@@ -1,0 +1,11 @@
+{
+  "setupComplete": false,
+  "branding": {
+    "logo": "",
+    "schoolName": ""
+  },
+  "adminUser": {
+    "username": "admin",
+    "password": "password"
+  }
+}

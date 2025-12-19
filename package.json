@@ -1,0 +1,26 @@
+{
+  "name": "radar",
+  "version": "1.0.0",
+  "description": "Radar is a web application for schools (primarily tech teams) to manage the status of their softwares.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevinmuscara/radar.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kevinmuscara/radar/issues"
+  },
+  "homepage": "https://github.com/kevinmuscara/radar#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "multer": "^2.0.2",
+    "path": "^0.12.7"
+  }
+}
