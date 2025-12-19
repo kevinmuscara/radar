@@ -1,15 +1,34 @@
 const express = require('express');
 const server = express();
 
-// const SetupManager = require("./config/SetupManager");
-// const configuration = new SetupManager("./config/config.json");
+const SetupManager = require("./config/SetupManager");
+const configuration = new SetupManager("./config/config.json");
 
-// routes
+// Import routes
 const setup = require("./routes/setup");
+const resources = require("./routes/resources");
 
+// Server setup
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
+server.set('view engine', 'ejs');
+server.use(express.static('public'));
 
+// Routing
 server.use("/setup", setup);
+server.use("/resources", resources);
+
+server.get("/", async (_request, response) => {
+  configuration.reloadConfig();
+  if (configuration.isSetupComplete()) {
+    // Proceed to dashboard
+    response.json({ status: 200 });
+  } else {
+    // Setup not complete, render setup page.
+    response.render("setup", {
+      config: await configuration.getConfig()
+    });
+  }
+});
 
 server.listen(80, "0.0.0.0", () => console.log("Radar live."));

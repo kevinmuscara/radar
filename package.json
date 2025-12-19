@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/kevinmuscara/radar#readme",
   "dependencies": {
+    "ejs": "^3.1.10",
     "express": "^5.2.1",
     "multer": "^2.0.2",
     "path": "^0.12.7"

@@ -23,9 +23,21 @@ class SetupManager {
         },
         adminUser: this.adminUser
       }));
+
+      this.reloadConfig();
     } catch (error) {
       console.log(error);
     }
+  }
+
+  // reloads the SetupManager instance variables from the config file
+  reloadConfig() {
+    this.config = JSON.parse(readFileSync(this.pathToConfig, "utf-8"));
+
+    this.logo = this.config.branding.logo;
+    this.schoolName = this.config.branding.schoolName;
+    this.adminUser = this.config.adminUser;
+    this.setupComplete = this.config.setupComplete;
   }
 
   // marks setup as complete and updates the config file
@@ -35,6 +47,7 @@ class SetupManager {
 
     try {
       this.#updateConfigFile();
+      this.reloadConfig();
     } catch (error) {
       console.log(error);
     }
@@ -74,6 +87,26 @@ class SetupManager {
     } catch (error) {
       console.log(error);
     }
+  }
+
+  getBrandingLogo() {
+    return this.logo;
+  }
+
+  getBrandingSchoolName() {
+    return this.schoolName;
+  }
+
+  getAdminUser() {
+    return this.adminUser;
+  }
+
+  getConfig() {
+    return this.config;
+  }
+
+  isSetupComplete() {
+    return this.setupComplete;
   }
 }
 

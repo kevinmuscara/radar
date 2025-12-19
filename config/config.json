@@ -1,8 +1,8 @@
 {
   "setupComplete": false,
   "branding": {
-    "logo": "",
-    "schoolName": ""
+    "logo": "logo",
+    "schoolName": "Your School Name"
   },
   "adminUser": {
     "username": "admin",

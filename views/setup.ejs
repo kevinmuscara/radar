@@ -1,0 +1,22 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    Setup Page
+  </title>
+  <link rel="icon" href="/branding/<%= config.branding.logo %>.png" type="image/png">
+</head>
+
+<body>
+  <form action="http://localhost/setup" method="POST" enctype="multipart/form-data">
+    <input type="file" name="logo" accept="image/*">
+    <input type="text" name="schoolName" placeholder="<%= config.branding.schoolName %>">
+    <input type="text" name="username" placeholder="<%= config.adminUser.username %>">
+    <input type="password" name="password" placeholder="<%= config.adminUser.password %>">
+    <button type="submit">Complete Setup</button>
+  </form>
+</body>
+
+</html>
