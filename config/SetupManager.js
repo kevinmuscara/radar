@@ -1,25 +1,9 @@
 const DatabaseManager = require("./DatabaseManager");
-const { readFileSync, existsSync } = require("fs");
-const path = require("path");
 
 class SetupManager {
   constructor() {
     this.dbManager = DatabaseManager;
-    this.config = {
-      branding: { logo: "", schoolName: "" },
-      adminUser: {
-        username: "admin",
-        password: "password"
-      },
-      setupComplete: false
-    };
-    this.logo = "";
-    this.schoolName = "";
-    this.adminUser = {
-      username: "admin",
-      password: "password"
-    };
-    this.setupComplete = false;
+    this.ready = this.initDefaults();
   }
 
   async #getSetting(key) {
@@ -33,100 +17,83 @@ class SetupManager {
     await db.run("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [key, value]);
   }
 
-  async migrateIfNeeded() {
+  async initDefaults() {
     const db = await this.dbManager.getDb();
     const row = await db.get("SELECT count(*) as count FROM settings");
     if (row.count > 0) return;
 
-    // DB is empty, try to load from JSON
-    const jsonPath = path.resolve(__dirname, "config.json");
-    if (existsSync(jsonPath)) {
-      try {
-        const data = JSON.parse(readFileSync(jsonPath, "utf-8"));
-        await this.#setSetting("branding_logo", data.branding.logo);
-        await this.#setSetting("branding_schoolName", data.branding.schoolName);
-        await this.#setSetting("admin_user", JSON.stringify(data.adminUser));
-        await this.#setSetting("setup_complete", String(data.setupComplete));
-        console.log("Migrated config.json to SQLite");
-      } catch (e) {
-        console.error("Failed to migrate config.json", e);
-      }
-    }
-  }
-
-  async reloadConfig() {
-    await this.migrateIfNeeded();
-
-    const logo = await this.#getSetting("branding_logo");
-    const schoolName = await this.#getSetting("branding_schoolName");
-    const adminUser = await this.#getSetting("admin_user");
-    const setupComplete = await this.#getSetting("setup_complete");
-
-    this.logo = logo || "";
-    this.schoolName = schoolName || "";
-    this.adminUser = adminUser ? JSON.parse(adminUser) : null;
-    this.setupComplete = setupComplete === "true";
-
-    this.config = {
-      branding: {
-        logo: this.logo,
-        schoolName: this.schoolName
-      },
-      adminUser: this.adminUser,
-      setupComplete: this.setupComplete
-    };
+    // Init default settings
+    await this.#setSetting("branding_logo", "logo.png");
+    await this.#setSetting("branding_schoolName", "Your School Name");
+    await this.#setSetting("admin_user", JSON.stringify({ username: "admin", password: "password" }));
+    await this.#setSetting("setup_complete", "false");
   }
 
   async completeSetup() {
-    this.setupComplete = true;
-    this.config.setupComplete = true;
+    await this.ready;
     await this.#setSetting("setup_complete", "true");
   }
 
   async uncompleteSetup() {
-    this.setupComplete = false;
-    this.config.setupComplete = false;
+    await this.ready;
     await this.#setSetting("setup_complete", "false");
   }
 
   async updateBrandingLogo(pathToLogo) {
-    this.logo = pathToLogo;
-    this.config.branding.logo = pathToLogo;
+    await this.ready;
     await this.#setSetting("branding_logo", pathToLogo);
   }
 
   async updateBrandingSchoolName(schoolName) {
-    this.schoolName = schoolName;
-    this.config.branding.schoolName = schoolName;
+    await this.ready;
     await this.#setSetting("branding_schoolName", schoolName);
   }
 
   async updateAdminUser(username, password) {
+    await this.ready;
     const user = { username, password };
-    this.adminUser = user;
-    this.config.adminUser = user;
     await this.#setSetting("admin_user", JSON.stringify(user));
   }
 
-  getBrandingLogo() {
-    return this.logo;
+  async getBrandingLogo() {
+    await this.ready;
+    const val = await this.#getSetting("branding_logo");
+    return val || "logo.png";
   }
 
-  getBrandingSchoolName() {
-    return this.schoolName;
+  async getBrandingSchoolName() {
+    await this.ready;
+    const val = await this.#getSetting("branding_schoolName");
+    return val || "Your School Name";
   }
 
-  getAdminUser() {
-    return this.adminUser;
+  async getAdminUser() {
+    await this.ready;
+    const val = await this.#getSetting("admin_user");
+    return val ? JSON.parse(val) : { username: "admin", password: "password" };
   }
 
-  getConfig() {
-    return this.config;
+  async getConfig() {
+    const logo = await this.getBrandingLogo();
+    const schoolName = await this.getBrandingSchoolName();
+    const adminUser = await this.getAdminUser();
+    const setupComplete = await this.isSetupComplete();
+
+    return {
+      branding: {
+        logo,
+        schoolName
+      },
+      adminUser,
+      setupComplete
+    };
   }
 
-  isSetupComplete() {
-    return this.setupComplete;
+  async isSetupComplete() {
+    await this.ready;
+    const val = await this.#getSetting("setup_complete");
+    return val === "true";
   }
 }
 
-module.exports = SetupManager;
+module.exports = new SetupManager();

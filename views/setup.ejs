@@ -1,22 +1,100 @@
-<html lang="en">
+<html lang="en" class="h-full bg-gray-50">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>
-    Setup Page
-  </title>
-  <link rel="icon" href="/branding/<%= config.branding.logo %>.png" type="image/png">
+  <title>Setup Page</title>
+  <link rel="icon" href="/branding/logo.png" type="image/png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: '#1e3a8a',
+            secondary: '#64748b',
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            background: '#f1f5f9',
+            surface: '#ffffff',
+          }
+        }
+      }
+    }
+  </script>
 </head>
 
-<body>
-  <form action="http://localhost/setup" method="POST" enctype="multipart/form-data">
-    <input type="file" name="logo" accept="image/*">
-    <input type="text" name="schoolName" placeholder="<%= config.branding.schoolName %>">
-    <input type="text" name="username" placeholder="<%= config.adminUser.username %>">
-    <input type="password" name="password" placeholder="<%= config.adminUser.password %>">
-    <button type="submit">Complete Setup</button>
-  </form>
+<body class="h-full">
+  <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+      <img src="/branding/logo.png" alt="Radar" class="mx-auto h-10 w-auto" />
+      <h2 class="mt-6 text-center text-2xl/9 font-bold tracking-tight text-gray-900">Welcome to Radar</h2>
+    </div>
+
+    <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
+      <div class="bg-white px-6 py-12 shadow sm:rounded-lg sm:px-12">
+        <form action="http://localhost/setup" method="POST" enctype="multipart/form-data" class="space-y-6">
+          <div>
+            <label for="username" class="block text-sm/6 font-medium text-gray-900">Admin Username</label>
+            <div class="mt-2">
+              <input id="username" type="text" name="username" required value="<%= config.adminUser.username %>"
+                class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6" />
+            </div>
+          </div>
+
+          <div>
+            <label for="password" class="block text-sm/6 font-medium text-gray-900">Password</label>
+            <div class="mt-2">
+              <input id="password" type="password" name="password" required value="<%= config.adminUser.password %>"
+                class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6" />
+            </div>
+          </div>
+
+          <div>
+            <label for="schoolName" class="block text-sm/6 font-medium text-gray-900">Your School Name</label>
+            <div class="mt-2">
+              <input id="schoolName" type="text" name="schoolName" required value="<%= config.branding.schoolName %>"
+                class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6" />
+            </div>
+          </div>
+
+          <div>
+            <label for="cover-photo" class="block text-sm/6 font-medium text-gray-900">School Logo</label>
+            <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
+              <div class="text-center">
+                <svg viewBox="0 0 24 24" fill="currentColor" data-slot="icon" aria-hidden="true"
+                  class="mx-auto size-12 text-gray-300">
+                  <path
+                    d="M1.5 6a2.25 2.25 0 0 1 2.25-2.25h16.5A2.25 2.25 0 0 1 22.5 6v12a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 18V6ZM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0 0 21 18v-1.94l-2.69-2.689a1.5 1.5 0 0 0-2.12 0l-.88.879.97.97a.75.75 0 1 1-1.06 1.06l-5.16-5.159a1.5 1.5 0 0 0-2.12 0L3 16.061Zm10.125-7.81a1.125 1.125 0 1 1 2.25 0 1.125 1.125 0 0 1-2.25 0Z"
+                    clip-rule="evenodd" fill-rule="evenodd" />
+                </svg>
+                <div class="mt-4 flex text-sm/6 text-gray-600">
+                  <label for="file"
+                    class="relative cursor-pointer rounded-md bg-transparent font-semibold text-indigo-600 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-indigo-600 hover:text-indigo-500">
+                    <span>Upload a file</span>
+                    <input id="file" type="file" name="logo" class="sr-only" />
+                  </label>
+                  <p class="pl-1">or drag and drop</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+
+          <div>
+            <button type="submit"
+              class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Sign
+              in</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </body>
 
 </html>

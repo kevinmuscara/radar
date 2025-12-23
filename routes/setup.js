@@ -2,10 +2,19 @@ const express = require("express");
 const router = express.Router();
 
 const multer = require("multer");
-const upload = multer({ dest: "public/branding" });
 
-const SetupManager = require("../config/SetupManager.js");
-const configuration = new SetupManager();
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "public/branding");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  }
+});
+
+const upload = multer({ storage });
+
+const configuration = require("../config/SetupManager");
 
 router.post("/", upload.single('logo'), async (request, response) => {
   if (request.file) {
@@ -17,12 +26,12 @@ router.post("/", upload.single('logo'), async (request, response) => {
   await configuration.updateAdminUser(request.body.username, request.body.password);
   await configuration.completeSetup();
 
-  response.send({ status: 200 });
+  response.redirect("/");
 });
 
 router.post("/uncomplete", async (_request, response) => {
   await configuration.uncompleteSetup();
-  response.send({ status: 200 });
+  response.redirect("/");
 });
 
 module.exports = router;

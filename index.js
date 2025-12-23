@@ -1,12 +1,13 @@
 const express = require('express');
 const server = express();
 
-const SetupManager = require("./config/SetupManager");
-const configuration = new SetupManager();
+const configuration = require("./config/SetupManager");
+
+const resources = require("./config/ResourceManager");
 
 // Import routes
-const setup = require("./routes/setup");
-const resources = require("./routes/resources");
+const setupRoute = require("./routes/setup");
+const resourcesRoute = require("./routes/resources");
 
 // Server setup
 server.use(express.urlencoded({ extended: true }));
@@ -15,18 +16,25 @@ server.set('view engine', 'ejs');
 server.use(express.static('public'));
 
 // Routing
-server.use("/setup", setup);
-server.use("/resources", resources);
+server.use("/setup", setupRoute);
+server.use("/resources", resourcesRoute);
+
+server.get("/data", async (_request, response) => {
+  response.json({
+    config: await configuration.getConfig(),
+    resources: await resources.getResources()
+  });
+});
 
 server.get("/", async (_request, response) => {
-  await configuration.reloadConfig();
-  if (configuration.isSetupComplete()) {
-    // Proceed to dashboard
-    response.json({ status: 200 });
+  if (await configuration.isSetupComplete()) {
+    response.render("dashboard", {
+      config: await configuration.getConfig(),
+      resources: await resources.getResources()
+    });
   } else {
-    // Setup not complete, render setup page.
     response.render("setup", {
-      config: configuration.getConfig()
+      config: await configuration.getConfig()
     });
   }
 });

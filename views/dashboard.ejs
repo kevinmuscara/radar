@@ -1,0 +1,48 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    <%= config.branding.schoolName %>
+  </title>
+  <link rel="icon" href="/branding/<%= config.branding.logo %>" type="image/png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: '#1e3a8a',
+            secondary: '#64748b',
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            background: '#f1f5f9',
+            surface: '#ffffff',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <% Object.entries(resources).forEach(([category, resources])=> { %>
+    <div class="flex flex-col items-center justify-center h-screen">
+      <h1 class="text-2xl font-bold text-primary">
+        <%= category %>
+      </h1>
+      <% resources.forEach(resource=> { %>
+        <a href="/resources/<%= resource.status_page %>">
+          <%= resource.resource_name %>
+        </a>
+        <% }) %>
+    </div>
+    <% }) %>
+</body>
+
+</html>

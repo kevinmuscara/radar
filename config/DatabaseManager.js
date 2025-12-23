@@ -8,7 +8,7 @@ class DatabaseManager {
   }
 
   async init() {
-    const dbPath = path.join(__dirname, '../database.sqlite');
+    const dbPath = process.env.DB_PATH || path.join(__dirname, '../database.sqlite');
     const db = await open({
       filename: dbPath,
       driver: sqlite3.Database
