@@ -8,6 +8,8 @@ lerna-debug.log*
 
 package-lock.json
 database.sqlite
+public/branding/*
+!public/branding/logo.png
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
