@@ -1,92 +1,111 @@
-//The SetupManager is used to manage the configuration state/variables in the initial setup process of Radar.
-const { readFileSync, writeFileSync } = require("fs");
+const DatabaseManager = require("./DatabaseManager");
+const { readFileSync, existsSync } = require("fs");
+const path = require("path");
 
 class SetupManager {
-  constructor(pathToConfig) {
-    this.pathToConfig = pathToConfig;
-    this.config = JSON.parse(readFileSync(pathToConfig, "utf-8"));
-
-    this.logo = this.config.branding.logo;
-    this.schoolName = this.config.branding.schoolName;
-    this.adminUser = this.config.adminUser;
-    this.setupComplete = this.config.setupComplete;
+  constructor() {
+    this.dbManager = DatabaseManager;
+    this.config = {
+      branding: { logo: "", schoolName: "" },
+      adminUser: {
+        username: "admin",
+        password: "password"
+      },
+      setupComplete: false
+    };
+    this.logo = "";
+    this.schoolName = "";
+    this.adminUser = {
+      username: "admin",
+      password: "password"
+    };
+    this.setupComplete = false;
   }
 
-  // updates the config file
-  #updateConfigFile() {
-    try {
-      writeFileSync(this.pathToConfig, JSON.stringify({
-        setupComplete: this.setupComplete,
-        branding: {
-          logo: this.logo,
-          schoolName: this.schoolName
-        },
-        adminUser: this.adminUser
-      }));
+  async #getSetting(key) {
+    const db = await this.dbManager.getDb();
+    const result = await db.get("SELECT value FROM settings WHERE key = ?", [key]);
+    return result ? result.value : null;
+  }
 
-      this.reloadConfig();
-    } catch (error) {
-      console.log(error);
+  async #setSetting(key, value) {
+    const db = await this.dbManager.getDb();
+    await db.run("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [key, value]);
+  }
+
+  async migrateIfNeeded() {
+    const db = await this.dbManager.getDb();
+    const row = await db.get("SELECT count(*) as count FROM settings");
+    if (row.count > 0) return;
+
+    // DB is empty, try to load from JSON
+    const jsonPath = path.resolve(__dirname, "config.json");
+    if (existsSync(jsonPath)) {
+      try {
+        const data = JSON.parse(readFileSync(jsonPath, "utf-8"));
+        await this.#setSetting("branding_logo", data.branding.logo);
+        await this.#setSetting("branding_schoolName", data.branding.schoolName);
+        await this.#setSetting("admin_user", JSON.stringify(data.adminUser));
+        await this.#setSetting("setup_complete", String(data.setupComplete));
+        console.log("Migrated config.json to SQLite");
+      } catch (e) {
+        console.error("Failed to migrate config.json", e);
+      }
     }
   }
 
-  // reloads the SetupManager instance variables from the config file
-  reloadConfig() {
-    this.config = JSON.parse(readFileSync(this.pathToConfig, "utf-8"));
+  async reloadConfig() {
+    await this.migrateIfNeeded();
 
-    this.logo = this.config.branding.logo;
-    this.schoolName = this.config.branding.schoolName;
-    this.adminUser = this.config.adminUser;
-    this.setupComplete = this.config.setupComplete;
+    const logo = await this.#getSetting("branding_logo");
+    const schoolName = await this.#getSetting("branding_schoolName");
+    const adminUser = await this.#getSetting("admin_user");
+    const setupComplete = await this.#getSetting("setup_complete");
+
+    this.logo = logo || "";
+    this.schoolName = schoolName || "";
+    this.adminUser = adminUser ? JSON.parse(adminUser) : null;
+    this.setupComplete = setupComplete === "true";
+
+    this.config = {
+      branding: {
+        logo: this.logo,
+        schoolName: this.schoolName
+      },
+      adminUser: this.adminUser,
+      setupComplete: this.setupComplete
+    };
   }
 
-  // marks setup as complete and updates the config file
-  completeSetup() {
+  async completeSetup() {
     this.setupComplete = true;
     this.config.setupComplete = true;
-
-    try {
-      this.#updateConfigFile();
-      this.reloadConfig();
-    } catch (error) {
-      console.log(error);
-    }
+    await this.#setSetting("setup_complete", "true");
   }
 
-  // updates the branding logo and updates the config file
-  updateBrandingLogo(pathToLogo) {
+  async uncompleteSetup() {
+    this.setupComplete = false;
+    this.config.setupComplete = false;
+    await this.#setSetting("setup_complete", "false");
+  }
+
+  async updateBrandingLogo(pathToLogo) {
     this.logo = pathToLogo;
     this.config.branding.logo = pathToLogo;
-
-    try {
-      this.#updateConfigFile();
-    } catch (error) {
-      console.log(error);
-    }
+    await this.#setSetting("branding_logo", pathToLogo);
   }
 
-  // updates the branding school name and updates the config file
-  updateBrandingSchoolName(schoolName) {
+  async updateBrandingSchoolName(schoolName) {
     this.schoolName = schoolName;
     this.config.branding.schoolName = schoolName;
-
-    try {
-      this.#updateConfigFile();
-    } catch (error) {
-      console.log(error);
-    }
+    await this.#setSetting("branding_schoolName", schoolName);
   }
 
-  // updates the admin user and updates the config file
-  updateAdminUser(username, password) {
-    this.adminUser = { username, password };
-    this.config.adminUser = { username, password };
-
-    try {
-      this.#updateConfigFile();
-    } catch (error) {
-      console.log(error);
-    }
+  async updateAdminUser(username, password) {
+    const user = { username, password };
+    this.adminUser = user;
+    this.config.adminUser = user;
+    await this.#setSetting("admin_user", JSON.stringify(user));
   }
 
   getBrandingLogo() {

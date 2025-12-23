@@ -1,46 +1,107 @@
-const { readFileSync, writeFileSync } = require("fs");
+const DatabaseManager = require("./DatabaseManager");
+const { readFileSync, existsSync } = require("fs");
+const path = require("path");
 
 class ResourceManager {
-  constructor(pathToResources) {
-    this.pathToResources = pathToResources;
-    this.resources = JSON.parse(readFileSync(pathToResources, "utf-8"));
-
-    this.reloadResources();
+  constructor() {
+    this.dbManager = DatabaseManager;
   }
 
-  #updateResourcesFile() {
-    try {
-      writeFileSync(this.pathToResources, JSON.stringify(this.resources));
-    } catch (error) {
-      console.log(error);
+  async migrateIfNeeded() {
+    const db = await this.dbManager.getDb();
+    const row = await db.get("SELECT count(*) as count FROM resources");
+    if (row.count > 0) return;
+
+    const jsonPath = path.resolve(__dirname, "resources.json");
+    if (existsSync(jsonPath)) {
+      try {
+        const data = JSON.parse(readFileSync(jsonPath, "utf-8"));
+        // data is { "Category": [ {resource...} ] }
+        for (const [category, resources] of Object.entries(data)) {
+          for (const resource of resources) {
+            await db.run(
+              "INSERT INTO resources (category, resource_name, status_page, grade_level) VALUES (?, ?, ?, ?)",
+              [category, resource.resource_name, resource.status_page, resource.grade_level]
+            );
+          }
+        }
+        console.log("Migrated resources.json to SQLite");
+      } catch (e) {
+        console.error("Failed to migrate resources.json", e);
+      }
     }
   }
 
-  reloadResources() {
-    this.resources = JSON.parse(readFileSync(this.pathToResources, "utf-8"));
+  async reloadResources() {
+    await this.migrateIfNeeded();
+    await this.dbManager.getDb();
   }
 
-  getResources() {
-    return this.resources;
+  async getResources() {
+    const db = await this.dbManager.getDb();
+    const rows = await db.all("SELECT * FROM resources");
+
+    const resources = {};
+    rows.forEach(row => {
+      if (!resources[row.category]) {
+        resources[row.category] = [];
+      }
+      resources[row.category].push({
+        resource_name: row.resource_name,
+        status_page: row.status_page,
+        grade_level: row.grade_level
+      });
+    });
+    return resources;
   }
 
-  addCategory(category) {
-    this.resources[category] = [];
-    this.#updateResourcesFile();
+  async addCategory(category) {
+    const db = await this.dbManager.getDb();
+    await db.run("INSERT INTO resources (category) VALUES (?)", [category]);
   }
 
-  addResource(category, resource) {
-    this.resources[category].push(resource);
-    this.#updateResourcesFile();
+  async addResource(category, resource) {
+    const db = await this.dbManager.getDb();
+    await db.run(
+      "INSERT INTO resources (category, resource_name, status_page, grade_level) VALUES (?, ?, ?, ?)",
+      [category, resource.resource_name, resource.status_page, resource.grade_level]
+    );
   }
 
-  getCategories() {
-    return Object.keys(this.resources);
+  async getCategories() {
+    const db = await this.dbManager.getDb();
+    const rows = await db.all("SELECT DISTINCT category FROM resources");
+    return rows.map(row => row.category);
   }
 
-  getCategory(category) {
-    return this.resources[category];
+  async getCategory(category) {
+    const db = await this.dbManager.getDb();
+    const rows = await db.all("SELECT * FROM resources WHERE category = ?", [category]);
+    return rows.map(row => ({
+      resource_name: row.resource_name,
+      status_page: row.status_page,
+      grade_level: row.grade_level
+    }));
+  }
+
+  async removeCategory(category) {
+    const db = await this.dbManager.getDb();
+    await db.run("DELETE FROM resources WHERE category = ?", [category]);
+  }
+
+  async removeResource(category, resource) {
+    const db = await this.dbManager.getDb();
+    await db.run("DELETE FROM resources WHERE category = ? AND resource_name = ?", [category, resource]);
+  }
+
+  async updateResource(category, resource, { resource_name, status_page, grade_level }) {
+    const db = await this.dbManager.getDb();
+    await db.run(
+      "UPDATE resources SET resource_name = ?, status_page = ?, grade_level = ? WHERE category = ? AND resource_name = ?",
+      [resource_name, status_page, grade_level, category, resource]
+    );
   }
 }
 
 module.exports = ResourceManager;
+

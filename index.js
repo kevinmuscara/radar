@@ -2,7 +2,7 @@ const express = require('express');
 const server = express();
 
 const SetupManager = require("./config/SetupManager");
-const configuration = new SetupManager("./config/config.json");
+const configuration = new SetupManager();
 
 // Import routes
 const setup = require("./routes/setup");
@@ -19,14 +19,14 @@ server.use("/setup", setup);
 server.use("/resources", resources);
 
 server.get("/", async (_request, response) => {
-  configuration.reloadConfig();
+  await configuration.reloadConfig();
   if (configuration.isSetupComplete()) {
     // Proceed to dashboard
     response.json({ status: 200 });
   } else {
     // Setup not complete, render setup page.
     response.render("setup", {
-      config: await configuration.getConfig()
+      config: configuration.getConfig()
     });
   }
 });
