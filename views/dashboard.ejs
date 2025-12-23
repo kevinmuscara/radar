@@ -37,7 +37,7 @@
         <%= category %>
       </h1>
       <% resources.forEach(resource=> { %>
-        <a href="/resources/<%= resource.status_page %>">
+        <a href="<%= resource.status_page %>">
           <%= resource.resource_name %>
         </a>
         <% }) %>

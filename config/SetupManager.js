@@ -1,4 +1,5 @@
 const DatabaseManager = require("./DatabaseManager");
+const bcrypt = require("bcrypt");
 
 class SetupManager {
   constructor() {
@@ -25,7 +26,11 @@ class SetupManager {
     // Init default settings
     await this.#setSetting("branding_logo", "logo.png");
     await this.#setSetting("branding_schoolName", "Your School Name");
-    await this.#setSetting("admin_user", JSON.stringify({ username: "admin", password: "password" }));
+    bcrypt.genSalt(10, (_err, salt) => {
+      bcrypt.hash("password", salt, (_err, hash) => {
+        this.#setSetting("admin_user", JSON.stringify({ username: "admin", password: hash }));
+      });
+    });
     await this.#setSetting("setup_complete", "false");
   }
 
@@ -52,7 +57,13 @@ class SetupManager {
   async updateAdminUser(username, password) {
     await this.ready;
     const user = { username, password };
-    await this.#setSetting("admin_user", JSON.stringify(user));
+
+    bcrypt.genSalt(10, (_err, salt) => {
+      bcrypt.hash(password, salt, (_err, hash) => {
+        user.password = hash;
+        this.#setSetting("admin_user", JSON.stringify(user));
+      });
+    });
   }
 
   async getBrandingLogo() {

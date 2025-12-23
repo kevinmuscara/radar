@@ -4,10 +4,10 @@ const router = express.Router();
 const multer = require("multer");
 
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: function (_request, _file, cb) {
     cb(null, "public/branding");
   },
-  filename: function (req, file, cb) {
+  filename: function (_request, file, cb) {
     cb(null, file.originalname);
   }
 });
