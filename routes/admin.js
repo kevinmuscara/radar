@@ -10,7 +10,8 @@ router.get("/", async (request, response) => {
   } else {
     response.render("admin", {
       config: await configuration.getConfig(),
-      resources: await resources.getResources()
+      resources: await resources.getResources(),
+      allCategories: await resources.getCategories()
     });
   }
 });

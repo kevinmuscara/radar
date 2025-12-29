@@ -18,6 +18,13 @@ router.get("/", async (_request, response) => {
   response.json({ status: 200, resources: allResources });
 });
 
+// get categories for a specific resource
+router.get("/tags/:resourceName", async (request, response) => {
+  const { resourceName } = request.params;
+  const categories = await resources.getResourceCategories(resourceName);
+  response.json({ status: 200, categories });
+});
+
 // get all categories
 router.get("/categories", async (_request, response) => {
 
@@ -51,13 +58,6 @@ router.post("/category/:category", checkAuth, async (request, response) => {
     grade_level,
   } = request.body;
 
-  const currentResources = await resources.getCategory(category);
-  const hasBlankResource = currentResources.some(r => r.resource_name === "");
-
-  if (hasBlankResource) {
-    await resources.removeResource(category, "");
-  }
-
   await resources.addResource(category, { resource_name, status_page, grade_level });
   response.json({ status: 200 });
 });
@@ -67,7 +67,7 @@ router.post("/category", checkAuth, async (request, response) => {
 
   const { category } = request.body;
 
-  await resources.addResource(category, { resource_name: "", status_page: "", grade_level: category });
+  await resources.addCategory(category);
   response.json({ status: 200 });
 });
 
