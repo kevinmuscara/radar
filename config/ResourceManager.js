@@ -13,8 +13,8 @@ class ResourceManager {
     if (rows.length <= 0) {
       // Init default resources
       const defaults = {
-        "Category 1": [{ resource_name: "Clever", status_page: "https://status.clever.com/api/v2/summary.json", grade_level: "K-12" }],
-        "Category 2": [{ resource_name: "PowerSchool", status_page: "https://status.powerschool.com/api/v2/summary.json", grade_level: "K-12" }]
+        "K-12": [{ resource_name: "Clever", status_page: "https://status.clever.com/api/v2/summary.json", grade_level: "K-12" }],
+        "6-8": [{ resource_name: "PowerSchool", status_page: "https://status.powerschool.com/api/v2/summary.json", grade_level: "6-8" }]
       };
 
       for (const [category, resources] of Object.entries(defaults)) {
@@ -105,6 +105,15 @@ class ResourceManager {
     await db.run(
       "UPDATE resources SET resource_name = ?, status_page = ?, grade_level = ? WHERE category = ? AND resource_name = ?",
       [resource_name, status_page, grade_level, category, resource]
+    );
+  }
+
+  async updateCategory(oldCategory, newCategory) {
+    await this.ready;
+    const db = await this.dbManager.getDb();
+    await db.run(
+      "UPDATE resources SET category = ?, grade_level = ? WHERE category = ?",
+      [newCategory, newCategory, oldCategory]
     );
   }
 }

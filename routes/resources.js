@@ -3,6 +3,14 @@ const router = express.Router();
 
 const resources = require("../config/ResourceManager");
 
+// Middleware to check authentication
+const checkAuth = (req, res, next) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  next();
+};
+
 // get all resources in every category
 router.get("/", async (_request, response) => {
 
@@ -34,7 +42,7 @@ router.get("/category/:category/:resource", async (request, response) => {
 });
 
 // create resource in category
-router.post("/category/:category", async (request, response) => {
+router.post("/category/:category", checkAuth, async (request, response) => {
 
   const { category } = request.params;
   const {
@@ -55,24 +63,33 @@ router.post("/category/:category", async (request, response) => {
 });
 
 // create category
-router.post("/category", async (request, response) => {
+router.post("/category", checkAuth, async (request, response) => {
 
   const { category } = request.body;
 
-  await resources.addResource(category, { resource_name: "", status_page: "", grade_level: "" });
+  await resources.addResource(category, { resource_name: "", status_page: "", grade_level: category });
   response.json({ status: 200 });
 });
 
 // Delete category
-router.delete("/category/:category", async (request, response) => {
+router.delete("/category/:category", checkAuth, async (request, response) => {
 
   const { category } = request.params;
   await resources.removeCategory(category);
   response.json({ status: 200 });
 });
 
+// Update category
+router.put("/category/:category", checkAuth, async (request, response) => {
+
+  const { category } = request.params;
+  const { newCategory } = request.body;
+  await resources.updateCategory(category, newCategory);
+  response.json({ status: 200 });
+});
+
 // Delete resource in category
-router.delete("/category/:category/:resource", async (request, response) => {
+router.delete("/category/:category/:resource", checkAuth, async (request, response) => {
 
   const { category, resource } = request.params;
   await resources.removeResource(category, resource);
@@ -80,7 +97,7 @@ router.delete("/category/:category/:resource", async (request, response) => {
 });
 
 // Update resource in category
-router.put("/category/:category/:resource", async (request, response) => {
+router.put("/category/:category/:resource", checkAuth, async (request, response) => {
 
   const { category, resource } = request.params;
   const {

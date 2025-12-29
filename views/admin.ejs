@@ -1,0 +1,493 @@
+<html lang="en" class="h-full bg-background">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    <%= config.branding.schoolName %> Admin Page
+  </title>
+  <link rel="icon" href="/branding/<%= config.branding.logo %>" type="image/png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: '#1e3a8a',
+            secondary: '#64748b',
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            background: '#f1f5f9',
+            surface: '#ffffff',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="h-full bg-background">
+  <nav class="bg-white shadow-sm">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex h-16 justify-between items-center">
+        <div class="flex items-center gap-4">
+          <img class="h-10 w-auto" src="/branding/<%= config.branding.logo %>"
+            alt="<%= config.branding.schoolName %>" />
+          <h1 class="text-xl font-bold text-gray-900">
+            <%= config.branding.schoolName %>
+          </h1>
+        </div>
+        <div class="flex gap-2">
+          <a href="/"
+            class="rounded-md bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-100 hover:text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            title="Go to Status Board">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+              stroke="currentColor" class="size-5">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            </svg>
+          </a>
+          <a href="/logout"
+            class="rounded-md bg-gray-500 p-2 text-white shadow-sm hover:bg-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+            title="Logout">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+              stroke="currentColor" class="size-5">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+            </svg>
+          </a>
+        </div>
+      </div>
+  </nav>
+
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+    <div class="grid grid-cols-1 gap-x-8 gap-y-10 lg:grid-cols-3">
+      <!-- Admin Settings (Column 1) -->
+      <div class="lg:col-span-1">
+        <div class="bg-white shadow sm:rounded-lg">
+          <div class="border-b rounded-t-lg bg-gray-50 border-gray-300 px-4 py-5 sm:px-6">
+            <h3 class="text-base font-semibold leading-6 text-gray-900">Dashboard Settings</h3>
+          </div>
+          <div class="px-4 py-5 sm:p-6">
+            <form action="http://localhost/setup/update" method="POST" enctype="multipart/form-data" class="space-y-6">
+              <div>
+                <label for="username" class="block text-sm/6 font-medium text-gray-900">Username</label>
+                <div class="mt-2">
+                  <input id="username" type="text" name="username" required value="<%= config.adminUser.username %>"
+                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6" />
+                </div>
+              </div>
+
+              <div>
+                <label for="password" class="block text-sm/6 font-medium text-gray-900">Password</label>
+                <div class="mt-2">
+                  <input id="password" type="password" name="password" required value="<%= config.adminUser.password %>"
+                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6" />
+                </div>
+              </div>
+
+              <div>
+                <label for="schoolName" class="block text-sm/6 font-medium text-gray-900">School Name</label>
+                <div class="mt-2">
+                  <input id="schoolName" type="text" name="schoolName" required
+                    value="<%= config.branding.schoolName %>"
+                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6" />
+                </div>
+              </div>
+
+              <div>
+                <label for="cover-photo" class="block text-sm/6 font-medium text-gray-900">School Logo</label>
+                <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
+                  <div class="text-center">
+                    <img src="/branding/<%= config.branding.logo %>" alt="<%= config.branding.schoolName %>"
+                      class="mx-auto h-10 w-auto" />
+                    <div class="mt-4 flex text-sm/6 text-gray-600">
+                      <label for="file"
+                        class="relative cursor-pointer rounded-md bg-transparent font-semibold text-blue-400 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-indigo-600 hover:text-indigo-500">
+                        <span>Upload a file</span>
+                        <input id="file" type="file" name="logo" class="sr-only" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+
+              <div>
+                <button type="submit"
+                  class="flex w-full justify-center rounded-md bg-green-500 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-sm hover:bg-green-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600">Save
+                  Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resource Management (Column 2 & 3) -->
+      <div class="lg:col-span-2">
+        <div class="bg-white shadow sm:rounded-lg">
+          <div class="border-b rounded-t-lg bg-gray-50 border-gray-200 px-4 py-5 sm:px-6">
+            <h3 class="text-base font-semibold leading-6 text-gray-900">Resource Management</h3>
+          </div>
+          <div class="px-4 py-5 sm:p-6">
+
+            <!-- Add Category -->
+            <div class="mb-8 border-b border-gray-200 pb-6">
+              <h4 class="text-sm font-bold text-gray-900 mb-2">Add New Category</h4>
+              <div class="flex gap-2">
+                <input type="text" id="new-category-name" placeholder="Category Name" autocomplete="off"
+                  class="block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                <button type="button" onclick="addCategory()"
+                  class="rounded-md bg-green-500 px-2 py-1 text-sm font-semibold text-white shadow-sm hover:bg-green-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Add</button>
+              </div>
+            </div>
+
+            <!-- Category List -->
+            <div id="resources-container" class="space-y-8">
+              <% for (const [category, items] of Object.entries(resources)) { %>
+                <div class="border rounded-lg shadow-md p-4 relative group category-block"
+                  data-category="<%= category %>">
+                  <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-2">
+                      <h4 class="text-lg font-semibold text-gray-800">
+                        <%= category %>
+                      </h4>
+                      <button type="button" onclick="updateCategory('<%= category %>')"
+                        class="text-gray-400 hover:text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                          stroke="currentColor" class="w-4 h-4">
+                          <path stroke-linecap="round" stroke-linejoin="round"
+                            d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div>
+                      <button type="button" onclick="openAddModal('<%= category %>')"
+                        class="text-gray-400 hover:text-green-600 mr-1" title="Add Resource">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                          stroke="currentColor" class="w-4 h-4">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                      </button>
+                      <button type="button" onclick="deleteCategory('<%= category %>')"
+                        class="text-gray-400 hover:text-red-600" title="Delete Category">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                          stroke="currentColor" class="w-4 h-4">
+                          <path stroke-linecap="round" stroke-linejoin="round"
+                            d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-300">
+                      <thead>
+                        <tr>
+                          <th scope="col"
+                            class="py-2 pl-2 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Name
+                          </th>
+                          <th scope="col"
+                            class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                            URL</th>
+                          <th scope="col" class="relative py-2 pl-3 pr-2 sm:pr-0"><span class="sr-only">Actions</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-gray-200">
+                        <% items.forEach(resource=> { %>
+                          <% if (resource.resource_name) { %>
+                            <tr>
+                              <td class="whitespace-nowrap py-2 pl-2 pr-3 text-sm text-gray-900">
+                                <%= resource.resource_name %>
+                              </td>
+                              <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-500 max-w-[200px] truncate"
+                                title="<%= resource.status_page %>">
+                                <%= resource.status_page %>
+                              </td>
+                              <td
+                                class="relative whitespace-nowrap py-2 pl-3 pr-2 text-right text-sm font-medium sm:pr-0">
+                                <button type="button"
+                                  onclick="editResource('<%= category %>', '<%= resource.resource_name %>', '<%= resource.status_page %>')"
+                                  class="text-yellow-500 hover:text-yellow-400 mr-2">Edit</button>
+                                <button type="button"
+                                  onclick="deleteResource('<%= category %>', '<%= resource.resource_name %>')"
+                                  class="text-red-600 hover:text-red-900">Delete</button>
+                              </td>
+                            </tr>
+                            <% } %>
+                              <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <% } %>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="relative z-10 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+      <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+          <div
+            class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+            <div>
+              <h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Edit Resource</h3>
+              <div class="mt-4 space-y-4">
+                <input type="hidden" id="edit-original-name">
+                <input type="hidden" id="edit-category">
+                <div>
+                  <label class="block text-sm font-medium leading-6 text-gray-900">Resource Name</label>
+                  <input type="text" id="edit-name"
+                    class="mt-2 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium leading-6 text-gray-900">Status Page URL</label>
+                  <input type="text" id="edit-url"
+                    class="mt-2 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                </div>
+              </div>
+            </div>
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+              <button type="button" onclick="saveEdit()"
+                class="inline-flex w-full justify-center rounded-md bg-green-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">Save</button>
+              <button type="button" onclick="closeEditModal()"
+                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Resource Modal -->
+    <div id="add-modal" class="relative z-10 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+      <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+          <div
+            class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+            <div>
+              <h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Add New Resource</h3>
+              <div class="mt-4 space-y-4">
+                <input type="hidden" id="add-category-input">
+                <div>
+                  <label class="block text-sm font-medium leading-6 text-gray-900">Resource Name</label>
+                  <input type="text" id="add-name" autocomplete="off"
+                    class="mt-2 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium leading-6 text-gray-900">Status Page URL</label>
+                  <input type="text" id="add-url" autocomplete="off"
+                    class="mt-2 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                </div>
+              </div>
+            </div>
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+              <button type="button" onclick="saveNewResource()"
+                class="inline-flex w-full justify-center rounded-md bg-green-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">Add</button>
+              <button type="button" onclick="closeAddModal()"
+                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function addCategory() {
+      const nameInput = document.getElementById('new-category-name');
+      const category = nameInput.value.trim();
+      if (!category) return;
+
+      try {
+        const res = await fetch('/resources/category', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category })
+        });
+        if (res.ok) window.location.reload();
+        else alert('Failed to add category');
+      } catch (e) {
+        console.error(e);
+        alert('Error adding category');
+      }
+    }
+
+    async function updateCategory(oldCategory) {
+      const newCategory = prompt("Enter new category name:", oldCategory);
+      if (!newCategory || newCategory === oldCategory) return;
+
+      try {
+        const res = await fetch(`/resources/category/${encodeURIComponent(oldCategory)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newCategory })
+        });
+        if (res.ok) window.location.reload();
+        else alert('Failed to update category');
+      } catch (e) {
+        console.error(e);
+        alert('Error updating category');
+      }
+    }
+
+    async function deleteCategory(category) {
+      if (!confirm(`Are you sure you want to delete category "${category}"?`)) return;
+
+      try {
+        const res = await fetch(`/resources/category/${encodeURIComponent(category)}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) window.location.reload();
+        else alert('Failed to delete category');
+      } catch (e) {
+        console.error(e);
+        alert('Error deleting category');
+      }
+    }
+
+    async function addResource(category, btn) {
+      const row = btn.closest('tr');
+      const name = row.querySelector('.new-res-name').value.trim();
+      const url = row.querySelector('.new-res-url').value.trim();
+
+      if (!name || !url) {
+        alert('Please fill in both Name and URL');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/resources/category/${encodeURIComponent(category)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resource_name: name,
+            status_page: url,
+            grade_level: category
+          })
+        });
+        if (res.ok) window.location.reload();
+        else alert('Failed to add resource');
+      } catch (e) {
+        console.error(e);
+        alert('Error adding resource');
+      }
+    }
+
+    async function deleteResource(category, resourceName) {
+      if (!confirm(`Delete resource "${resourceName}"?`)) return;
+
+      try {
+        const res = await fetch(`/resources/category/${encodeURIComponent(category)}/${encodeURIComponent(resourceName)}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) window.location.reload();
+        else alert('Failed to delete resource');
+      } catch (e) {
+        console.error(e);
+        alert('Error deleting resource');
+      }
+    }
+
+    // Edit Modal Logic
+    function editResource(category, name, url) {
+      document.getElementById('edit-category').value = category;
+      document.getElementById('edit-original-name').value = name;
+      document.getElementById('edit-name').value = name;
+      document.getElementById('edit-url').value = url;
+
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+    }
+
+    async function saveEdit() {
+      const category = document.getElementById('edit-category').value;
+      const originalName = document.getElementById('edit-original-name').value;
+      const newName = document.getElementById('edit-name').value;
+      const newUrl = document.getElementById('edit-url').value;
+
+      if (!newName || !newUrl) {
+        alert('Name and URL are required');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/resources/category/${encodeURIComponent(category)}/${encodeURIComponent(originalName)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resource_name: newName,
+            status_page: newUrl,
+            grade_level: category
+          })
+        });
+        if (res.ok) window.location.reload();
+        else alert('Failed to update resource');
+      } catch (e) {
+        console.error(e);
+        alert('Error updating resource');
+      }
+    }
+
+
+    // Add Modal Logic
+    function openAddModal(category) {
+      document.getElementById('add-category-input').value = category;
+      document.getElementById('add-name').value = '';
+      document.getElementById('add-url').value = '';
+      document.getElementById('add-modal').classList.remove('hidden');
+    }
+
+    function closeAddModal() {
+      document.getElementById('add-modal').classList.add('hidden');
+    }
+
+    async function saveNewResource() {
+      const category = document.getElementById('add-category-input').value;
+      const name = document.getElementById('add-name').value;
+      const url = document.getElementById('add-url').value;
+
+      if (!name || !url) {
+        alert('Name and URL are required');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/resources/category/${encodeURIComponent(category)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resource_name: name,
+            status_page: url,
+            grade_level: category
+          })
+        });
+        if (res.ok) window.location.reload();
+        else alert('Failed to add resource');
+      } catch (e) {
+        console.error(e);
+        alert('Error adding resource');
+      }
+    }
+  </script>
+  </div>
+</body>
+
+</html>

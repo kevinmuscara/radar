@@ -1,0 +1,26 @@
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f1f5f9;
+}
+
+.card-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.toggle-checkbox:checked {
+  transform: translateX(100%);
+  border-color: #10b981;
+}
+
+.toggle-checkbox:checked+.toggle-label {
+  background-color: #10b981;
+}
+
+body.hide-unknown .status-unknown {
+  display: none !important;
+}
