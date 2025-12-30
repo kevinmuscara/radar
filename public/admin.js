@@ -332,25 +332,121 @@ async function saveNewCategory() {
   }
 }
 
+// Pagination state
+const resourcePagination = {
+  currentPage: 1,
+  itemsPerPage: 10,
+  totalItems: 0,
+  filteredRows: [],
+  allRows: []
+};
+
 // Resource search/filter
 function filterResources() {
   const qEl = document.getElementById('resource-search');
   if (!qEl) return;
   const q = qEl.value.trim().toLowerCase();
-  const rows = document.querySelectorAll('#unique-resources-table tbody tr');
-  rows.forEach(row => {
+  
+  resourcePagination.filteredRows = resourcePagination.allRows.filter(row => {
     const name = (row.cells[0] && row.cells[0].textContent) ? row.cells[0].textContent.toLowerCase() : '';
     const url = (row.cells[1] && row.cells[1].textContent) ? row.cells[1].textContent.toLowerCase() : '';
     const cats = (row.cells[2] && row.cells[2].textContent) ? row.cells[2].textContent.toLowerCase() : '';
-    const matches = q === '' || name.includes(q) || url.includes(q) || cats.includes(q);
-    row.style.display = matches ? '' : 'none';
+    return q === '' || name.includes(q) || url.includes(q) || cats.includes(q);
   });
+  
+  resourcePagination.currentPage = 1;
+  resourcePagination.totalItems = resourcePagination.filteredRows.length;
+  updateResourcePagination();
+}
+
+function updateResourcePagination() {
+  const { currentPage, itemsPerPage, filteredRows, allRows } = resourcePagination;
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+  
+  // Hide all rows first
+  allRows.forEach(row => row.style.display = 'none');
+  
+  // Show only current page rows from filtered results
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = startIdx + itemsPerPage;
+  filteredRows.slice(startIdx, endIdx).forEach(row => row.style.display = '');
+  
+  // Update pagination info
+  const infoEl = document.getElementById('pagination-info');
+  if (infoEl) {
+    if (filteredRows.length === 0) {
+      infoEl.textContent = 'No resources found';
+    } else {
+      const showing = Math.min(endIdx, filteredRows.length);
+      infoEl.textContent = `Showing ${startIdx + 1} to ${showing} of ${filteredRows.length}`;
+    }
+  }
+  
+  // Update pagination buttons
+  const prevBtn = document.getElementById('pagination-prev');
+  const nextBtn = document.getElementById('pagination-next');
+  if (prevBtn) prevBtn.disabled = currentPage === 1;
+  if (nextBtn) nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+  
+  // Update page number buttons
+  const numbersEl = document.getElementById('pagination-numbers');
+  if (numbersEl) {
+    numbersEl.innerHTML = '';
+    const maxButtons = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+    if (endPage - startPage < maxButtons - 1) {
+      startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = i;
+      btn.className = `rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${
+        i === currentPage
+          ? 'bg-indigo-600 text-white'
+          : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+      }`;
+      btn.onclick = () => goToResourcePage(i);
+      numbersEl.appendChild(btn);
+    }
+  }
+}
+
+function nextResourcePage() {
+  const totalPages = Math.ceil(resourcePagination.filteredRows.length / resourcePagination.itemsPerPage);
+  if (resourcePagination.currentPage < totalPages) {
+    resourcePagination.currentPage++;
+    updateResourcePagination();
+  }
+}
+
+function prevResourcePage() {
+  if (resourcePagination.currentPage > 1) {
+    resourcePagination.currentPage--;
+    updateResourcePagination();
+  }
+}
+
+function goToResourcePage(page) {
+  resourcePagination.currentPage = page;
+  updateResourcePagination();
 }
 
 // attach listener when DOM loaded
 document.addEventListener('DOMContentLoaded', () => {
   const search = document.getElementById('resource-search');
   if (search) search.addEventListener('input', filterResources);
+  // Initialize pagination
+  const tbody = document.getElementById('resources-table-body');
+  if (tbody) {
+    const allRows = Array.from(tbody.querySelectorAll('.resource-row'));
+    resourcePagination.allRows = allRows;
+    resourcePagination.filteredRows = allRows;
+    resourcePagination.totalItems = allRows.length;
+    updateResourcePagination();
+  }
   // load errors button hook
   const refreshErrors = document.getElementById('refresh-errors-btn');
   if (refreshErrors) refreshErrors.addEventListener('click', loadErrors);

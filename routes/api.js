@@ -154,4 +154,74 @@ router.get("/check-status", async (request, response) => {
   }
 });
 
+// RSS feed of all resources' current statuses
+router.get('/rss', async (_request, response) => {
+  try {
+    const allResources = await resources.getResources();
+    const items = [];
+    Object.entries(allResources).forEach(([category, list]) => {
+      list.forEach(r => {
+        items.push({
+          category,
+          resource_name: r.resource_name,
+          status_page: r.status_page,
+          check_type: r.check_type || 'api',
+          scrape_keywords: r.scrape_keywords || ''
+        });
+      });
+    });
+
+    // Check statuses (limit parallelism to avoid overload)
+    const concurrency = 10;
+    const results = [];
+    for (let i = 0; i < items.length; i += concurrency) {
+      const chunk = items.slice(i, i + concurrency);
+      const chunkResults = await Promise.all(chunk.map(async (it) => {
+        try {
+          const status = await checkStatus(it);
+          return { item: it, status };
+        } catch (e) {
+          return { item: it, status: { status: 'Unknown', last_checked: new Date().toISOString(), status_url: it.status_page } };
+        }
+      }));
+      results.push(...chunkResults);
+    }
+
+    // Build RSS XML
+    const feedItems = results.map(r => {
+      const title = `${r.item.resource_name} — ${r.item.category} — ${r.status.status}`;
+      const link = r.status.status_url || r.item.status_page || '';
+      const pubDate = new Date(r.status.last_checked).toUTCString();
+      const description = `Status: ${r.status.status}. Checked: ${r.status.last_checked}. URL: ${link}`;
+      const guid = Buffer.from(`${r.item.resource_name}|${link}`).toString('base64');
+      return `    <item>\n      <title>${escapeXml(title)}</title>\n      <link>${escapeXml(link)}</link>\n      <guid isPermaLink="false">${guid}</guid>\n      <pubDate>${pubDate}</pubDate>\n      <description>${escapeXml(description)}</description>\n    </item>`;
+    }).join('\n');
+
+    const feedTitle = 'Radar - Resource Statuses';
+    const feedLink = (_request && _request.protocol && _request.get) ? `${_request.protocol}://${_request.get('host')}` : '';
+    const buildDate = new Date().toUTCString();
+
+    const rss = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0">\n  <channel>\n    <title>${escapeXml(feedTitle)}</title>\n    <link>${escapeXml(feedLink)}</link>\n    <description>Current statuses for all monitored resources</description>\n    <lastBuildDate>${buildDate}</lastBuildDate>\n${feedItems}\n  </channel>\n</rss>`;
+
+    response.set('Content-Type', 'application/rss+xml');
+    response.send(rss);
+  } catch (error) {
+    console.error('Failed to build RSS feed:', error);
+    response.status(500).send('Failed to build RSS feed');
+  }
+});
+
+function escapeXml(unsafe) {
+  if (!unsafe) return '';
+  return unsafe.replace(/[<>&"']/g, function (c) {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '"': return '&quot;';
+      case "'": return '&apos;';
+    }
+  });
+}
+
 module.exports = router;

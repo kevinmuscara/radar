@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const multer = require("multer");
+const bcrypt = require('bcrypt');
 
 const storage = multer.diskStorage({
   destination: function (_request, _file, cb) {
@@ -35,10 +36,38 @@ router.post("/", upload.single('logo'), async (request, response) => {
     }
 
     await configuration.updateBrandingSchoolName(request.body.schoolName);
+
+    // Update admin user in settings (existing async helper will also run)
     await configuration.updateAdminUser(request.body.username, request.body.password);
+
+    // mark setup complete
     await configuration.completeSetup();
 
-    response.redirect("/");
+    // Create session for the newly created admin so they are redirected straight to /admin
+    try {
+      const salt = await bcrypt.genSalt(10);
+      const hashed = await bcrypt.hash(request.body.password, salt);
+      const admin_user = { username: request.body.username, password: hashed };
+
+      request.session.regenerate((err) => {
+        if (err) {
+          console.error('Session regenerate error after setup:', err);
+          return response.redirect('/');
+        }
+
+        request.session.user = admin_user;
+        request.session.save((err) => {
+          if (err) {
+            console.error('Session save error after setup:', err);
+            return response.redirect('/');
+          }
+          response.redirect('/admin');
+        });
+      });
+    } catch (e) {
+      console.error('Failed to create session after setup:', e);
+      response.redirect('/');
+    }
   }
 });
 

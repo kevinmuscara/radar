@@ -24,6 +24,7 @@ server.use(session({
   saveUninitialized: true,
   cookie: { secure: false }
 }));
+server.disable("x-powered-by");
 
 // Routing
 server.use("/setup", setupRoute);

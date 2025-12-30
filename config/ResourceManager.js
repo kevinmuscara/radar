@@ -1,4 +1,6 @@
 const DatabaseManager = require("./DatabaseManager");
+const fs = require('fs').promises;
+const path = require('path');
 
 class ResourceManager {
   constructor() {
@@ -11,19 +13,50 @@ class ResourceManager {
     const rows = await db.all("SELECT * FROM categories");
 
     if (rows.length <= 0) {
-      // Init default resources
-      const defaults = {"K-12": [{ resource_name: "Clever", status_page: "https://status.clever.com/api/v2/summary.json", check_type: 'api' }]};
+      // Try to load initial resources from example_import.csv (project root)
+      try {
+        const csvPath = path.join(__dirname, '..', 'example_import.csv');
+        const contents = await fs.readFile(csvPath, 'utf8');
+        const lines = contents.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length > 0) {
+          const header = lines[0].split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(h => h.trim());
+          const idx = {}; header.forEach((h,i) => idx[h] = i);
 
-      for (const [categoryName, resources] of Object.entries(defaults)) {
-        await db.run("INSERT OR IGNORE INTO categories (name) VALUES (?)", [categoryName]);
-        const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [categoryName]);
+          for (let i = 1; i < lines.length; i++) {
+            const parts = lines[i].split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(p => p.trim().replace(/^"|"$/g, ''));
+            const categoryName = parts[idx['category']] || 'Uncategorized';
+            const resource_name = parts[idx['resource_name']] || '';
+            const status_page = parts[idx['status_page']] || '';
+            const check_type = (parts[idx['check_type']] || 'api').toLowerCase();
+            const scrape_keywords = parts[idx['scrape_keywords']] || '';
 
-        for (const resource of resources) {
-          await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, check_type, scrape_keywords) VALUES (?, ?, ?, ?)", [resource.resource_name, resource.status_page, resource.check_type || 'api', resource.scrape_keywords || '']);
-          const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
+            if (!resource_name) continue;
 
-          if (catRow && resRow) {
-            await db.run("INSERT OR IGNORE INTO resource_category_mapping (resource_id, category_id) VALUES (?, ?)", [resRow.id, catRow.id]);
+            await db.run("INSERT OR IGNORE INTO categories (name) VALUES (?)", [categoryName]);
+            const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [categoryName]);
+
+            await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, check_type, scrape_keywords) VALUES (?, ?, ?, ?)", [resource_name, status_page, check_type, scrape_keywords]);
+            const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource_name, status_page]);
+
+            if (catRow && resRow) {
+              await db.run("INSERT OR IGNORE INTO resource_category_mapping (resource_id, category_id) VALUES (?, ?)", [resRow.id, catRow.id]);
+            }
+          }
+        }
+      } catch (e) {
+        // Fallback to a small default set if CSV not available
+        const defaults = {"K-12": [{ resource_name: "Clever", status_page: "https://status.clever.com/api/v2/summary.json", check_type: 'api' }]};
+        for (const [categoryName, resources] of Object.entries(defaults)) {
+          await db.run("INSERT OR IGNORE INTO categories (name) VALUES (?)", [categoryName]);
+          const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [categoryName]);
+
+          for (const resource of resources) {
+            await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, check_type, scrape_keywords) VALUES (?, ?, ?, ?)", [resource.resource_name, resource.status_page, resource.check_type || 'api', resource.scrape_keywords || '']);
+            const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
+
+            if (catRow && resRow) {
+              await db.run("INSERT OR IGNORE INTO resource_category_mapping (resource_id, category_id) VALUES (?, ?)", [resRow.id, catRow.id]);
+            }
           }
         }
       }
