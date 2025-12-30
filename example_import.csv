@@ -1,98 +1,98 @@
-category,resource_name,status_page,check_type
-K-12,Google Workspace for Education,https://www.google.com/appsstatus/dashboard/,heartbeat
-K-12,Canva for Education,https://www.canvastatus.com/api/v2/summary.json,api
-K-8,Zearn,https://status.zearn.org,heartbeat
-K-12,WeVideo,https://status.wevideo.com/api/v2/summary.json,api
-6-8,Thunkable,https://status.thunkable.com/,heartbeat
-K-12,Socrative,https://status.socrative.com/api/v2/summary.json,api
-K-12,Lumio (formerly SMART Learning Suite Online),https://status.smarttech.com/,heartbeat
-6-12,Señor Wooly,https://status.senorwooly.com,heartbeat
-K-12,Screencastify,https://status.screencastify.com/api/v2/summary.json,api
-K-12,SchoolAI,https://status.schoolai.com/api/v2/summary.json,api
-K-5,Rise Up,https://status.riseup.ai/,heartbeat
-K-5,Lalilo,https://status.renaissance.com/,heartbeat
-K-12,Remind,https://status.remind.com/api/v2/summary.json,api
-K-12,Schoology Learning,https://status.powerschool.com/api/v2/summary.json,api
-K-12,Pear Assessment (formerly Edulastic),https://status.peardeck.com/api/v2/summary.json,api
-K-12,Pear Deck,https://status.peardeck.com/api/v2/summary.json,api
-K-12,Padlet,https://status.padlet.help/api/v2/summary.json,api
-K-12,OverDrive,https://status.overdrive.com/api/v2/summary.json,api
-K-12,Sora,https://status.openai.com/api/v2/summary.json,api
-K-12,Newsela,https://status.newsela.com/,heartbeat
-K-12,Nearpod,https://status.nearpod.com/api/v2/summary.json,api
-K-12,News2You,https://status.n2y.com/api/v2/summary.json,api
-K-12,Kami (Alternative on Schoology),https://status.kamihq.com/api/v2/summary.json,api
-K-12,IXL,https://status.ixl.com/,heartbeat
-9-12,Canvas,https://status.instructure.com/api/v2/summary.json,api
-K-12,GoGuardian,https://status.goguardian.com/api/v2/summary.json,api
-K-5,Freckle ELA,https://status.freckle.com,heartbeat
-K-12,Destiny Library Manager,https://status.follettsoftware.com/,heartbeat
-K-5,Flat for Education,https://status.flat.io,heartbeat
-6-8,CompTIA Spark,https://status.comptia.org/,heartbeat
-K-12,Code.org,https://status.code.org/api/v2/summary.json,api
-K-12,Clever,https://status.clever.com/api/v2/summary.json,api
-K-5,Class Dojo,https://status.classdojo.com,heartbeat
-K-12,CK-12,https://status.ck12.org/api/v2/summary.json,api
-K-12,EduBlogs,https://status.campuspress.com/,heartbeat
-K-5,BrainPOP Jr.,https://status.brainpop.com,heartbeat
-K-8,BrainPOP ELL,https://status.brainpop.com,heartbeat
-6-8,BrainPOP Science,https://status.brainpop.com,heartbeat
-K-12,Wayground (formerly Quizizz),https://quizizz.freshping.io,heartbeat
-K-12,Gimkit,https://gimkit.crisp.watch/en/,heartbeat
-K-5,Benchmark Education,https://benchmark.freshstatus.io/,heartbeat
-K-12,123test.com Career Aptitude Test,https://123test.com,heartbeat
-K-12,PowToon,http://status.powtoon.com/,heartbeat
-K-12,Boom Learning,http://status.boomlearning.com,heartbeat
-K-12,Book Widgets,https://bookwidgets.com,heartbeat
-K-12,BookSource,https://booksource.com,heartbeat
-K-12,Diigo,https://diigo.com,heartbeat
-K-12,Edpuzzle,https://edpuzzle.com/,heartbeat
-K-12,Formative,https://formative.com,heartbeat
-K-12,Mote,https://mote.com,heartbeat
-K-12,Personal Finance Lab,https://personalfinancelab.com,heartbeat
-K-12,Pixton,https://pixton.com,heartbeat
-K-12,Quia,https://quia.com,heartbeat
-K-12,Rosetta Stone For Schools,https://www.rosettastone.com/,heartbeat
-K-12,Snorkl,https://snorkl.com,heartbeat
-K-12,Soundation4Education,https://edu.soundation.com/,heartbeat
-K-12,Typing.com,https://typing.com,heartbeat
-K-12,Wizer,https://wizer.me,heartbeat
-K-12,World Book,https://worldbook.com,heartbeat
-K-5,99Math,https://99math.com,heartbeat
-K-5,ABCya,https://abcya.com,heartbeat
-K-5,ASSISTments,https://assistments.com,heartbeat
-K-5,Acadience,https://acadiencelearning.com,heartbeat
-K-5,EasyCBM,https://easycbm.com,heartbeat
-K-5,GoNoodle,https://gonoodle.com,heartbeat
-K-5,Kodable,https://kodable.com,heartbeat
-K-5,Project Read,https://projectread.ai,heartbeat
-K-5,Read Naturally,https://readnaturally.com,heartbeat
-K-5,Spellie,https://spellie.com,heartbeat
-K-5,Studies Weekly,https://studiesweekly.com,heartbeat
-K-5,Teach Your Monster to Read,https://teachyourmonster.org,heartbeat
-K-5,Vooks,https://vooks.com,heartbeat
-9-12,Agile Mind,https://agilemind.com,heartbeat
-9-12,Noteflight Learn,https://noteflight.com,heartbeat
-9-12,Paradigm Cyber Ventures,https://paradigmcyberventures.com,heartbeat
-9-12,Speakable,https://speakable.io,heartbeat
-9-12,VIA Institute on Character,https://viacharacter.org,heartbeat
-6-12,Affinity Products,https://affinity.studio,heartbeat
-6-12,Brilliant,https://brilliant.com,heartbeat
-6-12,CMU CS Academy,https://academy.cs.cmu.edu/,heartbeat
-6-12,CS-Stem Network,https://www.cs2n.org/,heartbeat
-6-12,CommonLit,https://commonlit.com,heartbeat
-6-12,Conjuguemos,https://conjuguemos.com,heartbeat
-6-12,Delta Math,https://deltamath.com,heartbeat
-6-12,Desmos Classroom,https://desmos.com,heartbeat
-6-12,MyPLTW (Project Lead the Way),https://www.pltw.org/,heartbeat
-6-12,NoRedInk,https://noredink.com,heartbeat
-6-12,PhET,https://phet.com,heartbeat
-6-12,Pixlr,https://pixlr.com,heartbeat
-6-12,ProWritingAid,https://prowritingaid.com,heartbeat
-6-12,Quill,https://quill.com,heartbeat
-6-12,SchooLinks,https://schoolinks.com,heartbeat
-6-12,Tinkercad Classroom,https://tinkercad.com,heartbeat
-6-12,WeWillWrite,https://wewillwrite.com,heartbeat
-K-8,Legends of Learning,https://legendsoflearning.com,heartbeat
-K-8,Prodigy,https://prodigy.com,heartbeat
-6-8,JASON Learning,https://jason.org,heartbeat
+category,resource_name,status_page,check_type,scrape_keywords
+K-12,Google Workspace for Education,https://www.google.com/appsstatus/dashboard/,scrape,No incidents
+K-12,Canva for Education,https://www.canvastatus.com/api/v2/summary.json,api,
+K-8,Zearn,https://status.zearn.org,heartbeat,
+K-12,WeVideo,https://status.wevideo.com/api/v2/summary.json,api,
+6-8,Thunkable,https://status.thunkable.com/,heartbeat,
+K-12,Socrative,https://status.socrative.com/api/v2/summary.json,api,
+K-12,Lumio (formerly SMART Learning Suite Online),https://status.smarttech.com/,heartbeat,
+6-12,Señor Wooly,https://status.senorwooly.com,heartbeat,
+K-12,Screencastify,https://status.screencastify.com/api/v2/summary.json,api,
+K-12,SchoolAI,https://status.schoolai.com/api/v2/summary.json,api,
+K-5,Rise Up,https://status.riseup.ai/,heartbeat,
+K-5,Lalilo,https://status.renaissance.com/,heartbeat,
+K-12,Remind,https://status.remind.com/api/v2/summary.json,api,
+K-12,Schoology Learning,https://status.powerschool.com/api/v2/summary.json,api,
+K-12,Pear Assessment (formerly Edulastic),https://status.peardeck.com/api/v2/summary.json,api,
+K-12,Pear Deck,https://status.peardeck.com/api/v2/summary.json,api,
+K-12,Padlet,https://status.padlet.help/api/v2/summary.json,api,
+K-12,OverDrive,https://status.overdrive.com/api/v2/summary.json,api,
+K-12,Sora,https://status.openai.com/api/v2/summary.json,api,
+K-12,Newsela,https://status.newsela.com/,heartbeat,
+K-12,Nearpod,https://status.nearpod.com/api/v2/summary.json,api,
+K-12,News2You,https://status.n2y.com/api/v2/summary.json,api,
+K-12,Kami (Alternative on Schoology),https://status.kamihq.com/api/v2/summary.json,api,
+K-12,IXL,https://status.ixl.com/,heartbeat,
+9-12,Canvas,https://status.instructure.com/api/v2/summary.json,api,
+K-12,GoGuardian,https://status.goguardian.com/api/v2/summary.json,api,
+K-5,Freckle ELA,https://status.freckle.com,heartbeat,
+K-12,Destiny Library Manager,https://status.follettsoftware.com/,heartbeat,
+K-5,Flat for Education,https://status.flat.io,heartbeat,
+6-8,CompTIA Spark,https://status.comptia.org/,heartbeat,
+K-12,Code.org,https://status.code.org/api/v2/summary.json,api,
+K-12,Clever,https://status.clever.com/api/v2/summary.json,api,
+K-5,Class Dojo,https://status.classdojo.com,heartbeat,
+K-12,CK-12,https://status.ck12.org/api/v2/summary.json,api,
+K-12,EduBlogs,https://status.campuspress.com/,heartbeat,
+K-5,BrainPOP Jr.,https://status.brainpop.com,heartbeat,
+K-8,BrainPOP ELL,https://status.brainpop.com,heartbeat,
+6-8,BrainPOP Science,https://status.brainpop.com,heartbeat,
+K-12,Wayground (formerly Quizizz),https://quizizz.freshping.io,heartbeat,
+K-12,Gimkit,https://gimkit.crisp.watch/en/,heartbeat,
+K-5,Benchmark Education,https://benchmark.freshstatus.io/,heartbeat,
+K-12,123test.com Career Aptitude Test,https://123test.com,heartbeat,
+K-12,PowToon,http://status.powtoon.com/,heartbeat,
+K-12,Boom Learning,http://status.boomlearning.com,heartbeat,
+K-12,Book Widgets,https://bookwidgets.com,heartbeat,
+K-12,BookSource,https://booksource.com,heartbeat,
+K-12,Diigo,https://diigo.com,heartbeat,
+K-12,Edpuzzle,https://edpuzzle.com/,heartbeat,
+K-12,Formative,https://formative.com,heartbeat,
+K-12,Mote,https://mote.com,heartbeat,
+K-12,Personal Finance Lab,https://personalfinancelab.com,heartbeat,
+K-12,Pixton,https://pixton.com,heartbeat,
+K-12,Quia,https://quia.com,heartbeat,
+K-12,Rosetta Stone For Schools,https://www.rosettastone.com/,heartbeat,
+K-12,Snorkl,https://snorkl.com,heartbeat,
+K-12,Soundation4Education,https://edu.soundation.com/,heartbeat,
+K-12,Typing.com,https://typing.com,heartbeat,
+K-12,Wizer,https://wizer.me,heartbeat,
+K-12,World Book,https://worldbook.com,heartbeat,
+K-5,99Math,https://99math.com,heartbeat,
+K-5,ABCya,https://abcya.com,heartbeat,
+K-5,ASSISTments,https://assistments.com,heartbeat,
+K-5,Acadience,https://acadiencelearning.com,heartbeat,
+K-5,EasyCBM,https://easycbm.com,heartbeat,
+K-5,GoNoodle,https://gonoodle.com,heartbeat,
+K-5,Kodable,https://kodable.com,heartbeat,
+K-5,Project Read,https://projectread.ai,heartbeat,
+K-5,Read Naturally,https://readnaturally.com,heartbeat,
+K-5,Spellie,https://spellie.com,heartbeat,
+K-5,Studies Weekly,https://studiesweekly.com,heartbeat,
+K-5,Teach Your Monster to Read,https://teachyourmonster.org,heartbeat,
+K-5,Vooks,https://vooks.com,heartbeat,
+9-12,Agile Mind,https://agilemind.com,heartbeat,
+9-12,Noteflight Learn,https://noteflight.com,heartbeat,
+9-12,Paradigm Cyber Ventures,https://paradigmcyberventures.com,heartbeat,
+9-12,Speakable,https://speakable.io,heartbeat,
+9-12,VIA Institute on Character,https://viacharacter.org,heartbeat,
+6-12,Affinity Products,https://affinity.studio,heartbeat,
+6-12,Brilliant,https://brilliant.com,heartbeat,
+6-12,CMU CS Academy,https://academy.cs.cmu.edu/,heartbeat,
+6-12,CS-Stem Network,https://www.cs2n.org/,heartbeat,
+6-12,CommonLit,https://commonlit.com,heartbeat,
+6-12,Conjuguemos,https://conjuguemos.com,heartbeat,
+6-12,Delta Math,https://deltamath.com,heartbeat,
+6-12,Desmos Classroom,https://desmos.com,heartbeat,
+6-12,MyPLTW (Project Lead the Way),https://www.pltw.org/,heartbeat,
+6-12,NoRedInk,https://noredink.com,heartbeat,
+6-12,PhET,https://phet.com,heartbeat,
+6-12,Pixlr,https://pixlr.com,heartbeat,
+6-12,ProWritingAid,https://prowritingaid.com,heartbeat,
+6-12,Quill,https://quill.com,heartbeat,
+6-12,SchooLinks,https://schoolinks.com,heartbeat,
+6-12,Tinkercad Classroom,https://tinkercad.com,heartbeat,
+6-12,WeWillWrite,https://wewillwrite.com,heartbeat,
+K-8,Legends of Learning,https://legendsoflearning.com,heartbeat,
+K-8,Prodigy,https://prodigy.com,heartbeat,
+6-8,JASON Learning,https://jason.org,heartbeat,
