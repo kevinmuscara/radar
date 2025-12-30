@@ -49,8 +49,11 @@
           <h1 class="text-lg md:text-xl font-bold tracking-tight text-slate-900 leading-tight">
             <%= config.branding.schoolName %>
           </h1>
-          <p class="text-[10px] md:text-xs text-slate-500 font-medium uppercase tracking-wider">Status
-            Dashboard</p>
+          <p class="text-[10px] md:text-xs text-slate-500 font-medium uppercase tracking-wider">
+            <span id="last-updated" class="text-xs text-slate-500 font-medium hidden sm:inline-block mr-2">Last
+              updated:
+              --:--</span>
+          </p>
         </div>
       </div>
       <div class="w-full md:flex-1 max-w-lg mx-auto md:px-4 flex items-center gap-3 md:gap-4">
@@ -69,8 +72,6 @@
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
-          <span id="last-updated" class="text-xs text-slate-500 font-medium hidden sm:inline-block mr-2">Last updated:
-            --:--</span>
           <button id="filter-toggle"
             class="md:hidden text-xs text-slate-600 font-medium flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-md border border-slate-200 hover:bg-slate-200 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
