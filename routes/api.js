@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const cheerio = require("cheerio");
+const puppeteer = require("puppeteer");
 const resources = require('../config/ResourceManager');
 
 function normalizeStatus(statusText) {
@@ -67,13 +68,40 @@ async function checkStatus(resource) {
       }
 
       if (method === 'scrape') {
-        const $ = cheerio.load(response.data);
-        const pageText = $('body').text();
+        let pageText;
+        
+        try {
+          // Use Puppeteer to render JavaScript-heavy sites
+          const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+          const page = await browser.newPage();
+          page.setDefaultTimeout(8000);
+          page.setDefaultNavigationTimeout(8000);
+          
+          await page.goto(url, { waitUntil: 'domcontentloaded' });
+          pageText = await page.content();
+          await browser.close();
+          
+          // Parse the fully rendered HTML
+          const $ = cheerio.load(pageText);
+          pageText = $('body').text();
+        } catch (puppeteerError) {
+          // Fallback to axios + cheerio if Puppeteer fails
+          console.warn(`Puppeteer failed for ${url}, falling back to axios: ${puppeteerError.message}`);
+          const response = await axios.get(url, {
+            timeout: 5000,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36' }
+          });
+          const $ = cheerio.load(response.data);
+          pageText = $('body').text();
+        }
+
         // If user provided keywords, look for them
         if (keywords.length > 0) {
           for (const kw of keywords) {
             if (pageText.toLowerCase().includes(kw.toLowerCase())) {
               return { status: normalizeStatus(kw), last_checked: new Date().toISOString(), status_url: url };
+            } else {
+              return { status: 'Outage', last_checked: new Date().toISOString(), status_url: url };
             }
           }
         }

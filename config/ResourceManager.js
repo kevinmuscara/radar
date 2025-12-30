@@ -12,10 +12,7 @@ class ResourceManager {
 
     if (rows.length <= 0) {
       // Init default resources
-      const defaults = {
-        "K-12": [{ resource_name: "Clever", status_page: "https://status.clever.com/api/v2/summary.json", check_type: 'api' }, { resource_name: "Fake Example Outage Data", status_page: "http://localhost/fake-summary.json", check_type: 'api' }],
-        "6-8": [{ resource_name: "PowerSchool", status_page: "https://status.powerschool.com/api/v2/summary.json", check_type: 'api' }, { resource_name: "Fake Example Outage Data", status_page: "http://localhost/fake-summary.json", check_type: 'api' }]
-      };
+      const defaults = {"K-12": [{ resource_name: "Clever", status_page: "https://status.clever.com/api/v2/summary.json", check_type: 'api' }]};
 
       for (const [categoryName, resources] of Object.entries(defaults)) {
         await db.run("INSERT OR IGNORE INTO categories (name) VALUES (?)", [categoryName]);

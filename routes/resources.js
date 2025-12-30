@@ -138,4 +138,69 @@ router.put("/category/:category/:resource", checkAuth, async (request, response)
   response.json({ status: 200 });
 });
 
+// bulk import from CSV
+router.post("/import", checkAuth, async (request, response) => {
+  try {
+    const { data } = request.body;
+    
+    if (!Array.isArray(data) || data.length === 0) {
+      return response.status(400).json({ error: "Invalid data: must be a non-empty array" });
+    }
+
+    // Track categories and resources added/updated
+    const imported = { categories: new Set(), resources: 0 };
+
+    // Process each row
+    for (const row of data) {
+      const { category, resource_name, status_page, check_type, scrape_keywords } = row;
+
+      if (!category || !resource_name || !status_page || !check_type) {
+        return response.status(400).json({ error: "Invalid row: missing required fields" });
+      }
+
+      if (!['api', 'scrape', 'heartbeat'].includes(check_type)) {
+        return response.status(400).json({ error: "Invalid check_type: must be 'api', 'scrape', or 'heartbeat'" });
+      }
+
+      try {
+        // Check if category exists, create if not
+        const existingCategories = await resources.getCategories();
+        if (!existingCategories.includes(category)) {
+          await resources.addCategory(category);
+          imported.categories.add(category);
+        }
+
+        // Add resource to category
+        await resources.addResource(category, {
+          resource_name,
+          status_page,
+          check_type,
+          scrape_keywords: scrape_keywords || ''
+        });
+
+        imported.resources++;
+      } catch (err) {
+        console.error(`Failed to import ${category} > ${resource_name}:`, err);
+        // Continue with next row instead of failing entire import
+      }
+    }
+
+    response.json({ 
+      status: 200, 
+      message: `Successfully imported ${imported.resources} resources in ${imported.categories.size} categories`,
+      imported
+    });
+  } catch (error) {
+    console.error('Import error:', error);
+    response.status(500).json({ error: "Failed to import CSV data" });
+  }
+});
+
+// download CSV template
+router.get("/template", (_request, response) => {
+  const path = require('path');
+  const filePath = path.join(__dirname, '../example_import.csv');
+  response.download(filePath, 'resources_template.csv');
+});
+
 module.exports = router;

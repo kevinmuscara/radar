@@ -27,6 +27,7 @@
     "express-session": "^1.18.2",
     "multer": "^2.0.2",
     "path": "^0.12.7",
+    "puppeteer": "^24.34.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
   }

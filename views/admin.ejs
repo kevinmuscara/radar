@@ -54,7 +54,7 @@
         </div>
         <div class="flex gap-2">
           <a href="/"
-            class="rounded-md bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-100 hover:text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            class="rounded-md p-2.5 text-gray-600 hover:text-primary hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors"
             title="Go to Status Board">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
               stroke="currentColor" class="size-5">
@@ -63,12 +63,12 @@
             </svg>
           </a>
           <a href="/logout"
-            class="rounded-md bg-gray-500 p-2 text-white shadow-sm hover:bg-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+            class="rounded-md p-2.5 text-gray-600 hover:text-danger hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger transition-colors"
             title="Logout">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
               stroke="currentColor" class="size-5">
               <path stroke-linecap="round" stroke-linejoin="round"
-                d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15M12 9l3 3m0 0-3 3m3-3H3.75" />
             </svg>
           </a>
         </div>
@@ -274,10 +274,24 @@
                 </div>
               </div>
 
+              <!-- Import CSV Section -->
+              <div class="mt-8 mb-8">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="text-sm font-bold text-gray-900">Bulk Import</h4>
+                  <button type="button" onclick="openImportModal()" title="Import CSV" aria-label="Import CSV" class="px-3 py-2 rounded-md text-gray-600 text-sm font-medium hover:text-primary hover:bg-blue-50 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline mr-1">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33A3 3 0 0116.5 19.5H6.75z" />
+                    </svg>
+                    Import CSV
+                  </button>
+                </div>
+                <p class="text-xs text-gray-600 mb-4">Import categories and resources from a CSV file. <a href="#" onclick="downloadCSVTemplate(event)" class="text-blue-500 hover:text-blue-600 underline">Download template</a></p>
+              </div>
+
               <!-- Check Errors -->
               <div class="mt-8">
                 <div class="flex items-center justify-between mb-2">
-                  <h4 class="text-sm font-bold text-gray-900">Recent Check Errors</h4>
+                  <h4 class="text-sm font-bold text-gray-900">Errors</h4>
                   <div class="flex items-center gap-2">
                     <button id="refresh-errors-btn" type="button" title="Refresh Errors" aria-label="Refresh Errors" class="p-2 rounded-md bg-white text-gray-600 border border-slate-200 hover:bg-slate-50">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -297,7 +311,6 @@
                       <tr>
                         <th class="py-2 pl-2 pr-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
                         <th class="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase">Resource</th>
-                        <th class="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase">URL</th>
                         <th class="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase">Check Type</th>
                         <th class="py-2 pr-2 text-left text-xs font-medium text-gray-500 uppercase">Error</th>
                       </tr>
@@ -456,6 +469,40 @@
               <button type="button" onclick="saveNewCategory()"
                 class="inline-flex w-full justify-center rounded-md bg-green-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">Add</button>
               <button type="button" onclick="closeAddCategoryModal()"
+                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import CSV Modal -->
+    <div id="import-modal" class="relative z-10 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+      <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+          <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+            <div>
+              <h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Import Categories & Resources</h3>
+              <div class="mt-4 space-y-4">
+                <div class="text-sm text-gray-600 bg-blue-50 p-3 rounded-md">
+                  <p class="font-medium mb-2">CSV Format:</p>
+                  <p class="font-mono text-xs">category,resource_name,status_page,check_type,scrape_keywords</p>
+                  <p class="mt-2">check_type: api, scrape, or heartbeat</p>
+                  <p>scrape_keywords: comma-separated values (optional)</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium leading-6 text-gray-900">Select CSV File</label>
+                  <input type="file" id="import-csv-file" accept=".csv" 
+                    class="mt-2 block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                </div>
+                <div id="import-preview" class="text-sm text-gray-600"></div>
+              </div>
+            </div>
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+              <button type="button" onclick="importCSV()"
+                class="inline-flex w-full justify-center rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">Import</button>
+              <button type="button" onclick="closeImportModal()"
                 class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
             </div>
           </div>

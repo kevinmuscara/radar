@@ -382,7 +382,6 @@ async function loadErrors() {
       tr.innerHTML = `
         <td class="py-2 pl-2 pr-3 text-sm text-gray-700">${time}</td>
         <td class="py-2 px-3 text-sm text-gray-800">${r.resource_name || ''}</td>
-        <td class="py-2 px-3 text-sm text-gray-600 truncate max-w-md" title="${r.status_page || ''}">${r.status_page || ''}</td>
         <td class="py-2 px-3 text-sm text-gray-600">${r.check_type || ''}</td>
         <td class="py-2 pr-2 text-sm text-gray-700">${(r.error_message || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>
         <td class="py-2 pr-2 text-sm text-right">
@@ -417,4 +416,111 @@ async function clearAllErrors() {
     const res = await fetch('/resources/errors', { method: 'DELETE' });
     if (res.ok) loadErrors(); else alert('Failed to clear errors');
   } catch (e) { console.error('Failed to clear errors', e); alert('Failed to clear errors'); }
+}
+
+// CSV Import functions
+function openImportModal() {
+  document.getElementById('import-modal').classList.remove('hidden');
+  document.getElementById('import-csv-file').value = '';
+  document.getElementById('import-preview').innerHTML = '';
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').classList.add('hidden');
+  document.getElementById('import-csv-file').value = '';
+  document.getElementById('import-preview').innerHTML = '';
+}
+
+function downloadCSVTemplate(event) {
+  event.preventDefault();
+  window.location.href = '/resources/template';
+}
+
+async function importCSV() {
+  const fileInput = document.getElementById('import-csv-file');
+  if (!fileInput.files || fileInput.files.length === 0) {
+    alert('Please select a CSV file');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const text = await file.text();
+  const lines = text.trim().split('\n');
+  
+  if (lines.length < 2) {
+    alert('CSV file must have at least a header row and one data row');
+    return;
+  }
+
+  const headers = lines[0].split(',').map(h => h.trim());
+  const requiredHeaders = ['category', 'resource_name', 'status_page', 'check_type'];
+  
+  // Validate headers
+  const hasRequiredHeaders = requiredHeaders.every(h => headers.includes(h));
+  if (!hasRequiredHeaders) {
+    alert(`CSV must have columns: ${requiredHeaders.join(', ')}`);
+    return;
+  }
+
+  const data = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim() === '') continue; // Skip empty lines
+    
+    const values = lines[i].split(',').map(v => v.trim());
+    const row = {};
+    headers.forEach((header, index) => {
+      row[header] = values[index] || '';
+    });
+    
+    if (!row.category || !row.resource_name || !row.status_page) {
+      alert(`Row ${i + 1}: Missing required fields (category, resource_name, status_page)`);
+      return;
+    }
+
+    if (!['api', 'scrape', 'heartbeat'].includes(row.check_type)) {
+      alert(`Row ${i + 1}: check_type must be 'api', 'scrape', or 'heartbeat'`);
+      return;
+    }
+
+    data.push(row);
+  }
+
+  if (data.length === 0) {
+    alert('No valid data rows found in CSV');
+    return;
+  }
+
+  // Show preview
+  const preview = document.getElementById('import-preview');
+  preview.innerHTML = `<p class="font-medium mb-2">Preview: ${data.length} items to import</p>`;
+  data.slice(0, 5).forEach(item => {
+    preview.innerHTML += `<p class="text-xs">${item.category} > ${item.resource_name} (${item.check_type})</p>`;
+  });
+  if (data.length > 5) {
+    preview.innerHTML += `<p class="text-xs font-medium">... and ${data.length - 5} more</p>`;
+  }
+
+  if (!confirm(`Import ${data.length} items? This will add or update resources.`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch('/resources/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data })
+    });
+
+    if (res.ok) {
+      alert(`Successfully imported ${data.length} items`);
+      closeImportModal();
+      window.location.reload();
+    } else {
+      const error = await res.json();
+      alert(`Import failed: ${error.error || 'Unknown error'}`);
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Error importing CSV');
+  }
 }

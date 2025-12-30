@@ -1,0 +1,5 @@
+category,resource_name,status_page,check_type,scrape_keywords
+K-12,Clever,https://status.clever.com/api/v2/summary.json,api,
+K-12,GoNoodle,https://gonoodle.com,heartbeat,
+K-5,GoNoodle,https://gonoodle.com,heartbeat,
+K-12,IXL,https://status.ixl.com,scrape,All systems operational
