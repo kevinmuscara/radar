@@ -73,6 +73,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Derive a favicon URL for a resource's site. Attempts to extract the base domain from the
+  // status_page (falling back to resource name) and uses Google's favicon service.
+  function getFaviconUrl(resource) {
+    let host = '';
+    const tryExtract = (u) => {
+      try {
+        const url = new URL(u);
+        return url.hostname;
+      } catch (e) {
+        try {
+          const url2 = new URL('https://' + u);
+          return url2.hostname;
+        } catch (err) {
+          return '';
+        }
+      }
+    };
+
+    if (resource.status_page) host = tryExtract(resource.status_page);
+    if (!host && resource.resource_name) host = tryExtract(resource.resource_name);
+
+    if (!host) return (window.BRANDING_LOGO || '/branding/favicon.ico');
+
+    const parts = host.split('.');
+    // Naive base domain extraction: take last two parts (handles most cases)
+    const base = parts.length >= 2 ? parts.slice(-2).join('.') : host;
+    // Use Google's favicon service (fast and reliable)
+    return `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(base)}`;
+  }
+
   function updateCurrentIssues(resourceData) {
     const downServices = [];
     Object.values(resourceData).forEach(list => {
@@ -249,12 +279,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     resources.forEach(resource => {
       const card = document.createElement('div');
-      card.className = 'bg-white rounded-xl border border-slate-200 p-5 card-hover flex flex-col h-full shadow-sm relative overflow-hidden status-unknown';
+      card.className = 'bg-white rounded-xl border border-slate-200 p-5 card-hover flex flex-col h-full shadow relative overflow-hidden status-unknown transition-shadow hover:shadow-lg';
+      // compute favicon URL for this resource
+      const faviconUrl = getFaviconUrl(resource);
 
-      card.innerHTML = `
-                <div class="flex-1">
-                    <div class="flex justify-between items-start mb-2">
-                        ${(() => {
+            card.innerHTML = `
+                <div class="flex-1 relative flex flex-col justify-center">
+                <!-- Top-right status indicator -->
+                  <div class="absolute top-4 right-3">
+                  <div class="status-indicator-container relative">
+                    <div class="status-indicator w-3.5 h-3.5 rounded-full bg-slate-300" title="" aria-hidden="true"></div>
+                    <div class="status-tooltip" style="display:none; position:absolute; right:0; top:calc(100% + 6px); white-space:nowrap; background:#fff; border:1px solid #e6e9ee; padding:6px 8px; border-radius:6px; box-shadow:0 6px 18px rgba(15,23,42,0.08); font-size:12px; color:#0f172a;">Status</div>
+                  </div>
+                </div>
+
+                  <div class="flex items-center mb-0">
+                    <img src="${faviconUrl}" alt="favicon" class="w-12 h-12 rounded-sm object-contain flex-shrink-0" onerror="this.style.display='none'" />
+                    <div class="ml-4 flex-1 min-w-0">
+                    ${(() => {
           if (isSpecial && resource.status_page && resource.status_page.trim() !== "") {
             let statusUrl = resource.status_page;
             // Remove API suffixes to get the user-facing page
@@ -262,28 +304,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             statusUrl = statusUrl.replace(/\/summary\.json$/, '');
             // Remove trailing slash if present after replacement
             if (statusUrl.endsWith('/')) {
-              statusUrl = statusUrl.slice(0, -1);
+            statusUrl = statusUrl.slice(0, -1);
             }
 
-            return `<h3 class="font-semibold text-slate-900 text-lg line-clamp-2 leading-tight" title="${resource.resource_name}">
-                                    <a href="${statusUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600 hover:underline inline-flex items-center gap-1">
-                                        ${resource.resource_name}
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-slate-400">
-                                            <path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z" clip-rule="evenodd" />
-                                            <path fill-rule="evenodd" d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z" clip-rule="evenodd" />
-                                        </svg>
-                                    </a>
-                                </h3>`;
+            return `<h3 class="font-semibold text-slate-900 text-xl leading-tight min-w-0">
+                          <a href="${statusUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600 hover:underline inline-flex items-center gap-2 min-w-0 truncate">
+                            <span class="truncate">${resource.resource_name}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-slate-400">
+                              <path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z" clip-rule="evenodd" />
+                              <path fill-rule="evenodd" d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z" clip-rule="evenodd" />
+                            </svg>
+                          </a>
+                        </h3>`;
           } else {
-            return `<h3 class="font-semibold text-slate-900 text-lg line-clamp-2 leading-tight" title="${resource.resource_name}">${resource.resource_name}</h3>`;
+            return `<h3 class="font-semibold text-slate-900 text-xl leading-tight min-w-0"><span class="truncate" title="${resource.resource_name}">${resource.resource_name}</span></h3>`;
           }
-        })()}
-                        <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 ml-2 shrink-0">
-                            <span class="status-dot w-2 h-2 rounded-full bg-slate-300 animate-pulse"></span>
-                            <span class="status-text text-xs font-medium text-slate-600">Last updated</span>
-                        </div>
-                    </div>
+          })()}
+
+                            
+                  </div>
                 </div>
+              </div>
             `;
       grid.appendChild(card);
 
@@ -302,13 +343,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusColor = getStatusColor(statusData.status);
     const statusText = statusData.status || 'Unknown';
 
-    const dot = card.querySelector('.status-dot');
-    const text = card.querySelector('.status-text');
+    const indicator = card.querySelector('.status-indicator');
+    const tooltip = card.querySelector('.status-tooltip');
 
-    dot.className = `status-dot w-2.5 h-2.5 rounded-full ${statusColor} ${statusText === 'Operational' ? 'animate-pulse' : ''}`;
+    if (indicator) {
+      // Update top-right indicator color and accessible title
+      indicator.className = `status-indicator w-3.5 h-3.5 rounded-full ${statusColor}`;
+      indicator.setAttribute('title', statusText);
+      indicator.setAttribute('aria-label', `Status: ${statusText}`);
 
-    text.textContent = statusText;
-    text.className = `status-text text-sm font-medium ${statusText === 'Operational' ? 'text-slate-700' : 'text-slate-900'}`;
+      // Set tooltip text
+      if (tooltip) tooltip.textContent = statusText;
+
+      // Add hover handlers once to show custom tooltip
+      if (!indicator.dataset.bound) {
+        indicator.addEventListener('mouseenter', () => {
+          if (tooltip) tooltip.style.display = 'block';
+        });
+        indicator.addEventListener('mouseleave', () => {
+          if (tooltip) tooltip.style.display = 'none';
+        });
+        indicator.dataset.bound = 'true';
+      }
+    }
 
     if (statusText === 'Unknown' || statusText === 'Last updated') {
       card.classList.add('status-unknown');

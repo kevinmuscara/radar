@@ -1,6 +1,6 @@
 async function addCategory() {
   const nameInput = document.getElementById('new-category-name');
-  const category = nameInput.value.trim();
+  const category = nameInput ? nameInput.value.trim() : '';
   if (!category) return;
 
   try {
@@ -94,7 +94,7 @@ async function deleteResource(category, resourceName) {
 }
 
 // Edit Modal Logic
-async function editResource(category, name, url) {
+async function editResource(name, url) {
   document.getElementById('edit-original-name').value = name;
   document.getElementById('edit-name').value = name;
   document.getElementById('edit-url').value = url;
@@ -119,6 +119,29 @@ async function editResource(category, name, url) {
   }
 
   document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+// Delete a resource from all categories (global delete)
+async function deleteResourceGlobal(resourceName) {
+  if (!confirm(`Delete resource "${resourceName}" from all categories?`)) return;
+
+  try {
+    // fetch categories for resource
+    const res = await fetch(`/resources/tags/${encodeURIComponent(resourceName)}`);
+    const data = await res.json();
+    const categories = data.categories || [];
+
+    for (const cat of categories) {
+      await fetch(`/resources/category/${encodeURIComponent(cat)}/${encodeURIComponent(resourceName)}`, {
+        method: 'DELETE'
+      });
+    }
+
+    window.location.reload();
+  } catch (e) {
+    console.error(e);
+    alert('Failed to delete resource');
+  }
 }
 
 function closeEditModal() {
@@ -243,3 +266,54 @@ async function saveNewResource() {
     alert('Error adding resource');
   }
 }
+
+// Category modal controls
+function openAddCategoryModal() {
+  const el = document.getElementById('modal-new-category-name');
+  if (el) el.value = '';
+  document.getElementById('add-category-modal').classList.remove('hidden');
+}
+
+function closeAddCategoryModal() {
+  document.getElementById('add-category-modal').classList.add('hidden');
+}
+
+async function saveNewCategory() {
+  const input = document.getElementById('modal-new-category-name');
+  const category = input ? input.value.trim() : '';
+  if (!category) return alert('Please enter a category name');
+
+  try {
+    const res = await fetch('/resources/category', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category })
+    });
+    if (res.ok) window.location.reload();
+    else alert('Failed to add category');
+  } catch (e) {
+    console.error(e);
+    alert('Error adding category');
+  }
+}
+
+// Resource search/filter
+function filterResources() {
+  const qEl = document.getElementById('resource-search');
+  if (!qEl) return;
+  const q = qEl.value.trim().toLowerCase();
+  const rows = document.querySelectorAll('#unique-resources-table tbody tr');
+  rows.forEach(row => {
+    const name = (row.cells[0] && row.cells[0].textContent) ? row.cells[0].textContent.toLowerCase() : '';
+    const url = (row.cells[1] && row.cells[1].textContent) ? row.cells[1].textContent.toLowerCase() : '';
+    const cats = (row.cells[2] && row.cells[2].textContent) ? row.cells[2].textContent.toLowerCase() : '';
+    const matches = q === '' || name.includes(q) || url.includes(q) || cats.includes(q);
+    row.style.display = matches ? '' : 'none';
+  });
+}
+
+// attach listener when DOM loaded
+document.addEventListener('DOMContentLoaded', () => {
+  const search = document.getElementById('resource-search');
+  if (search) search.addEventListener('input', filterResources);
+});
