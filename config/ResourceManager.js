@@ -13,8 +13,8 @@ class ResourceManager {
     if (rows.length <= 0) {
       // Init default resources
       const defaults = {
-        "K-12": [{ resource_name: "Clever", status_page: "https://status.clever.com/api/v2/summary.json" }, { resource_name: "Fake Example Outage Data", status_page: "http://localhost/fake-summary.json" }],
-        "6-8": [{ resource_name: "PowerSchool", status_page: "https://status.powerschool.com/api/v2/summary.json" }, { resource_name: "Fake Example Outage Data", status_page: "http://localhost/fake-summary.json" }]
+        "K-12": [{ resource_name: "Clever", status_page: "https://status.clever.com/api/v2/summary.json", check_type: 'api' }, { resource_name: "Fake Example Outage Data", status_page: "http://localhost/fake-summary.json", check_type: 'api' }],
+        "6-8": [{ resource_name: "PowerSchool", status_page: "https://status.powerschool.com/api/v2/summary.json", check_type: 'api' }, { resource_name: "Fake Example Outage Data", status_page: "http://localhost/fake-summary.json", check_type: 'api' }]
       };
 
       for (const [categoryName, resources] of Object.entries(defaults)) {
@@ -22,7 +22,7 @@ class ResourceManager {
         const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [categoryName]);
 
         for (const resource of resources) {
-          await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page) VALUES (?, ?)", [resource.resource_name, resource.status_page]);
+          await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, check_type, scrape_keywords) VALUES (?, ?, ?, ?)", [resource.resource_name, resource.status_page, resource.check_type || 'api', resource.scrape_keywords || '']);
           const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
 
           if (catRow && resRow) {
@@ -41,7 +41,7 @@ class ResourceManager {
 
     // Get all resources mapped to categories
     const rows = await db.all(`
-        SELECT c.name as category, r.name as resource_name, r.status_page 
+      SELECT c.name as category, r.name as resource_name, r.status_page, r.check_type, r.scrape_keywords 
         FROM resource_category_mapping m
         JOIN categories c ON m.category_id = c.id
         JOIN resource_definitions r ON m.resource_id = r.id
@@ -56,6 +56,8 @@ class ResourceManager {
       resources[row.category].push({
         resource_name: row.resource_name,
         status_page: row.status_page,
+        check_type: row.check_type || 'api',
+        scrape_keywords: row.scrape_keywords || '',
         grade_level: row.category
       });
     });
@@ -79,7 +81,7 @@ class ResourceManager {
     if (!catRow) return; // Should not happen if category exists
 
     // 2. Ensure/Get Resource Definition ID
-    await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page) VALUES (?, ?)", [resource.resource_name, resource.status_page]);
+    await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, check_type, scrape_keywords) VALUES (?, ?, ?, ?)", [resource.resource_name, resource.status_page, resource.check_type || 'api', resource.scrape_keywords || '']);
     const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
 
     // 3. Create Mapping
@@ -90,7 +92,7 @@ class ResourceManager {
     await this.ready;
     const db = await this.dbManager.getDb();
     const row = await db.get(`
-        SELECT c.name as category, r.name as resource_name, r.status_page 
+      SELECT c.name as category, r.name as resource_name, r.status_page, r.check_type, r.scrape_keywords 
         FROM resource_category_mapping m
         JOIN categories c ON m.category_id = c.id
         JOIN resource_definitions r ON m.resource_id = r.id
@@ -102,6 +104,8 @@ class ResourceManager {
         category: row.category,
         resource_name: row.resource_name,
         status_page: row.status_page,
+        check_type: row.check_type || 'api',
+        scrape_keywords: row.scrape_keywords || '',
         grade_level: row.category
       };
     }
@@ -119,7 +123,7 @@ class ResourceManager {
     await this.ready;
     const db = await this.dbManager.getDb();
     const rows = await db.all(`
-        SELECT r.name as resource_name, r.status_page 
+      SELECT r.name as resource_name, r.status_page, r.check_type, r.scrape_keywords 
         FROM resource_category_mapping m
         JOIN categories c ON m.category_id = c.id
         JOIN resource_definitions r ON m.resource_id = r.id
@@ -129,6 +133,8 @@ class ResourceManager {
     return rows.map(row => ({
       resource_name: row.resource_name,
       status_page: row.status_page,
+      check_type: row.check_type || 'api',
+      scrape_keywords: row.scrape_keywords || '',
       grade_level: category
     }));
   }
@@ -144,6 +150,62 @@ class ResourceManager {
         WHERE r.name = ?
     `, [resourceName]);
     return rows.map(r => r.name);
+  }
+
+  async getDefinition(resourceName) {
+    await this.ready;
+    const db = await this.dbManager.getDb();
+    const row = await db.get("SELECT id, name as resource_name, status_page, check_type, scrape_keywords FROM resource_definitions WHERE name = ?", [resourceName]);
+    if (!row) return null;
+    return {
+      id: row.id,
+      resource_name: row.resource_name,
+      status_page: row.status_page,
+      check_type: row.check_type || 'api',
+      scrape_keywords: row.scrape_keywords || ''
+    };
+  }
+
+  async logCheckError(resource, errorMessage) {
+    await this.ready;
+    const db = await this.dbManager.getDb();
+
+    // Try to find resource definition id
+    let resRow = null;
+    try {
+      resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
+    } catch (e) {
+      // ignore
+    }
+
+    const resourceId = resRow ? resRow.id : null;
+
+    await db.run(`INSERT INTO status_check_errors (resource_id, resource_name, status_page, check_type, error_message) VALUES (?, ?, ?, ?, ?)`, [
+      resourceId,
+      resource.resource_name || null,
+      resource.status_page || null,
+      resource.check_type || null,
+      errorMessage || ''
+    ]);
+  }
+
+  async getCheckErrors(limit = 200) {
+    await this.ready;
+    const db = await this.dbManager.getDb();
+    const rows = await db.all(`SELECT id, resource_id, resource_name, status_page, check_type, error_message, created_at FROM status_check_errors ORDER BY created_at DESC LIMIT ?`, [limit]);
+    return rows;
+  }
+
+  async deleteCheckError(id) {
+    await this.ready;
+    const db = await this.dbManager.getDb();
+    await db.run(`DELETE FROM status_check_errors WHERE id = ?`, [id]);
+  }
+
+  async clearCheckErrors() {
+    await this.ready;
+    const db = await this.dbManager.getDb();
+    await db.run(`DELETE FROM status_check_errors`);
   }
 
   async removeCategory(category) {
@@ -169,18 +231,18 @@ class ResourceManager {
     // For now, keep them to allow easy re-adding or if they exist in other categories (which we don't check yet here)
   }
 
-  async updateResource(category, oldResourceName, { resource_name, status_page, grade_level }) {
+  async updateResource(category, oldResourceName, { resource_name, status_page, check_type, scrape_keywords }) {
     await this.ready;
     const db = await this.dbManager.getDb();
 
     // 1. Get the definition of the OLD resource
-    const oldResRow = await db.get("SELECT id FROM resource_definitions WHERE name = ?", [oldResourceName]);
+    const oldResRow = await db.get("SELECT id, check_type, scrape_keywords FROM resource_definitions WHERE name = ?", [oldResourceName]);
     if (!oldResRow) return;
 
     // 2. Update the definition itself directly?
     // Updating the definition affects ALL categories this resource is in. This matches the "Tag" philosophy.
     // If the user changes the URL for "Google" in one category, it should update everywhere using "Google".
-    await db.run("UPDATE resource_definitions SET name = ?, status_page = ? WHERE id = ?", [resource_name, status_page, oldResRow.id]);
+    await db.run("UPDATE resource_definitions SET name = ?, status_page = ?, check_type = ?, scrape_keywords = ? WHERE id = ?", [resource_name, status_page, check_type || oldResRow.check_type, scrape_keywords || oldResRow.scrape_keywords, oldResRow.id]);
   }
 
   async updateCategory(oldCategory, newCategory) {

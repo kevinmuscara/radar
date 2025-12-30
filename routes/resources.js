@@ -48,6 +48,35 @@ router.get("/category/:category/:resource", async (request, response) => {
   response.json({ status: 200, [resource]: resourceInCategory });
 });
 
+// get resource definition by name
+router.get('/definition/:resourceName', async (request, response) => {
+  const { resourceName } = request.params;
+  const def = await resources.getDefinition ? await resources.getDefinition(resourceName) : null;
+  if (def) response.json({ status: 200, definition: def });
+  else response.json({ status: 404, definition: null });
+});
+
+// get recent check errors (admin)
+router.get('/errors', checkAuth, async (_request, response) => {
+  const errs = await resources.getCheckErrors ? await resources.getCheckErrors(200) : [];
+  response.json({ status: 200, errors: errs });
+});
+
+// delete a single error
+router.delete('/errors/:id', checkAuth, async (request, response) => {
+  const { id } = request.params;
+  if (!resources.deleteCheckError) return response.status(500).json({ status: 500, error: 'Not supported' });
+  await resources.deleteCheckError(id);
+  response.json({ status: 200 });
+});
+
+// clear all errors
+router.delete('/errors', checkAuth, async (_request, response) => {
+  if (!resources.clearCheckErrors) return response.status(500).json({ status: 500, error: 'Not supported' });
+  await resources.clearCheckErrors();
+  response.json({ status: 200 });
+});
+
 // create resource in category
 router.post("/category/:category", checkAuth, async (request, response) => {
 
@@ -58,7 +87,7 @@ router.post("/category/:category", checkAuth, async (request, response) => {
     grade_level,
   } = request.body;
 
-  await resources.addResource(category, { resource_name, status_page, grade_level });
+  await resources.addResource(category, { resource_name, status_page, check_type: request.body.check_type, scrape_keywords: request.body.scrape_keywords });
   response.json({ status: 200 });
 });
 
@@ -105,7 +134,7 @@ router.put("/category/:category/:resource", checkAuth, async (request, response)
     status_page,
     grade_level,
   } = request.body;
-  await resources.updateResource(category, resource, { resource_name, status_page, grade_level });
+  await resources.updateResource(category, resource, { resource_name, status_page, check_type: request.body.check_type, scrape_keywords: request.body.scrape_keywords });
   response.json({ status: 200 });
 });
 

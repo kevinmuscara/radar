@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const cheerio = require("cheerio");
+const resources = require('../config/ResourceManager');
 
 function normalizeStatus(statusText) {
   if (!statusText) return 'Unknown';
@@ -23,6 +24,8 @@ function normalizeStatus(statusText) {
 
 async function checkStatus(resource) {
   let url = resource.status_page;
+  const method = (resource.check_type || 'api').toLowerCase();
+  const keywords = resource.scrape_keywords ? resource.scrape_keywords.split(',').map(k=>k.trim()).filter(Boolean) : [];
 
   if (!url || url.trim() === "") {
     return { status: 'Unknown', last_checked: new Date().toISOString() };
@@ -32,37 +35,71 @@ async function checkStatus(resource) {
     url = 'http://' + url;
   }
 
-  try {
-    const response = await axios.get(url, {
+    try {
+      const response = await axios.get(url, {
       timeout: 5000,
       headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36' }
     });
 
-    if (url.includes('summary.json')) {
-      if (response.data && response.data.status && response.data.status.description) {
-        return {
-          status: normalizeStatus(response.data.status.description),
-          last_checked: new Date().toISOString(),
-          status_url: url
-        };
+      // Handle based on selected method
+      if (method === 'api') {
+        // Try to parse JSON API responses (e.g., statuspage.io summary.json)
+        if (response.headers['content-type'] && response.headers['content-type'].includes('application/json')) {
+          const data = response.data;
+          // Try common shapes
+          if (data && data.status && data.status.description) {
+            return { status: normalizeStatus(data.status.description), last_checked: new Date().toISOString(), status_url: url };
+          }
+          // If top-level status string exists
+          if (data && data.status && typeof data.status === 'string') {
+            return { status: normalizeStatus(data.status), last_checked: new Date().toISOString(), status_url: url };
+          }
+        }
+        // As a fallback for api, also attempt to inspect body text like before
+        const $api = cheerio.load(response.data);
+        const pageTextApi = $api('body').text();
+        if (pageTextApi) {
+          for (const kw of ['All Systems Operational', 'No incidents reported', 'Operational', 'Services are healthy']) {
+            if (pageTextApi.includes(kw)) return { status: 'Operational', last_checked: new Date().toISOString(), status_url: url };
+          }
+        }
+        return { status: 'Unknown', last_checked: new Date().toISOString(), status_url: url };
       }
-    }
 
-    const $ = cheerio.load(response.data);
-    const pageText = $('body').text();
+      if (method === 'scrape') {
+        const $ = cheerio.load(response.data);
+        const pageText = $('body').text();
+        // If user provided keywords, look for them
+        if (keywords.length > 0) {
+          for (const kw of keywords) {
+            if (pageText.toLowerCase().includes(kw.toLowerCase())) {
+              return { status: normalizeStatus(kw), last_checked: new Date().toISOString(), status_url: url };
+            }
+          }
+        }
+        // default heuristics
+        for (const kw of ['All Systems Operational', 'No incidents reported', 'Operational', 'Services are healthy']) {
+          if (pageText.includes(kw)) return { status: 'Operational', last_checked: new Date().toISOString(), status_url: url };
+        }
+        return { status: 'Unknown', last_checked: new Date().toISOString(), status_url: url };
+      }
 
-    if (pageText.includes('All Systems Operational') || pageText.includes('No incidents reported') || pageText.includes('Operational') || pageText.includes('Services are healthy')) {
-      return { status: 'Operational', last_checked: new Date().toISOString(), status_url: url };
-    }
+      // heartbeat (simple HTTP 200 check)
+      if (method === 'heartbeat') {
+        if (response.status === 200) return { status: 'Operational', last_checked: new Date().toISOString(), status_url: url };
+        return { status: 'Outage', last_checked: new Date().toISOString(), status_url: url };
+      }
 
-    if (response.status === 200) {
-      return { status: 'Operational', last_checked: new Date().toISOString(), status_url: url };
-    }
-
-    return { status: 'Unknown', last_checked: new Date().toISOString(), status_url: url };
+      // fallback
+      return { status: 'Unknown', last_checked: new Date().toISOString(), status_url: url };
 
   } catch (error) {
     console.error(`Error checking ${resource.resource_name} (${url}): ${error.message}`);
+    try {
+      await resources.logCheckError(resource, error.message);
+    } catch (e) {
+      console.error('Failed to record check error:', e.message);
+    }
     return { status: 'Unknown', last_checked: new Date().toISOString(), status_url: url };
   }
 }
@@ -76,7 +113,9 @@ router.get("/check-status", async (request, response) => {
 
   const resource = {
     resource_name: name || 'Unknown',
-    status_page: url || ''
+    status_page: url || '',
+    check_type: request.query.check_type || 'api',
+    scrape_keywords: request.query.scrape_keywords || ''
   };
 
   try {

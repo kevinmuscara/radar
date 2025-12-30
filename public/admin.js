@@ -67,7 +67,9 @@ async function addResource(category, btn) {
       body: JSON.stringify({
         resource_name: name,
         status_page: url,
-        grade_level: category
+        grade_level: category,
+        check_type: 'api',
+        scrape_keywords: ''
       })
     });
     if (res.ok) window.location.reload();
@@ -114,6 +116,25 @@ async function editResource(name, url) {
       const cb = document.getElementById(`edit-cat-${cat}`);
       if (cb) cb.checked = true;
     });
+    // fetch definition (check_type, scrape_keywords)
+    try {
+      const defRes = await fetch(`/resources/definition/${encodeURIComponent(name)}`);
+      if (defRes.ok) {
+        const defData = await defRes.json();
+        const def = defData.definition || defData.definition;
+        if (def) {
+          const ct = def.check_type || 'api';
+          const sk = def.scrape_keywords || '';
+          const sel = document.getElementById('edit-check-type');
+          const inpt = document.getElementById('edit-scrape-keywords');
+          if (sel) sel.value = ct;
+          if (inpt) inpt.value = sk;
+        }
+      }
+    } catch (e) {
+      // ignore definition errors
+      console.error('Failed to fetch definition', e);
+    }
   } catch (e) {
     console.error("Failed to fetch tags", e);
   }
@@ -173,11 +194,13 @@ async function saveEdit() {
     const removed = originalCategories.filter(x => !newCategories.includes(x));
 
     // 2. Add to new categories
+    const editCheckType = document.getElementById('edit-check-type') ? document.getElementById('edit-check-type').value : 'api';
+    const editScrape = document.getElementById('edit-scrape-keywords') ? document.getElementById('edit-scrape-keywords').value : '';
     for (const cat of added) {
       await fetch(`/resources/category/${encodeURIComponent(cat)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resource_name: newName, status_page: newUrl, grade_level: cat })
+        body: JSON.stringify({ resource_name: newName, status_page: newUrl, grade_level: cat, check_type: editCheckType, scrape_keywords: editScrape })
       });
     }
 
@@ -195,13 +218,17 @@ async function saveEdit() {
     const targetCat = newCategories.length > 0 ? newCategories[0] : (added.length > 0 ? added[0] : null);
 
     if (targetCat) {
+      const editCheckType = document.getElementById('edit-check-type') ? document.getElementById('edit-check-type').value : 'api';
+      const editScrape = document.getElementById('edit-scrape-keywords') ? document.getElementById('edit-scrape-keywords').value : '';
       await fetch(`/resources/category/${encodeURIComponent(targetCat)}/${encodeURIComponent(originalName)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           resource_name: newName,
           status_page: newUrl,
-          grade_level: targetCat
+          grade_level: targetCat,
+          check_type: editCheckType,
+          scrape_keywords: editScrape
         })
       });
     }
@@ -218,6 +245,10 @@ async function saveEdit() {
 function openAddModal(category) {
   document.getElementById('add-name').value = '';
   document.getElementById('add-url').value = '';
+  const ct = document.getElementById('add-check-type');
+  const sk = document.getElementById('add-scrape-keywords');
+  if (ct) ct.value = 'api';
+  if (sk) sk.value = '';
 
   const checkboxes = document.querySelectorAll('input[name="add-categories"]');
   checkboxes.forEach(cb => {
@@ -250,13 +281,17 @@ async function saveNewResource() {
 
   try {
     for (const cat of categories) {
+      const addCT = document.getElementById('add-check-type') ? document.getElementById('add-check-type').value : 'api';
+      const addSK = document.getElementById('add-scrape-keywords') ? document.getElementById('add-scrape-keywords').value : '';
       await fetch(`/resources/category/${encodeURIComponent(cat)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           resource_name: name,
           status_page: url,
-          grade_level: cat
+          grade_level: cat,
+          check_type: addCT,
+          scrape_keywords: addSK
         })
       });
     }
@@ -316,4 +351,70 @@ function filterResources() {
 document.addEventListener('DOMContentLoaded', () => {
   const search = document.getElementById('resource-search');
   if (search) search.addEventListener('input', filterResources);
+  // load errors button hook
+  const refreshErrors = document.getElementById('refresh-errors-btn');
+  if (refreshErrors) refreshErrors.addEventListener('click', loadErrors);
+  const clearErrorsBtn = document.getElementById('clear-errors-btn');
+  if (clearErrorsBtn) clearErrorsBtn.addEventListener('click', clearAllErrors);
+  // auto-load errors on page load for convenience
+  if (document.getElementById('check-errors-table-body')) {
+    loadErrors();
+  }
 });
+
+async function loadErrors() {
+  try {
+    const res = await fetch('/resources/errors');
+    if (!res.ok) throw new Error('Failed to fetch errors');
+    const data = await res.json();
+    const rows = data.errors || [];
+    const tbody = document.getElementById('check-errors-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td class="py-2 pl-2 pr-3 text-sm text-gray-500" colspan="6">No recent errors.</td></tr>';
+      return;
+    }
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      tr.className = 'odd:bg-white even:bg-gray-50';
+      const time = new Date(r.created_at).toLocaleString();
+      tr.innerHTML = `
+        <td class="py-2 pl-2 pr-3 text-sm text-gray-700">${time}</td>
+        <td class="py-2 px-3 text-sm text-gray-800">${r.resource_name || ''}</td>
+        <td class="py-2 px-3 text-sm text-gray-600 truncate max-w-md" title="${r.status_page || ''}">${r.status_page || ''}</td>
+        <td class="py-2 px-3 text-sm text-gray-600">${r.check_type || ''}</td>
+        <td class="py-2 pr-2 text-sm text-gray-700">${(r.error_message || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>
+        <td class="py-2 pr-2 text-sm text-right">
+          <button class="delete-error-btn p-1 text-red-500 hover:text-red-600" data-id="${r.id}" title="Delete error" aria-label="Delete error">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline-block">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9M21 6.5l-1 14.5a2.25 2.25 0 01-2.25 2.25H6.25A2.25 2.25 0 014 21L3 6.5M8.5 6.5V4.75A1.75 1.75 0 0110.25 3h3.5A1.75 1.75 0 0115.5 4.75V6.5" />
+            </svg>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+    // bind delete handlers
+    const dels = tbody.querySelectorAll('.delete-error-btn');
+    dels.forEach(btn => btn.addEventListener('click', async (e) => {
+      const id = btn.dataset.id;
+      if (!id) return;
+      if (!confirm('Delete this error entry?')) return;
+      try {
+        const res2 = await fetch(`/resources/errors/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        if (res2.ok) loadErrors(); else alert('Failed to delete error');
+      } catch (err) { console.error(err); alert('Failed to delete error'); }
+    }));
+  } catch (e) {
+    console.error('Failed to load errors', e);
+  }
+}
+
+async function clearAllErrors() {
+  if (!confirm('Clear all check errors? This cannot be undone.')) return;
+  try {
+    const res = await fetch('/resources/errors', { method: 'DELETE' });
+    if (res.ok) loadErrors(); else alert('Failed to clear errors');
+  } catch (e) { console.error('Failed to clear errors', e); alert('Failed to clear errors'); }
+}

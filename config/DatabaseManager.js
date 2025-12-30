@@ -31,8 +31,10 @@ class DatabaseManager {
             CREATE TABLE IF NOT EXISTS resource_definitions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                status_page TEXT NOT NULL,
-                UNIQUE(name, status_page)
+              status_page TEXT NOT NULL,
+              check_type TEXT DEFAULT 'api',
+              scrape_keywords TEXT DEFAULT '',
+              UNIQUE(name, status_page)
             );
 
             CREATE TABLE IF NOT EXISTS resource_category_mapping (
@@ -41,6 +43,17 @@ class DatabaseManager {
                 PRIMARY KEY (resource_id, category_id),
                 FOREIGN KEY (resource_id) REFERENCES resource_definitions(id) ON DELETE CASCADE,
                 FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS status_check_errors (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              resource_id INTEGER,
+              resource_name TEXT,
+              status_page TEXT,
+              check_type TEXT,
+              error_message TEXT,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (resource_id) REFERENCES resource_definitions(id) ON DELETE SET NULL
             );
         `);
 
@@ -77,6 +90,20 @@ class DatabaseManager {
 
       console.log("Migration complete. Renaming old table.");
       await db.exec("ALTER TABLE resources RENAME TO resources_backup_" + Date.now());
+    }
+
+    // Ensure new columns exist on resource_definitions for existing DBs
+    try {
+      const cols = await db.all("PRAGMA table_info('resource_definitions')");
+      const colNames = cols.map(c => c.name);
+      if (!colNames.includes('check_type')) {
+        await db.exec("ALTER TABLE resource_definitions ADD COLUMN check_type TEXT DEFAULT 'api';");
+      }
+      if (!colNames.includes('scrape_keywords')) {
+        await db.exec("ALTER TABLE resource_definitions ADD COLUMN scrape_keywords TEXT DEFAULT '';");
+      }
+    } catch (e) {
+      console.error('Error ensuring resource_definitions columns:', e.message);
     }
 
     return db;

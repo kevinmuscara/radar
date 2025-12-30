@@ -58,6 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         url: resource.status_page || '',
         name: resource.resource_name
       });
+      if (resource.check_type) params.set('check_type', resource.check_type);
+      if (resource.scrape_keywords) params.set('scrape_keywords', resource.scrape_keywords);
       const response = await fetch(`/api/check-status?${params}`);
       const data = await response.json();
 
