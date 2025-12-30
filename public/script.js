@@ -281,50 +281,55 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     resources.forEach(resource => {
       const card = document.createElement('div');
-      card.className = 'bg-white rounded-xl border border-slate-200 p-5 card-hover flex flex-col h-full shadow relative overflow-hidden status-unknown transition-shadow hover:shadow-lg';
+      card.className = 'bg-white rounded-xl border border-slate-200 card-hover flex flex-col h-full shadow relative overflow-hidden status-unknown transition-shadow hover:shadow-lg';
       // compute favicon URL for this resource
       const faviconUrl = getFaviconUrl(resource);
 
             card.innerHTML = `
-                <div class="flex-1 relative flex flex-col justify-center">
-                <!-- Top-right status indicator -->
-                  <div class="absolute top-4 right-3">
-                  <div class="status-indicator-container relative">
-                    <div class="status-indicator w-3.5 h-3.5 rounded-full bg-slate-300" title="" aria-hidden="true"></div>
-                    <div class="status-tooltip" style="display:none; position:absolute; right:0; top:calc(100% + 6px); white-space:nowrap; background:#fff; border:1px solid #e6e9ee; padding:6px 8px; border-radius:6px; box-shadow:0 6px 18px rgba(15,23,42,0.08); font-size:12px; color:#0f172a;">Status</div>
-                  </div>
-                </div>
+              <div class="flex flex-col h-full">
+                <!-- Top bar with status dot -->
+                <div class="h-1.5 w-full bg-slate-300 status-indicator-bar" aria-hidden="true"></div>
+                
+                <!-- Card content -->
+                <div class="p-4 flex-1 flex flex-col min-w-0">
+                  <div class="flex items-start gap-3 mb-3">
+                    <img src="${faviconUrl}" alt="favicon" class="w-10 h-10 rounded-md object-contain flex-shrink-0" onerror="this.style.display='none'" />
+                    <div class="flex-1 min-w-0">
+                      ${(() => {
+            if (isSpecial && resource.status_page && resource.status_page.trim() !== "") {
+              let statusUrl = resource.status_page;
+              // Remove API suffixes to get the user-facing page
+              statusUrl = statusUrl.replace(/\/api\/v2\/summary\.json$/, '');
+              statusUrl = statusUrl.replace(/\/summary\.json$/, '');
+              // Remove trailing slash if present after replacement
+              if (statusUrl.endsWith('/')) {
+                statusUrl = statusUrl.slice(0, -1);
+              }
 
-                  <div class="flex items-center mb-0">
-                    <img src="${faviconUrl}" alt="favicon" class="w-12 h-12 rounded-sm object-contain flex-shrink-0" onerror="this.style.display='none'" />
-                    <div class="ml-4 flex-1 min-w-0">
-                    ${(() => {
-          if (isSpecial && resource.status_page && resource.status_page.trim() !== "") {
-            let statusUrl = resource.status_page;
-            // Remove API suffixes to get the user-facing page
-            statusUrl = statusUrl.replace(/\/api\/v2\/summary\.json$/, '');
-            statusUrl = statusUrl.replace(/\/summary\.json$/, '');
-            // Remove trailing slash if present after replacement
-            if (statusUrl.endsWith('/')) {
-            statusUrl = statusUrl.slice(0, -1);
+              return `<h3 class="font-semibold text-slate-900 text-sm leading-snug min-w-0 mb-2">
+                        <a href="${statusUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600 hover:underline inline-flex items-center gap-1.5 min-w-0">
+                          <span class="truncate" title="${resource.resource_name}">${resource.resource_name}</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5 text-slate-400 flex-shrink-0">
+                            <path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z" clip-rule="evenodd" />
+                          </svg>
+                        </a>
+                      </h3>`;
+            } else {
+              return `<h3 class="font-semibold text-slate-900 text-sm leading-snug min-w-0 mb-2 truncate" title="${resource.resource_name}">${resource.resource_name}</h3>`;
             }
-
-            return `<h3 class="font-semibold text-slate-900 text-xl leading-tight min-w-0">
-                          <a href="${statusUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600 hover:underline inline-flex items-center gap-2 min-w-0 truncate">
-                            <span class="truncate">${resource.resource_name}</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-slate-400">
-                              <path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z" clip-rule="evenodd" />
-                              <path fill-rule="evenodd" d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z" clip-rule="evenodd" />
-                            </svg>
-                          </a>
-                        </h3>`;
-          } else {
-            return `<h3 class="font-semibold text-slate-900 text-xl leading-tight min-w-0"><span class="truncate" title="${resource.resource_name}">${resource.resource_name}</span></h3>`;
-          }
           })()}
-
-                            
+                    </div>
                   </div>
+                  
+                  <!-- Status label at bottom -->
+                  <div class="mt-auto">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-100">
+                      <div class="status-indicator w-2 h-2 rounded-full bg-slate-300" title="" aria-hidden="true"></div>
+                      <span class="status-text text-xs font-medium text-slate-600">Unknown</span>
+                    </div>
+                  </div>
+                  <div class="status-tooltip hidden" style="display:none; position:absolute; right:4; bottom:60px; white-space:nowrap; background:#fff; border:1px solid #e6e9ee; padding:6px 8px; border-radius:6px; box-shadow:0 6px 18px rgba(15,23,42,0.08); font-size:12px; color:#0f172a; z-index:10;">Status</div>
                 </div>
               </div>
             `;
@@ -346,28 +351,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusText = statusData.status || 'Unknown';
 
     const indicator = card.querySelector('.status-indicator');
+    const statusBar = card.querySelector('.status-indicator-bar');
+    const statusTextEl = card.querySelector('.status-text');
     const tooltip = card.querySelector('.status-tooltip');
 
+    // Update status dot and bar color
     if (indicator) {
-      // Update top-right indicator color and accessible title
-      indicator.className = `status-indicator w-3.5 h-3.5 rounded-full ${statusColor}`;
+      indicator.className = `status-indicator w-2 h-2 rounded-full ${statusColor}`;
       indicator.setAttribute('title', statusText);
       indicator.setAttribute('aria-label', `Status: ${statusText}`);
-
-      // Set tooltip text
-      if (tooltip) tooltip.textContent = statusText;
-
-      // Add hover handlers once to show custom tooltip
-      if (!indicator.dataset.bound) {
-        indicator.addEventListener('mouseenter', () => {
-          if (tooltip) tooltip.style.display = 'block';
-        });
-        indicator.addEventListener('mouseleave', () => {
-          if (tooltip) tooltip.style.display = 'none';
-        });
-        indicator.dataset.bound = 'true';
-      }
     }
+
+    if (statusBar) {
+      statusBar.className = `status-indicator-bar h-1.5 w-full ${statusColor}`;
+    }
+
+    // Update status text label
+    if (statusTextEl) {
+      statusTextEl.textContent = statusText;
+    }
+
+    // Set tooltip text
+    if (tooltip) tooltip.textContent = statusText;
 
     if (statusText === 'Unknown' || statusText === 'Last updated') {
       card.classList.add('status-unknown');
