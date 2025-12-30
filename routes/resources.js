@@ -199,7 +199,7 @@ router.post("/import", checkAuth, async (request, response) => {
 // download CSV template
 router.get("/template", (_request, response) => {
   const path = require('path');
-  const filePath = path.join(__dirname, '../example_import.csv');
+  const filePath = path.join(__dirname, '../template.csv');
   response.download(filePath, 'resources_template.csv');
 });
 

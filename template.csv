@@ -1,0 +1,2 @@
+category,resource_name,status_page,check_type,scrape_keywords
+K-12,Google Workspace for Education,https://www.google.com/appsstatus/dashboard/,scrape,No incidents
