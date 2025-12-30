@@ -31,7 +31,6 @@ router.post("/", upload.single('logo'), async (request, response) => {
     return response.status(401).json({ error: "Unauthorized:Setup already complete" });
   } else {
     if (request.file) {
-      console.log(`Uploaded branding logo as ${request.file.filename}`);
       await configuration.updateBrandingLogo(request.file.filename);
     }
 
@@ -73,7 +72,6 @@ router.post("/", upload.single('logo'), async (request, response) => {
 
 router.post("/update", upload.single('logo'), async (request, response) => {
   if (request.file) {
-    console.log(`Uploaded branding logo as ${request.file.filename}`);
     await configuration.updateBrandingLogo(request.file.filename);
   }
 

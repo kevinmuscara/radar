@@ -60,7 +60,6 @@ class DatabaseManager {
     // Check for potential migration
     const tableExists = await db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='resources'");
     if (tableExists) {
-      console.log("Migrating legacy resources table...");
       const oldResources = await db.all("SELECT * FROM resources");
 
       for (const row of oldResources) {
@@ -88,7 +87,6 @@ class DatabaseManager {
         }
       }
 
-      console.log("Migration complete. Renaming old table.");
       await db.exec("ALTER TABLE resources RENAME TO resources_backup_" + Date.now());
     }
 
