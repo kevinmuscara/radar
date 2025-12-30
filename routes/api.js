@@ -5,6 +5,45 @@ const cheerio = require("cheerio");
 const puppeteer = require("puppeteer");
 const resources = require('../config/ResourceManager');
 
+// Simple in-memory request limiter to prevent abuse
+const requestLimiter = new Map();
+const MAX_REQUESTS_PER_MINUTE = 200;
+
+function checkRateLimit(identifier) {
+  const now = Date.now();
+  const key = identifier || 'global';
+  
+  if (!requestLimiter.has(key)) {
+    requestLimiter.set(key, []);
+  }
+  
+  const times = requestLimiter.get(key);
+  // Remove requests older than 1 minute
+  const recentRequests = times.filter(t => now - t < 60000);
+  
+  if (recentRequests.length >= MAX_REQUESTS_PER_MINUTE) {
+    return false; // Rate limit exceeded
+  }
+  
+  recentRequests.push(now);
+  requestLimiter.set(key, recentRequests);
+  return true;
+}
+
+// Cleanup rate limiter every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, times] of requestLimiter.entries()) {
+    const recentRequests = times.filter(t => now - t < 60000);
+    if (recentRequests.length === 0) {
+      requestLimiter.delete(key);
+    } else {
+      requestLimiter.set(key, recentRequests);
+    }
+  }
+}, 5 * 60 * 1000);
+
+
 function normalizeStatus(statusText) {
   if (!statusText) return 'Unknown';
   const lower = statusText.toLowerCase();
@@ -133,6 +172,12 @@ async function checkStatus(resource) {
 }
 
 router.get("/check-status", async (request, response) => {
+  // Rate limiting to prevent server overload
+  const clientIp = request.ip || request.connection.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIp)) {
+    return response.status(429).json({ error: 'Too many requests. Please try again later.' });
+  }
+
   const { url, name } = request.query;
 
   if (!url && !name) {
@@ -151,6 +196,58 @@ router.get("/check-status", async (request, response) => {
     response.json(statusInfo);
   } catch (error) {
     response.status(500).json({ error: 'Failed to check status', details: error.message });
+  }
+});
+
+// Batch endpoint for checking multiple resources efficiently
+// Prevents thundering herd of requests
+router.post("/check-status-batch", async (request, response) => {
+  // Rate limiting to prevent server overload
+  const clientIp = request.ip || request.connection.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIp)) {
+    return response.status(429).json({ error: 'Too many requests. Please try again later.' });
+  }
+
+  const { resources: resourcesToCheck } = request.body;
+
+  if (!Array.isArray(resourcesToCheck) || resourcesToCheck.length === 0) {
+    return response.status(400).json({ error: 'Invalid request body. Expected { resources: [...] }' });
+  }
+
+  try {
+    // Process requests with concurrency limiting (max 10 concurrent)
+    const concurrency = 10;
+    const results = [];
+    
+    for (let i = 0; i < resourcesToCheck.length; i += concurrency) {
+      const chunk = resourcesToCheck.slice(i, i + concurrency);
+      const chunkResults = await Promise.all(
+        chunk.map(async (res) => {
+          try {
+            const resource = {
+              resource_name: res.name || 'Unknown',
+              status_page: res.url || '',
+              check_type: res.check_type || 'api',
+              scrape_keywords: res.scrape_keywords || ''
+            };
+            const statusInfo = await checkStatus(resource);
+            return { name: res.name, ...statusInfo };
+          } catch (err) {
+            return {
+              name: res.name,
+              status: 'Unknown',
+              last_checked: new Date().toISOString(),
+              error: err.message
+            };
+          }
+        })
+      );
+      results.push(...chunkResults);
+    }
+
+    response.json({ results });
+  } catch (error) {
+    response.status(500).json({ error: 'Batch check failed', details: error.message });
   }
 });
 

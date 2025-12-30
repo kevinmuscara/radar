@@ -17,6 +17,45 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const CACHE_DURATION = 10 * 60 * 1000;
   const CACHE_KEY_PREFIX = 'status_cache_';
+  
+  // Request throttling configuration
+  const REQUEST_THROTTLE_CONFIG = {
+    maxConcurrentRequests: 3,  // Max 3 concurrent requests to prevent server overload
+    requestDelay: 200           // Delay (ms) between starting new requests
+  };
+
+  let activeRequests = 0;
+  const requestQueue = [];
+
+  // Throttle requests to prevent server overload
+  async function throttledRequest(fn) {
+    return new Promise((resolve) => {
+      const executeRequest = async () => {
+        activeRequests++;
+        try {
+          const result = await fn();
+          resolve(result);
+        } finally {
+          activeRequests--;
+          processQueue();
+        }
+      };
+
+      if (activeRequests < REQUEST_THROTTLE_CONFIG.maxConcurrentRequests) {
+        executeRequest();
+      } else {
+        requestQueue.push(executeRequest);
+      }
+    });
+  }
+
+  function processQueue() {
+    if (requestQueue.length > 0 && activeRequests < REQUEST_THROTTLE_CONFIG.maxConcurrentRequests) {
+      const executeRequest = requestQueue.shift();
+      setTimeout(executeRequest, REQUEST_THROTTLE_CONFIG.requestDelay);
+    }
+  }
+
   async function loadData() {
     try {
       const response = await fetch('/resources');
@@ -46,6 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cacheKey = CACHE_KEY_PREFIX + resource.resource_name;
     const cached = localStorage.getItem(cacheKey);
 
+    // Check cache first - if valid, return immediately without making a request
     if (cached) {
       const { timestamp, data } = JSON.parse(cached);
       if (Date.now() - timestamp < CACHE_DURATION) {
@@ -53,26 +93,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    try {
-      const params = new URLSearchParams({
-        url: resource.status_page || '',
-        name: resource.resource_name
-      });
-      if (resource.check_type) params.set('check_type', resource.check_type);
-      if (resource.scrape_keywords) params.set('scrape_keywords', resource.scrape_keywords);
-      const response = await fetch(`/api/check-status?${params}`);
-      const data = await response.json();
+    // Use throttled request to prevent server overload
+    return throttledRequest(async () => {
+      try {
+        const params = new URLSearchParams({
+          url: resource.status_page || '',
+          name: resource.resource_name
+        });
+        if (resource.check_type) params.set('check_type', resource.check_type);
+        if (resource.scrape_keywords) params.set('scrape_keywords', resource.scrape_keywords);
+        const response = await fetch(`/api/check-status?${params}`);
+        const data = await response.json();
 
-      localStorage.setItem(cacheKey, JSON.stringify({
-        timestamp: Date.now(),
-        data: data
-      }));
+        localStorage.setItem(cacheKey, JSON.stringify({
+          timestamp: Date.now(),
+          data: data
+        }));
 
-      return data;
-    } catch (error) {
-      console.error('Status check failed:', error);
-      return { status: 'Unknown', last_checked: new Date().toISOString() };
-    }
+        return data;
+      } catch (error) {
+        console.error('Status check failed:', error);
+        return { status: 'Unknown', last_checked: new Date().toISOString() };
+      }
+    });
   }
 
   // Derive a favicon URL for a resource's site. Attempts to extract the base domain from the
@@ -414,12 +457,45 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   loadData();
 
+  // Auto-refresh every 5 minutes instead of on every page load
+  // This significantly reduces server load
+  const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  setInterval(() => {
+    // Clear expired cache entries and refresh
+    const now = Date.now();
+    let hasExpiredCache = false;
+    
+    for (let key in localStorage) {
+      if (key.startsWith(CACHE_KEY_PREFIX)) {
+        try {
+          const { timestamp } = JSON.parse(localStorage.getItem(key));
+          if (now - timestamp >= CACHE_DURATION) {
+            localStorage.removeItem(key);
+            hasExpiredCache = true;
+          }
+        } catch (e) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+    
+    // Only refresh if cache has expired
+    if (hasExpiredCache) {
+      loadData();
+    }
+  }, AUTO_REFRESH_INTERVAL);
+
   const refreshBtn = document.getElementById('refresh-btn');
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => {
-      // Clear status cache but preserve other potential preferences if needed (though user said clear localstorage)
-      localStorage.clear();
-      window.location.reload();
+      // Clear only status cache, not entire localStorage
+      for (let key in localStorage) {
+        if (key.startsWith(CACHE_KEY_PREFIX)) {
+          localStorage.removeItem(key);
+        }
+      }
+      // Refresh data immediately
+      loadData();
     });
   }
 
