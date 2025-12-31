@@ -173,32 +173,32 @@ Radar solves the critical problem of service visibility in schools. Tech teams a
 
 #### Check Application Status
 ```bash
-sudo systemctl status radar
+sudo systemctl status radarboard.service
 ```
 
 #### View Application Logs
 ```bash
-sudo journalctl -u radar -f
+sudo journalctl -u radarboard.service -f
 ```
 
 #### Restart the Application
 ```bash
-sudo systemctl restart radar
+sudo systemctl restart radarboard.service
 ```
 
 #### Stop the Application
 ```bash
-sudo systemctl stop radar
+sudo systemctl stop radarboard.service
 ```
 
 #### Start the Application
 ```bash
-sudo systemctl start radar
+sudo systemctl start radarboard.service
 ```
 
 #### View Last 50 Log Lines
 ```bash
-sudo journalctl -u radar -n 50
+sudo journalctl -u radarboard.service -n 50
 ```
 
 ### Configuration
