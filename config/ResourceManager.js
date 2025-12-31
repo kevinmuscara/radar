@@ -15,7 +15,7 @@ class ResourceManager {
     if (rows.length <= 0) {
       // Try to load initial resources from example_import.csv (project root)
       try {
-        const csvPath = path.join(__dirname, '..', 'example_import.csv');
+        const csvPath = path.join(__dirname, '..', 'default_import.csv');
         const contents = await fs.readFile(csvPath, 'utf8');
         const lines = contents.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
         if (lines.length > 0) {
@@ -44,21 +44,22 @@ class ResourceManager {
           }
         }
       } catch (e) {
+        console.error("Error initializing defaults:", e);
         // Fallback to a small default set if CSV not available
-        const defaults = {"K-12": [{ resource_name: "Clever", status_page: "https://status.clever.com/api/v2/summary.json", check_type: 'api' }]};
-        for (const [categoryName, resources] of Object.entries(defaults)) {
-          await db.run("INSERT OR IGNORE INTO categories (name) VALUES (?)", [categoryName]);
-          const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [categoryName]);
+        // const defaults = {"K-12": [{ resource_name: "Clever", status_page: "https://status.clever.com/api/v2/summary.json", check_type: 'api' }]};
+        // for (const [categoryName, resources] of Object.entries(defaults)) {
+        //   await db.run("INSERT OR IGNORE INTO categories (name) VALUES (?)", [categoryName]);
+        //   const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [categoryName]);
 
-          for (const resource of resources) {
-            await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, check_type, scrape_keywords) VALUES (?, ?, ?, ?)", [resource.resource_name, resource.status_page, resource.check_type || 'api', resource.scrape_keywords || '']);
-            const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
+        //   for (const resource of resources) {
+        //     await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, check_type, scrape_keywords) VALUES (?, ?, ?, ?)", [resource.resource_name, resource.status_page, resource.check_type || 'api', resource.scrape_keywords || '']);
+        //     const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
 
-            if (catRow && resRow) {
-              await db.run("INSERT OR IGNORE INTO resource_category_mapping (resource_id, category_id) VALUES (?, ?)", [resRow.id, catRow.id]);
-            }
-          }
-        }
+        //     if (catRow && resRow) {
+        //       await db.run("INSERT OR IGNORE INTO resource_category_mapping (resource_id, category_id) VALUES (?, ?)", [resRow.id, catRow.id]);
+        //     }
+        //   }
+        // }
       }
     }
   }

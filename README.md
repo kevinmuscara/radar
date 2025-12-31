@@ -105,15 +105,26 @@ Radar solves the critical problem of service visibility in schools. Tech teams a
    npm install
    ```
 
-3. **Start the Application**
+3. **Configure Environment (Optional)**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` to customize:
+   ```
+   PORT=80
+   HOST=0.0.0.0
+   NODE_ENV=production
+   ```
+
+4. **Start the Application**
    ```bash
    npm start
    ```
    
-   The application will start on `http://localhost` (or the port specified in your environment)
+   The application will start on the configured HOST:PORT (default: http://localhost:80)
 
-4. **Initial Setup**
-   - Navigate to `http://localhost`
+5. **Initial Setup**
+   - Navigate to your application URL
    - Complete the initial setup wizard
    - Add categories and resources
    - Or import resources from a CSV file
@@ -121,17 +132,17 @@ Radar solves the critical problem of service visibility in schools. Tech teams a
 ### Configuration
 
 #### Environment Variables
-Create a `.env` file in the project root (optional):
-```
-PORT=3000
-NODE_ENV=production
-SESSION_SECRET=your-secret-key
-```
+The application uses a `.env` file for configuration. Copy `.env.example` to `.env` and customize:
+
+**Available Settings:**
+- `PORT` - Server port (default: 80)
+- `HOST` - Server host/IP address (default: 0.0.0.0)
+- `NODE_ENV` - Environment mode: `development` or `production` (default: production)
 
 #### Database
 - The application uses SQLite for data persistence
 - Database file is created automatically on first run
-- Located in the project root as `radar.db`
+- Located in the project root as `database.db`
 
 ---
 
