@@ -1,6 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const server = express();
 const session = require("express-session");
+const MemoryStore = require("memorystore")(session);
 
 const configuration = require("./config/SetupManager");
 const resources = require("./config/ResourceManager");
@@ -22,7 +24,10 @@ server.use(session({
   secret: "radar",
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false }
+  cookie: { secure: false },
+  store: new MemoryStore({
+    checkPeriod: 86400000
+  })
 }));
 server.disable("x-powered-by");
 
@@ -83,4 +88,7 @@ server.get("/", async (_request, response) => {
   }
 });
 
-server.listen(80, "0.0.0.0", () => console.log("Radar live."));
+const PORT = process.env.PORT || 80;
+const HOST = process.env.HOST || "0.0.0.0";
+
+server.listen(PORT, HOST, () => console.log(`Radar live on ${HOST}:${PORT}`));

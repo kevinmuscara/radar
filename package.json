@@ -4,7 +4,8 @@
   "description": "Radar is a web application for schools (primarily tech teams) to manage the status of their softwares.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "prod": "NODE_ENV=production node index.js"
   },
   "repository": {
     "type": "git",
@@ -22,9 +23,11 @@
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "cheerio": "^1.1.2",
+    "dotenv": "^16.0.3",
     "ejs": "^3.1.10",
     "express": "^5.2.1",
     "express-session": "^1.18.2",
+    "memorystore": "^1.6.7",
     "multer": "^2.0.2",
     "path": "^0.12.7",
     "puppeteer": "^24.34.0",
