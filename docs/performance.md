@@ -1,6 +1,8 @@
-# Server Load Optimization
+# Performance Optimization Guide
 
-## Solutions Implemented
+Radar is built with a sophisticated load optimization to handle high concurrency and prevent server overload. 
+
+See the detailed optimization features listed below.
 
 ### 1. Client-Side Request Throttling (public/script.js)
 
