@@ -6,7 +6,9 @@
 </p>
 
 <p align="center">
-  <a aria-label="radar documentation" href="/docs/index.md">Read the Documentation</a>
+  <a aria-label="radar documentation" href="/docs/index.md">Documentation</a> | 
+  <a aria-label="radar documentation" href="#-screenshots">Screenshots</a> | 
+  <a aria-label="radar documentation" href="#-key-capabilities">Features</a>
 </p>
 
 ## Introduction
