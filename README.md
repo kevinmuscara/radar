@@ -105,7 +105,7 @@ Radar solves the critical problem of service visibility in schools. Tech teams a
    npm install
    ```
 
-3. **Configure Environment (Optional)**
+3. **Configure Environment**
    ```bash
    cp .env.example .env
    ```
@@ -123,11 +123,83 @@ Radar solves the critical problem of service visibility in schools. Tech teams a
    
    The application will start on the configured HOST:PORT (default: http://localhost:80)
 
-5. **Initial Setup**
-   - Navigate to your application URL
-   - Complete the initial setup wizard
-   - Add categories and resources
-   - Or import resources from a CSV file
+## Installation on Ubuntu Server
+
+### Prerequisites
+
+- Ubuntu Server (18.04 LTS or newer)
+- Node.js and npm installed
+- Root or sudo access
+
+### Installation Steps
+
+   1. Clone/Copy the application to the server
+      ```bash
+      git clone https://github.com/kevinmuscara/radar
+      cd radar
+      npm install
+      ```
+
+   2. Create env variables for production
+      ```
+      cp .env.example .env
+      ```
+
+   3. Modify radarboard.service
+      ```bash
+      WorkingDirectory=/home/<insert_user>/radar
+      ExecStart=/usr/bin/node /home/<insert_user>/radar/index.js
+      ```
+
+   4. Set up the systemd service
+      ```bash
+      # Move the service file to systemd
+      sudo mv radarboard.service /etc/systemd/system
+
+      # Reload systemd daemon
+      sudo systemctl daemon-reload
+
+      # Enable the service to start on boot
+      sudo systemctl enable radarboard
+
+      # Start the service
+      sudo systemctl start radarboard
+
+      # Check status
+      sudo systemctl status radarboard
+      ```
+
+### Useful Commands
+
+#### Check Application Status
+```bash
+sudo systemctl status radar
+```
+
+#### View Application Logs
+```bash
+sudo journalctl -u radar -f
+```
+
+#### Restart the Application
+```bash
+sudo systemctl restart radar
+```
+
+#### Stop the Application
+```bash
+sudo systemctl stop radar
+```
+
+#### Start the Application
+```bash
+sudo systemctl start radar
+```
+
+#### View Last 50 Log Lines
+```bash
+sudo journalctl -u radar -n 50
+```
 
 ### Configuration
 
