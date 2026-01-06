@@ -1,0 +1,16 @@
+site_name: Radar
+repo_url: https://github.com/kevinmuscara/radar
+theme:
+  name: shadcn
+  show_title: true
+  show_stargazers: false
+  pygments_style: # default styles 
+    light: shadcn-light
+    dark: github-dark
+  icon: heroicons:rocket-launch
+  topbar_sections: false # NEW!
+  show_datetime: false 
+markdown_extensions:
+  - codehilite
+extra_javascript:
+  - javascripts/removeWatermark.js

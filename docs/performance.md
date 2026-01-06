@@ -4,9 +4,10 @@ Radar is built with a sophisticated load optimization to handle high concurrency
 
 See the detailed optimization features listed below.
 
-### 1. Client-Side Request Throttling (public/script.js)
+## Client-Side Request Throttling
 
-#### Throttled Request Queue
+Throttled Request Queue
+
 - **Max Concurrent Requests**: Limited to 3 simultaneous requests
 - **Request Delay**: 200ms between starting new requests
 - **Benefits**: Prevents thundering herd of requests hitting the server
@@ -24,9 +25,10 @@ const REQUEST_THROTTLE_CONFIG = {
 - Additional requests wait in queue until a slot opens
 - When a request completes, the next queued request starts after a 200ms delay
 
-### 2. Enhanced Browser Cache Strategy (public/script.js)
+## Enhanced Browser Cache Strategy
 
-#### Cache Before Request
+Cache Before Request
+
 - Checks browser localStorage cache **before** making any API request
 - Cache duration: **10 minutes**
 - Only makes server requests when cache is expired
@@ -36,17 +38,20 @@ const CACHE_DURATION = 10 * 60 * 1000;  // 10 minutes
 ```
 
 **Benefits:**
+
 - Significantly reduces API calls when multiple users access the site
 - Users see cached data immediately without waiting
 - Server is only hit for genuinely new data requests
 
-### 3. Automatic Intelligent Refresh (public/script.js)
+## Automatic Intelligent Refresh
 
-#### Old Behavior
+Old Behavior
+
 - Manual refresh cleared all cache and reloaded page
 - Every page load triggered fresh checks for all resources
 
-#### New Behavior
+New Behavior
+
 - Auto-refresh every **5 minutes** (configurable)
 - Only makes new requests if cache has expired
 - Manual refresh button only clears status cache (not all localStorage)
@@ -57,13 +62,15 @@ const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000;  // 5 minutes
 ```
 
 **Benefits:**
+
 - Predictable server load instead of spikes
 - Reduces unnecessary page reloads
 - Better browser performance and user experience
 
-### 4. Server-Side Rate Limiting (routes/api.js)
+## Server-Side Rate Limiting
 
-#### Per-IP Rate Limiting
+Per-IP Rate Limiting
+
 - **Limit**: 100 requests per minute per IP
 - Prevents abuse and DoS attacks
 - Automatically cleaned up every 5 minutes
@@ -78,12 +85,14 @@ function checkRateLimit(identifier) {
 ```
 
 **Applied to:**
+
 - `/api/check-status` endpoint
 - `/api/check-status-batch` endpoint
 
-### 5. New Batch Status Check Endpoint (routes/api.js)
+## New Batch Status Check Endpoint
 
-#### Batch Endpoint Benefits
+Batch Endpoint Benefits
+
 - **Endpoint**: POST `/api/check-status-batch`
 - **Purpose**: Check multiple resources in one request
 - **Concurrency**: Limited to 10 concurrent checks
@@ -122,8 +131,6 @@ The batch endpoint is ready to be used by the frontend if further optimization i
 
 ## Performance Impact
 
-### Request Reduction Examples
-
 **Scenario: Dashboard with 20 resources, 10 concurrent users**
 
 | Metric | Before | After | Reduction |
@@ -135,14 +142,14 @@ The batch endpoint is ready to be used by the frontend if further optimization i
 
 ## Configuration
 
-### To Adjust Cache Duration
-Edit in [public/script.js](public/script.js):
+To Adjust Cache Duration
+Edit in `public/script.js`:
 ```javascript
 const CACHE_DURATION = 10 * 60 * 1000;  // Change 10 to desired minutes
 ```
 
-### To Adjust Throttle Settings
-Edit in [public/script.js](public/script.js):
+To Adjust Throttle Settings
+Edit in `public/script.js`:
 ```javascript
 const REQUEST_THROTTLE_CONFIG = {
   maxConcurrentRequests: 3,   // Adjust concurrent limit
@@ -150,21 +157,22 @@ const REQUEST_THROTTLE_CONFIG = {
 };
 ```
 
-### To Adjust Auto-Refresh Interval
-Edit in [public/script.js](public/script.js):
+To Adjust Auto-Refresh Interval
+Edit in `public/script.js`:
 ```javascript
 const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000;  // Change 5 to desired minutes
 ```
 
-### To Adjust Server Rate Limit
-Edit in [routes/api.js](routes/api.js):
+To Adjust Server Rate Limit
+Edit in `routes/api.js`:
 ```javascript
 const MAX_REQUESTS_PER_MINUTE = 100;  // Adjust per your capacity
 ```
 
 ## Monitoring
 
-### Watch for:
+Watch for:
+
 1. **Rate limit hits** - Check server logs for 429 responses
 2. **Cache effectiveness** - Monitor cache hit rates
 3. **Server response times** - Should improve with reduced concurrent load
@@ -172,16 +180,19 @@ const MAX_REQUESTS_PER_MINUTE = 100;  // Adjust per your capacity
 
 ## Testing
 
-### To Test Throttling:
+To Test Throttling:
+
 1. Open browser DevTools Network tab
 2. Refresh the page
 3. Observe that requests come in batches of 3, not all at once
 
-### To Test Caching:
+To Test Caching:
+
 1. Refresh page (uses cache from first load)
 2. Wait 10 minutes for cache to expire
 3. Watch for new requests in Network tab
 
-### To Test Rate Limiting:
+To Test Rate Limiting:
+
 1. Use load testing tool or script to send 100+ requests/minute
 2. Observe 429 Too Many Requests responses after limit
