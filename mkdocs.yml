@@ -1,4 +1,5 @@
 site_name: Radar
+site_url: https://kevinmuscara.github.io/radar
 repo_url: https://github.com/kevinmuscara/radar
 theme:
   name: shadcn
