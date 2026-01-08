@@ -2,8 +2,6 @@
 
 Radar is an open-source application designed for educational instituitions. It provides a unified interface to track the operational status of software services and digital resources including LMS, communication tools, authentication services, and other vital digital infrastructure. 
 
-This repository includes the full Radar application, documentation, and various other supporting tools. 
-
 ## ⚡ Key Capabilities
 
 - **Real-time Status Monitoring**: Automatically checks the status of configured services at regular intervals
