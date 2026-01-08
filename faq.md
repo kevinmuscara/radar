@@ -36,4 +36,4 @@ K-5,Last Service,https://service.com/,heartbeat,
 - **Monitor**: Use browser DevTools Network tab to see request patterns.
 
 ## Performance Optimizations
-For questions related to cache duration, request throttling, auto refresh intervals, or server rate limits, please refer to the [Performance Optimizations Guide](/performance). 
+For questions related to cache duration, request throttling, auto refresh intervals, or server rate limits, please refer to the [Performance Optimizations Guide](performance.md). 

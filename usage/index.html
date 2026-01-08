@@ -286,25 +286,19 @@
 </li>
                 
                 
-                
-                <li data-slot="sidebar-menu-item" data-sidebar="menu-item" class="group/menu-item relative">
-    <a data-slot="sidebar-menu-button" data-active="false" data-sidebar="menu-button"
-        data-size="default" href="None"
-        class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground peer/menu-button flex items-center gap-2 rounded-md p-2 text-left outline-hidden ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 data-[active=true]:bg-accent data-[active=true]:border-accent 3xl:fixed:w-full 3xl:fixed:max-w-48 relative h-[30px] w-fit overflow-visible border border-transparent text-[0.8rem] font-medium after:absolute after:inset-x-0 after:-inset-y-1 after:z-0 after:rounded-md">
+            </ul>
+        </div>
+    </div>
+    
 
-        
-        Faq
-        
-
-        
-
-        
-
-        
-    </a>
-</li>
-                
-                
+    
+    
+    <div data-slot="sidebar-group" data-sidebar="group" class="relative flex w-full min-w-0 flex-col p-2">
+        <div data-slot="sidebar-group-label" data-sidebar="group-label"
+            class="ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs outline-hidden transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&amp;&gt;svg]:size-4 [&amp;&gt;svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 text-muted-foreground font-medium">
+            Documentation</div>
+        <div data-slot="sidebar-group-content" data-sidebar="group-content" class="w-full text-sm">
+            <ul data-slot="sidebar-menu" data-sidebar="menu" class="flex w-full min-w-0 flex-col gap-0.5">
                 
                 <li data-slot="sidebar-menu-item" data-sidebar="menu-item" class="group/menu-item relative">
     <a data-slot="sidebar-menu-button" data-active="false" data-sidebar="menu-button"
@@ -323,7 +317,22 @@
     </a>
 </li>
                 
-                
+                <li data-slot="sidebar-menu-item" data-sidebar="menu-item" class="group/menu-item relative">
+    <a data-slot="sidebar-menu-button" data-active="true" data-sidebar="menu-button"
+        data-size="default" href="None"
+        class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground peer/menu-button flex items-center gap-2 rounded-md p-2 text-left outline-hidden ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 data-[active=true]:bg-accent data-[active=true]:border-accent 3xl:fixed:w-full 3xl:fixed:max-w-48 relative h-[30px] w-fit overflow-visible border border-transparent text-[0.8rem] font-medium after:absolute after:inset-x-0 after:-inset-y-1 after:z-0 after:rounded-md">
+
+        
+        Usage
+        
+
+        
+
+        
+
+        
+    </a>
+</li>
                 
                 <li data-slot="sidebar-menu-item" data-sidebar="menu-item" class="group/menu-item relative">
     <a data-slot="sidebar-menu-button" data-active="false" data-sidebar="menu-button"
@@ -342,15 +351,13 @@
     </a>
 </li>
                 
-                
-                
                 <li data-slot="sidebar-menu-item" data-sidebar="menu-item" class="group/menu-item relative">
-    <a data-slot="sidebar-menu-button" data-active="true" data-sidebar="menu-button"
+    <a data-slot="sidebar-menu-button" data-active="false" data-sidebar="menu-button"
         data-size="default" href="None"
         class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground peer/menu-button flex items-center gap-2 rounded-md p-2 text-left outline-hidden ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 data-[active=true]:bg-accent data-[active=true]:border-accent 3xl:fixed:w-full 3xl:fixed:max-w-48 relative h-[30px] w-fit overflow-visible border border-transparent text-[0.8rem] font-medium after:absolute after:inset-x-0 after:-inset-y-1 after:z-0 after:rounded-md">
 
         
-        Usage
+        FAQ
         
 
         
@@ -361,12 +368,10 @@
     </a>
 </li>
                 
-                
             </ul>
         </div>
     </div>
     
-
     
 
 
@@ -425,6 +430,31 @@
           </a>
            
           
+          <a
+            data-slot="button"
+            id="next-button"
+            class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg:not([class*='size-'])]:size-4 shrink-0 [&amp;_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-secondary text-secondary-foreground hover:bg-secondary/80 extend-touch-target size-8 shadow-none md:size-7"
+            href="None"
+          >
+            <span class="sr-only">Next</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="tabler-icon tabler-icon-arrow-right"
+            >
+              <path d="M5 12l14 0"></path>
+              <path d="M13 18l6 -6"></path>
+              <path d="M13 6l6 6"></path>
+            </svg>
+          </a>
+          
         </div>
       </div>
       
@@ -462,7 +492,7 @@
 <p><img alt="Add Resource" src="../images/add_resource.png" /></p>
 <p>You will now see your category listed in the table. If you want to add a resource to more than one category, be sure to select multiple categories in the checkbox selection.</p>
 <h2 id="bulk-importing-categories">Bulk importing categories</h2>
-<p>To bulk import multiple categories, you may begin by downloading the template csv file linked under the <strong>Bulk Import</strong> section. Once you have downloaded the template, add your resources following the header structure. If you need further assistance with adding resources, please refer to <a href="/faq#how-can-i-bulk-import-my-resources">This Guide</a></p>
+<p>To bulk import multiple categories, you may begin by downloading the template csv file linked under the <strong>Bulk Import</strong> section. Once you have downloaded the template, add your resources following the header structure. If you need further assistance with adding resources, please refer to <a href="../faq/#how-can-i-bulk-import-my-resources">This Guide</a></p>
 <p><img alt="Bulk Import" src="../images/import_resources.png" /></p>
 <p>Once you have completed your CSV import, you will see all of the categories and resources in their respective tables.</p>
 <h2 id="the-status-dashboard">The Status Dashboard</h2>
@@ -482,9 +512,22 @@
             <path d="M5 12l6 6"></path>
             <path d="M5 12l6 -6"></path>
         </svg>
-        <span class="max-[500px]:hidden">Performance</span>
+        <span class="max-[500px]:hidden">Installation</span>
     </a>
     
+    
+    <a data-slot="button"
+        class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg:not([class*='size-'])]:size-4 shrink-0 [&amp;_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-secondary text-secondary-foreground hover:bg-secondary/80 h-8 rounded-md gap-1.5 px-3 has-[&gt;svg]:px-2.5 ml-auto shadow-none"
+        href="None">
+        <span class="max-[500px]:hidden">Performance</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="tabler-icon tabler-icon-arrow-right ">
+            <path d="M5 12l14 0"></path>
+            <path d="M13 18l6 -6"></path>
+            <path d="M13 6l6 6"></path>
+        </svg>
+    </a>
     
 </div>
                                 <dialog id="bottom-sidebar" onclick="onBottomSidebarDialogClick(event)" class="bg-transparent"
@@ -509,34 +552,47 @@
                         
                     </a>
                     
-                    <a class="text-2xl font-medium" href="../faq/">
-                        
-                        Faq
-                        
-                    </a>
-                    
-                    <a class="text-2xl font-medium" href="../installation/">
-                        
-                        Installation
-                        
-                    </a>
-                    
-                    <a class="text-2xl font-medium" href="../performance/">
-                        
-                        Performance
-                        
-                    </a>
-                    
-                    <a class="text-2xl font-medium" href="./">
-                        
-                        Usage
-                        
-                    </a>
-                    
                 </div>
             </div>
             
 
+            
+            <div class="flex flex-col gap-8">
+                
+                <div class="flex flex-col gap-4">
+                    <div class="text-muted-foreground text-sm font-medium">Documentation</div>
+                    
+                    <div class="flex flex-col gap-3">
+                        
+                        <a class="text-2xl font-medium" href="../installation/">
+                            
+                            Installation
+                            
+                        </a>
+                        
+                        <a class="text-2xl font-medium" href="./">
+                            
+                            Usage
+                            
+                        </a>
+                        
+                        <a class="text-2xl font-medium" href="../performance/">
+                            
+                            Performance
+                            
+                        </a>
+                        
+                        <a class="text-2xl font-medium" href="../faq/">
+                            
+                            FAQ
+                            
+                        </a>
+                        
+                    </div>
+                    
+                </div>
+                
+            </div>
             
             
 
@@ -635,6 +691,85 @@
     <script>updatePygmentsStylesheet();</script>
     
     
+    
+    <script src="../js/socket.io.min.js"></script>
+<script>
+    function randomString(length = 10) {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        const array = new Uint32Array(length);
+        crypto.getRandomValues(array);
+        return Array.from(array, x => chars[x % chars.length]).join('');
+    }
+
+    /**
+     * Executes code using Programiz REPL via socket.io
+     * @param {string} lang - Programming language (e.g., "python", "cpp", "javascript")
+     * @param {string} code - Code to execute
+     * @returns {Promise<{output:string,ok:boolean}>} Promise resolving to the output
+     */
+    function runCodexec(code, lang) {
+        console.log(`Running code in ${lang}:`, code);
+        if (!["r", "c", "cpp", "csharp", "java", "python", "javascript", "typescript", "scala", "dart", "ruby", "golang", "php", "swift", "rust"].includes(lang)) {
+            return Promise.reject(new Error(`Unsupported language: ${lang}`));
+        }
+        const sessionId = randomString();
+        const socket = io(`wss://${lang}.repl-web.programiz.com`, {
+            path: "/socket.io",
+            transports: ["websocket"],
+            query: {
+                sessionId,
+                lang,
+                EIO: "3",
+            },
+        });
+
+        const id = `${lang}/${sessionId}`;
+
+
+        return new Promise((resolve, reject) => {
+            let timeout;
+            let result = ""
+            let ok = true;
+
+            socket.on("connect_error", (err) => {
+                console.error(`[${id}] Connection error:`, err);
+                reject(err);
+            });
+
+            socket.on("connect", () => {
+                console.log(`[${id}] Connected`);
+                console.log(`[${id}] Code:\n${code}`);
+                socket.emit("run", { code });
+            });
+
+            socket.on("disconnect", () => {
+                clearTimeout(timeout);
+                // remove bottom marker and trim
+                result = result.replace("=== Code Execution Successful ===", "").trim(); // trim trailing newlines
+                resolve({ output: result, ok });
+                console.log(`[${id}] Disconnected`);
+            });
+
+            socket.on("output", ({ output }) => {
+                console.log(`[${id}] Output received:`, output);
+                if (output.slice(0, 6) === "ERROR!") {
+                    ok = false;
+                    // we try to retrieve the error message in the next message
+                    return
+                }
+                // append output
+                result += output;
+            });
+
+            // safety timeout
+            timeout = setTimeout(() => {
+                reject(new Error(`[${id}] Timeout while waiting for output`));
+                socket.disconnect();
+            }, 10000);
+        });
+    }
+
+</script>
     
     <script type="speculationrules">
 {
