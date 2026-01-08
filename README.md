@@ -1,6 +1,6 @@
 <p align="center">
   <a href="#">
-    <img alt="Radar Logo" height="128" src=https://raw.githubusercontent.com/kevinmuscara/radar/refs/heads/main/public/branding/logo.png">
+    <img alt="Radar Logo" height="128" src="./public/branding/logo.png">
     <h1 align="center">Radar</h1>
   </a>
 </p>
