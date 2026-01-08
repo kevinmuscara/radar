@@ -46,7 +46,7 @@ You will now see your category listed in the table. If you want to add a resourc
 
 ## Bulk importing categories
 
-To bulk import multiple categories, you may begin by downloading the template csv file linked under the **Bulk Import** section. Once you have downloaded the template, add your resources following the header structure. If you need further assistance with adding resources, please refer to [This Guide](faq.md#how-can-i-bulk-import-my-resources)
+To bulk import multiple categories, you may begin by downloading the template csv file linked under the **Bulk Import** section. Once you have downloaded the template, add your resources following the header structure. If you need further assistance with adding resources, please refer to [This Guide](/faq#how-can-i-bulk-import-my-resources)
 
 ![Bulk Import](./images/import_resources.png)
 

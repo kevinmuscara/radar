@@ -5,12 +5,20 @@ theme:
   show_title: true
   show_stargazers: false
   pygments_style: # default styles 
-    light: shadcn-light
-    dark: github-dark
+        light: shadcn-light
+        dark: github-dark
   icon: heroicons:rocket-launch
   topbar_sections: false # NEW!
   show_datetime: false 
+nav:
+  - Home: index.md
+  - Documentation:
+      - Installation: installation.md
+      - Usage: usage.md
+      - Performance: performance.md
+      - FAQ: faq.md
 markdown_extensions:
   - codehilite
+  - shadcn.extensions.codexec
 extra_javascript:
   - javascripts/removeWatermark.js

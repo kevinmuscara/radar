@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const response = await fetch('/resources');
       let resourceData = await response.json();
       resourceData = resourceData.resources;
+      window.currentResourceData = resourceData;
 
       // Update global timestamp
       const lastUpdatedEl = document.getElementById('last-updated');
@@ -69,12 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         lastUpdatedEl.textContent = `Last updated: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
       }
 
-      const updatePromises = renderDashboard(resourceData);
-
-      // Wait for all status checks to complete, then update Current Issues
-      Promise.all(updatePromises).then(() => {
-        updateCurrentIssues(resourceData);
-      });
+      renderDashboard(resourceData);
     } catch (error) {
       console.error('Error fetching data:', error);
       container.innerHTML = '<div class="text-center text-red-500 py-12">Failed to load resources. Please try again later.</div>';
@@ -104,6 +100,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (resource.scrape_keywords) params.set('scrape_keywords', resource.scrape_keywords);
         const response = await fetch(`/api/check-status?${params}`);
         const data = await response.json();
+
+        console.log(`[Status Check] ${resource.resource_name}: ${data.status}`);
 
         localStorage.setItem(cacheKey, JSON.stringify({
           timestamp: Date.now(),
@@ -160,9 +158,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (cached) {
             const { data } = JSON.parse(cached);
             status = (data.status || '').toLowerCase();
+            console.log(`[Current Issues Check] ${resource.resource_name}: ${status}`);
           }
 
           if (status === 'outage' || status === 'down' || status === 'degraded' || status === 'maintenance') {
+            console.log(`[Current Issues] Adding ${resource.resource_name} with status ${status}`);
             if (!downServices.some(r => r.resource_name === resource.resource_name)) {
               downServices.push({
                 ...resource,
@@ -173,16 +173,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
     });
+    
+    console.log(`[Current Issues] Found ${downServices.length} services with issues`);
 
     const currentIssuesSection = document.getElementById('current-issues-section');
-    if (currentIssuesSection) {
-      currentIssuesSection.remove();
+    
+    if (downServices.length === 0) {
+      // No issues - remove the section if it exists
+      if (currentIssuesSection) {
+        currentIssuesSection.remove();
+      }
+      return;
     }
 
-    if (downServices.length > 0) {
-      // Create a temporary container to render the section
+    if (currentIssuesSection) {
+      // Section exists - update it in place
+      const grid = currentIssuesSection.querySelector('div.grid');
+      const badge = currentIssuesSection.querySelector('span.rounded-full');
+      
+      if (badge) {
+        badge.textContent = downServices.length;
+      }
+      
+      if (grid) {
+        // Clear and re-render the grid
+        grid.innerHTML = '';
+        downServices.forEach(resource => {
+          const card = createResourceCard(resource, true);
+          grid.appendChild(card);
+          // Update status but don't wait for it since we're already in the update cycle
+          updateCardStatus(card, resource).catch(err => console.error('Error updating card status:', err));
+        });
+      }
+    } else {
+      // Section doesn't exist - create it
       const tempContainer = document.createElement('div');
-      renderSection("Current Issues", downServices, true, true, tempContainer);
+      renderSection("Current Issues", downServices, true, true, tempContainer, true);
 
       const newSection = tempContainer.firstElementChild;
       newSection.id = 'current-issues-section';
@@ -198,7 +224,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderDashboard(resourceData) {
     container.innerHTML = '';
-    const updatePromises = [];
 
     // Initial check for cached issues
     updateCurrentIssues(resourceData);
@@ -221,12 +246,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (resourceData[sectionName] && resourceData[sectionName].length > 0) {
         const isDefaultExpanded = sectionName === "Approved for K-12" || !!currentView;
-        const sectionPromises = renderSection(sectionName, resourceData[sectionName], false, isDefaultExpanded, container);
-        updatePromises.push(...sectionPromises);
+        renderSection(sectionName, resourceData[sectionName], false, isDefaultExpanded, container, false);
       }
     });
-
-    return updatePromises;
 
     function renderFilterButtons(activeView) {
       const filterContainer = document.getElementById('filter-container');
@@ -273,7 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function renderSection(title, resources, isSpecial, startExpanded, targetContainer) {
+  function renderSection(title, resources, isSpecial, startExpanded, targetContainer, skipIssuesUpdate = false) {
     const section = document.createElement('section');
     section.className = 'animate-fade-in group';
     section.dataset.defaultExpanded = startExpanded;
@@ -320,10 +342,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    const promises = [];
-
     resources.forEach(resource => {
-      const card = document.createElement('div');
+      const card = createResourceCard(resource, isSpecial);
+      grid.appendChild(card);
+      updateCardStatus(card, resource).then(() => {
+        // After each card status is updated, refresh the Current Issues section
+        // Skip this if we're rendering the Current Issues section itself to prevent recursion
+        if (!skipIssuesUpdate && window.currentResourceData) {
+          updateCurrentIssues(window.currentResourceData);
+        }
+      });
+    });
+
+    section.appendChild(grid);
+    targetContainer.appendChild(section);
+  }
+
+  function createResourceCard(resource, isSpecial) {
+    const card = document.createElement('div');
       card.className = 'bg-white rounded-xl border border-slate-200 card-hover flex flex-col h-full shadow relative overflow-hidden status-unknown transition-shadow hover:shadow-lg';
       // compute favicon URL for this resource
       const faviconUrl = getFaviconUrl(resource);
@@ -376,15 +412,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
               </div>
             `;
-      grid.appendChild(card);
-
-      promises.push(updateCardStatus(card, resource));
-    });
-
-    section.appendChild(grid);
-    targetContainer.appendChild(section);
-
-    return promises;
+    return card;
   }
 
   async function updateCardStatus(card, resource) {
