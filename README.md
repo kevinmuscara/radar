@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a aria-label="radar documentation" href="/docs/index.md">Documentation</a> | 
+  <a aria-label="radar documentation" href="https://kevinmuscara.github.io/radar">Documentation</a> | 
   <a aria-label="radar documentation" href="#-screenshots">Screenshots</a> | 
   <a aria-label="radar documentation" href="#-key-capabilities">Features</a>
 </p>
@@ -37,7 +37,7 @@ This repository includes the full Radar application, documentation, and various 
 - [📷 Screenshots](#screenshots)
 
 ## 📚 Documentation
-<p>Learn more about deploying Radar for your team <a aria-label="expo documentation" href="/docs/index.md">in the official docs.</a></p>
+<p>Learn more about deploying Radar for your team <a aria-label="expo documentation" href="https://kevinmuscara.github.io/radar">in the official docs.</a></p>
 
 ## 👏 Contributing
 If you like Radar and want to help make it better then check out the [Contributing Guide](./CONTRIBUTING.md)!
