@@ -34,6 +34,7 @@ class DatabaseManager {
               status_page TEXT NOT NULL,
               check_type TEXT DEFAULT 'api',
               scrape_keywords TEXT DEFAULT '',
+              api_config TEXT DEFAULT NULL,
               UNIQUE(name, status_page)
             );
 

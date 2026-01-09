@@ -66,6 +66,16 @@ async function checkStatus(resource) {
   let url = resource.status_page;
   const method = (resource.check_type || 'api').toLowerCase();
   const keywords = resource.scrape_keywords ? resource.scrape_keywords.split(',').map(k=>k.trim()).filter(Boolean) : [];
+  let apiConfig = null;
+  
+  // Parse API config if exists
+  if (resource.api_config) {
+    try {
+      apiConfig = typeof resource.api_config === 'string' ? JSON.parse(resource.api_config) : resource.api_config;
+    } catch (e) {
+      console.error('Failed to parse api_config:', e);
+    }
+  }
 
   if (!url || url.trim() === "") {
     return { status: 'Unknown', last_checked: new Date().toISOString() };
@@ -86,6 +96,39 @@ async function checkStatus(resource) {
         // Try to parse JSON API responses (e.g., statuspage.io summary.json)
         if (response.headers['content-type'] && response.headers['content-type'].includes('application/json')) {
           const data = response.data;
+          
+          // If user configured specific API field, use it
+          if (apiConfig && apiConfig.fieldPath) {
+            try {
+              // Navigate to the configured field path
+              // Split on . [ ] to handle paths like "components[0].status" or "data.items[1].value"
+              const pathParts = apiConfig.fieldPath.split(/\.|\[|\]/).filter(Boolean);
+              let value = data;
+              
+              for (const part of pathParts) {
+                if (value === null || value === undefined) break;
+                // Try to use as array index if it's a number, otherwise as object key
+                const index = parseInt(part, 10);
+                if (!isNaN(index) && Array.isArray(value)) {
+                  value = value[index];
+                } else {
+                  value = value[part];
+                }
+              }
+              
+              if (value !== null && value !== undefined) {
+                return { 
+                  status: normalizeStatus(String(value)), 
+                  last_checked: new Date().toISOString(), 
+                  status_url: url 
+                };
+              }
+            } catch (e) {
+              console.error('Failed to extract configured API field:', e);
+            }
+          }
+          
+          // Fallback to common API patterns
           // Try common shapes
           if (data && data.status && data.status.description) {
             return { status: normalizeStatus(data.status.description), last_checked: new Date().toISOString(), status_url: url };
@@ -188,7 +231,8 @@ router.get("/check-status", async (request, response) => {
     resource_name: name || 'Unknown',
     status_page: url || '',
     check_type: request.query.check_type || 'api',
-    scrape_keywords: request.query.scrape_keywords || ''
+    scrape_keywords: request.query.scrape_keywords || '',
+    api_config: request.query.api_config || null
   };
 
   try {
@@ -196,6 +240,105 @@ router.get("/check-status", async (request, response) => {
     response.json(statusInfo);
   } catch (error) {
     response.status(500).json({ error: 'Failed to check status', details: error.message });
+  }
+});
+
+// New endpoint to fetch and analyze API structure for field selection
+router.post("/analyze-api", async (request, response) => {
+  const clientIp = request.ip || request.connection.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIp)) {
+    return response.status(429).json({ error: 'Too many requests. Please try again later.' });
+  }
+
+  const { url } = request.body;
+
+  if (!url) {
+    return response.status(400).json({ error: 'Missing url parameter' });
+  }
+
+  let fullUrl = url;
+  if (!fullUrl.startsWith('http')) {
+    fullUrl = 'http://' + fullUrl;
+  }
+
+  try {
+    const apiResponse = await axios.get(fullUrl, {
+      timeout: 8000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36' }
+    });
+
+    // Check if response is JSON
+    if (!apiResponse.headers['content-type'] || !apiResponse.headers['content-type'].includes('application/json')) {
+      return response.status(400).json({ error: 'URL does not return JSON. Please use API (JSON) check type only for JSON APIs.' });
+    }
+
+    const data = apiResponse.data;
+
+    // Function to flatten nested objects and extract all paths, including array information
+    function extractPaths(obj, prefix = '') {
+      const paths = [];
+      const arrayInfo = [];
+      
+      function traverse(current, currentPath) {
+        if (current === null || current === undefined) {
+          paths.push({ path: currentPath, value: current, type: typeof current });
+          return;
+        }
+        
+        if (Array.isArray(current)) {
+          if (current.length > 0) {
+            // Store array information for bulk creation
+            arrayInfo.push({
+              path: currentPath,
+              length: current.length,
+              items: current.map((item, idx) => {
+                // Try to find a name field for this item
+                let itemName = null;
+                if (typeof item === 'object' && item !== null) {
+                  // Look for common name fields
+                  itemName = item.name || item.title || item.label || item.id || `Item ${idx}`;
+                }
+                return { index: idx, name: itemName, preview: item };
+              })
+            });
+            
+            // Traverse ALL items in the array, not just the first one
+            current.forEach((item, idx) => {
+              traverse(item, `${currentPath}[${idx}]`);
+            });
+          } else {
+            paths.push({ path: currentPath, value: '[]', type: 'array' });
+          }
+        } else if (typeof current === 'object') {
+          for (const key in current) {
+            if (current.hasOwnProperty(key)) {
+              const newPath = currentPath ? `${currentPath}.${key}` : key;
+              traverse(current[key], newPath);
+            }
+          }
+        } else {
+          paths.push({ path: currentPath, value: current, type: typeof current });
+        }
+      }
+
+      traverse(obj, prefix);
+      return { paths, arrayInfo };
+    }
+
+    const { paths, arrayInfo } = extractPaths(data);
+    
+    response.json({ 
+      success: true, 
+      apiData: data,
+      paths: paths.filter(p => p.type !== 'object' && p.type !== 'array'), // Only return leaf nodes
+      arrayInfo: arrayInfo // Information about arrays for bulk creation
+    });
+  } catch (error) {
+    console.error(`Error analyzing API ${fullUrl}:`, error.message);
+    response.status(500).json({ 
+      error: 'Failed to fetch or analyze API', 
+      details: error.message 
+    });
   }
 });
 
@@ -228,7 +371,8 @@ router.post("/check-status-batch", async (request, response) => {
               resource_name: res.name || 'Unknown',
               status_page: res.url || '',
               check_type: res.check_type || 'api',
-              scrape_keywords: res.scrape_keywords || ''
+              scrape_keywords: res.scrape_keywords || '',
+              api_config: res.api_config || null
             };
             const statusInfo = await checkStatus(resource);
             return { name: res.name, ...statusInfo };
@@ -263,7 +407,8 @@ router.get('/rss', async (_request, response) => {
           resource_name: r.resource_name,
           status_page: r.status_page,
           check_type: r.check_type || 'api',
-          scrape_keywords: r.scrape_keywords || ''
+          scrape_keywords: r.scrape_keywords || '',
+          api_config: r.api_config || null
         });
       });
     });

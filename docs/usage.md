@@ -38,6 +38,22 @@ In the popup modal pictured below, fill out the form. For more information about
 - **Web Scrape (keywords)**: Use this if your resource will need to scrape a specific keyword off of the linked page. (Example: searching for the phrase "operational" on a page). 
 - **Heartbeat (HTTP 200)**: Use this if your resource will simply have a heartbeat monitor of the linked page.
 
+
+### API Scraping
+
+Follow these steps to browse an API for a specific field for your resource status:
+
+1. Type the API URL into the `Status Page URL` field on the add resource modal.
+2. Select the blue `Analyze` button and the API Structure Explorer will show as pictured below:
+
+![Scrape Resource](./images/add_resource_api_structure.png)
+
+3. You can use the search fields to search for a specific key or value in the structured API. Once you found the field for the object related to your reseource, select the field that contains the current status of the resource.
+
+![Scrape Search](./images/add_resource_api_select.png)
+
+4. Once you have selected the associated field, you can now create the resource.
+
 ***NOTE: If using the Web Scrape (keywords) check type, be sure to include a keyword that you want to filter by.***
 
 ![Add Resource](./images/add_resource.png)

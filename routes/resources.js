@@ -87,7 +87,13 @@ router.post("/category/:category", checkAuth, async (request, response) => {
     grade_level,
   } = request.body;
 
-  await resources.addResource(category, { resource_name, status_page, check_type: request.body.check_type, scrape_keywords: request.body.scrape_keywords });
+  await resources.addResource(category, { 
+    resource_name, 
+    status_page, 
+    check_type: request.body.check_type, 
+    scrape_keywords: request.body.scrape_keywords,
+    api_config: request.body.api_config 
+  });
   response.json({ status: 200 });
 });
 
@@ -134,7 +140,13 @@ router.put("/category/:category/:resource", checkAuth, async (request, response)
     status_page,
     grade_level,
   } = request.body;
-  await resources.updateResource(category, resource, { resource_name, status_page, check_type: request.body.check_type, scrape_keywords: request.body.scrape_keywords });
+  await resources.updateResource(category, resource, { 
+    resource_name, 
+    status_page, 
+    check_type: request.body.check_type, 
+    scrape_keywords: request.body.scrape_keywords,
+    api_config: request.body.api_config 
+  });
   response.json({ status: 200 });
 });
 
@@ -152,7 +164,7 @@ router.post("/import", checkAuth, async (request, response) => {
 
     // Process each row
     for (const row of data) {
-      const { category, resource_name, status_page, check_type, scrape_keywords } = row;
+      const { category, resource_name, status_page, check_type, scrape_keywords, api_config } = row;
 
       if (!category || !resource_name || !status_page || !check_type) {
         return response.status(400).json({ error: "Invalid row: missing required fields" });
@@ -175,7 +187,8 @@ router.post("/import", checkAuth, async (request, response) => {
           resource_name,
           status_page,
           check_type,
-          scrape_keywords: scrape_keywords || ''
+          scrape_keywords: scrape_keywords || '',
+          api_config: api_config || null
         });
 
         imported.resources++;

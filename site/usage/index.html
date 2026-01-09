@@ -492,6 +492,20 @@
 <li><strong>Web Scrape (keywords)</strong>: Use this if your resource will need to scrape a specific keyword off of the linked page. (Example: searching for the phrase "operational" on a page). </li>
 <li><strong>Heartbeat (HTTP 200)</strong>: Use this if your resource will simply have a heartbeat monitor of the linked page.</li>
 </ul>
+<h3 id="api-scraping">API Scraping</h3>
+<p>Follow these steps to browse an API for a specific field for your resource status:</p>
+<ol>
+<li>Type the API URL into the <code>Status Page URL</code> field on the add resource modal.</li>
+<li>Select the blue <code>Analyze</code> button and the API Structure Explorer will show as pictured below:</li>
+</ol>
+<p><img alt="Scrape Resource" src="../images/add_resource_api_structure.png" /></p>
+<ol>
+<li>You can use the search fields to search for a specific key or value in the structured API. Once you found the field for the object related to your reseource, select the field that contains the current status of the resource.</li>
+</ol>
+<p><img alt="Scrape Search" src="../images/add_resource_api_select.png" /></p>
+<ol>
+<li>Once you have selected the associated field, you can now create the resource.</li>
+</ol>
 <p><strong><em>NOTE: If using the Web Scrape (keywords) check type, be sure to include a keyword that you want to filter by.</em></strong></p>
 <p><img alt="Add Resource" src="../images/add_resource.png" /></p>
 <p>You will now see your category listed in the table. If you want to add a resource to more than one category, be sure to select multiple categories in the checkbox selection.</p>
@@ -635,6 +649,14 @@
             data-active="false" data-depth="2">
             Creating your first resource
         </a>
+        
+        
+        <a href="#api-scraping"
+            class="text-muted-foreground hover:text-foreground data-[active=true]:text-foreground text-[0.8rem] no-underline transition-colors data-[depth=3]:pl-4 data-[depth=4]:pl-6"
+            data-active="false" data-depth="3">
+            API Scraping
+        </a>
+        
         
 
         
