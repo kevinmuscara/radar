@@ -20,17 +20,60 @@ async function addCategory() {
 // Force refresh all statuses
 document.addEventListener('DOMContentLoaded', () => {
   const forceRefreshBtn = document.getElementById('force-refresh-btn');
+  const progressContainer = document.getElementById('progress-container');
+  const progressBar = document.getElementById('progress-bar');
+  let progressInterval = null;
+
+  // Function to update progress
+  async function updateProgress() {
+    try {
+      const response = await fetch('/api/check-progress');
+      const progress = await response.json();
+
+      if (progress.isChecking) {
+        // Show progress bar
+        if (progressContainer) {
+          progressContainer.classList.remove('hidden');
+          if (progressBar) {
+            progressBar.style.width = `${progress.percentage}%`;
+          }
+        }
+
+        // Update button text
+        if (forceRefreshBtn && progress.currentResourceName) {
+          forceRefreshBtn.title = `Checking: ${progress.currentResourceName} (${progress.currentProgress}/${progress.totalResources})`;
+        }
+      } else {
+        // Hide progress bar
+        if (progressContainer) {
+          progressContainer.classList.add('hidden');
+        }
+        
+        // Reset button
+        if (forceRefreshBtn) {
+          forceRefreshBtn.title = 'Refresh All Statuses';
+          forceRefreshBtn.disabled = false;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching progress:', error);
+    }
+  }
+
+  // Start polling for progress
+  function startProgressPolling() {
+    if (progressInterval) return;
+    progressInterval = setInterval(updateProgress, 500); // Poll every 500ms
+  }
+
+  // Initial progress check
+  updateProgress();
+  startProgressPolling();
+
   if (forceRefreshBtn) {
     forceRefreshBtn.addEventListener('click', async () => {
-      const originalText = forceRefreshBtn.innerHTML;
       forceRefreshBtn.disabled = true;
-      forceRefreshBtn.innerHTML = `
-        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        Refreshing...
-      `;
+      forceRefreshBtn.title = 'Refreshing...';
 
       try {
         const response = await fetch('/api/force-refresh', {
@@ -38,18 +81,21 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { 'Content-Type': 'application/json' }
         });
 
-        if (response.ok) {
+        if (response.status === 429) {
           const data = await response.json();
-          alert('Status refresh initiated! It may take a few minutes to complete.');
+          alert(data.message || 'Please wait before refreshing again');
+          forceRefreshBtn.disabled = false;
+        } else if (response.ok) {
+          // Progress polling will handle the UI updates
+          updateProgress();
         } else {
           alert('Failed to initiate refresh');
+          forceRefreshBtn.disabled = false;
         }
       } catch (error) {
         console.error('Error forcing refresh:', error);
         alert('Error initiating refresh');
-      } finally {
         forceRefreshBtn.disabled = false;
-        forceRefreshBtn.innerHTML = originalText;
       }
     });
   }
