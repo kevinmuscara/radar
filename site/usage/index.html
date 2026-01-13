@@ -474,7 +474,8 @@
 - Admin account username
 - Admin account password
 - Dashboard/School name
-- Dashboard Branding/logo</p>
+- Dashboard Branding/logo
+- Status Check Interval</p>
 <p><img alt="Setup Page" src="../images/setup_page.png" /></p>
 <p>When you are finished customizing these settings, hit the blue <code>Complete Setup</code> button to continue. </p>
 <h2 id="creating-your-first-category">Creating your first category</h2>
@@ -515,7 +516,43 @@
 <p>Once you have completed your CSV import, you will see all of the categories and resources in their respective tables.</p>
 <h2 id="the-status-dashboard">The Status Dashboard</h2>
 <p>Once you have added all your resources, you can click the home button in the upper right corner, or goto the <code>/</code> route of your Radar instance to view the dashboard.</p>
+<p>The dashboard automatically updates every 5 minutes with the latest status information from the server. Status checks are performed server-side at the interval you configured (default: 30 minutes).</p>
 <p><img alt="Home Page" src="../images/home_page.png" /></p>
+<h2 id="server-side-status-monitoring">Server-Side Status Monitoring</h2>
+<p>Radar uses server-side status checking for optimal performance:</p>
+<ul>
+<li><strong>Automatic Checks</strong>: Status checks run at your configured interval (1-60 minutes)</li>
+<li><strong>Instant Dashboard</strong>: All users see cached results instantly</li>
+<li><strong>Auto-Refresh</strong>: Dashboard updates every 5 minutes with latest cached data</li>
+<li><strong>Smart Retries</strong>: Failed checks are automatically retried once</li>
+<li><strong>Error Logging</strong>: Persistent failures are logged in the admin dashboard</li>
+</ul>
+<h3 id="adjusting-check-interval">Adjusting Check Interval</h3>
+<p>To change how often resources are checked:</p>
+<ol>
+<li>Navigate to Admin Dashboard</li>
+<li>Go to Dashboard Settings</li>
+<li>Adjust "Status Check Interval" (1-60 minutes)</li>
+<li>Click "Save Changes"</li>
+</ol>
+<p>The new interval takes effect immediately without restarting the server.</p>
+<h3 id="manual-refresh">Manual Refresh</h3>
+<p>Administrators can force an immediate status check:</p>
+<ol>
+<li>Go to Admin Dashboard</li>
+<li>Click "Refresh All Statuses" button in the header</li>
+<li>Watch the progress bar to track completion</li>
+</ol>
+<p><strong>Note</strong>: Manual refresh is rate-limited to once per minute to prevent server overload.</p>
+<h3 id="monitoring-errors">Monitoring Errors</h3>
+<p>Failed status checks are logged in the admin dashboard:</p>
+<ol>
+<li>Go to Admin Dashboard</li>
+<li>Scroll to "Status Check Errors" section</li>
+<li>Review resources that failed both initial and retry attempts</li>
+<li>Click "Clear Errors" to remove resolved issues</li>
+</ol>
+<p>This helps identify resources with incorrect URLs or configuration issues.</p>
   </div>
 </article>
                                 <div class="mx-auto flex flex-wrap h-16 w-full max-w-2xl items-center gap-2 px-4 md:px-0">
@@ -673,6 +710,34 @@
             data-active="false" data-depth="2">
             The Status Dashboard
         </a>
+        
+
+        
+        <a href="#server-side-status-monitoring"
+            class="text-muted-foreground hover:text-foreground data-[active=true]:text-foreground text-[0.8rem] no-underline transition-colors data-[depth=3]:pl-4 data-[depth=4]:pl-6"
+            data-active="false" data-depth="2">
+            Server-Side Status Monitoring
+        </a>
+        
+        
+        <a href="#adjusting-check-interval"
+            class="text-muted-foreground hover:text-foreground data-[active=true]:text-foreground text-[0.8rem] no-underline transition-colors data-[depth=3]:pl-4 data-[depth=4]:pl-6"
+            data-active="false" data-depth="3">
+            Adjusting Check Interval
+        </a>
+        
+        <a href="#manual-refresh"
+            class="text-muted-foreground hover:text-foreground data-[active=true]:text-foreground text-[0.8rem] no-underline transition-colors data-[depth=3]:pl-4 data-[depth=4]:pl-6"
+            data-active="false" data-depth="3">
+            Manual Refresh
+        </a>
+        
+        <a href="#monitoring-errors"
+            class="text-muted-foreground hover:text-foreground data-[active=true]:text-foreground text-[0.8rem] no-underline transition-colors data-[depth=3]:pl-4 data-[depth=4]:pl-6"
+            data-active="false" data-depth="3">
+            Monitoring Errors
+        </a>
+        
         
 
         

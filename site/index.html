@@ -443,26 +443,40 @@
     </div>
   </div>
   <div class="typography w-full flex-1 *:data-[slot=alert]:first:mt-0">
-    <p>Radar is an open-source application designed for educational instituitions. It provides a unified interface to track the operational status of software services and digital resources including LMS, communication tools, authentication services, and other vital digital infrastructure. </p>
+    <p>Radar is an open-source application designed for educational institutions. It provides a unified interface to track the operational status of software services and digital resources including LMS, communication tools, authentication services, and other vital digital infrastructure.</p>
 <h2 id="key-capabilities">⚡ Key Capabilities</h2>
 <ul>
-<li><strong>Real-time Status Monitoring</strong>: Automatically checks the status of configured services at regular intervals</li>
+<li><strong>Server-Side Status Monitoring</strong>: Efficient server-side checking at configurable intervals (30 minutes default)</li>
+<li><strong>Instant Dashboard Loads</strong>: All users see pre-computed cached status data</li>
 <li><strong>Multiple Check Methods</strong>: Supports API-based checks, web scraping, and simple heartbeat monitoring</li>
 <li><strong>Responsive Dashboard</strong>: Clean, intuitive interface that works on desktop and mobile devices</li>
 <li><strong>Category Organization</strong>: Group related services into logical categories for better organization</li>
 <li><strong>Status Indicators</strong>: Color-coded status badges showing operational, degraded, maintenance, and outage states</li>
 <li><strong>Current Issues Section</strong>: Highlighted section showing all services that are not fully operational</li>
 <li><strong>Search &amp; Filter</strong>: Quickly find services with built-in search functionality and category filters</li>
+<li><strong>Smart Retry Logic</strong>: Automatic retry for failed checks before logging errors</li>
+<li><strong>Progress Tracking</strong>: Real-time progress bar during status checks (admin dashboard)</li>
+<li><strong>Error Logging</strong>: Persistent failures logged in database for admin review</li>
 <li><strong>RSS Feed</strong>: Automated status feed for integration with other systems</li>
 <li><strong>Admin Panel</strong>: Manage resources, categories, and monitoring settings</li>
 <li><strong>User Authentication</strong>: Secure login system to protect administrative functions</li>
+<li><strong>Auto-Updates</strong>: Dashboard refreshes every 5 minutes with latest cached data</li>
+<li><strong>Unlimited Scalability</strong>: Same server load for 1 user or 10,000 users</li>
 </ul>
-<h2 id="talbe-of-contents">Talbe of contents</h2>
+<h2 id="performance-highlights">Performance Highlights</h2>
 <ul>
-<li><a href="installation/">Installation Guide</a> Follow this guide to learn how to setup Radar for your institution.</li>
-<li><a href="usage/">Usage Guide</a> Follow this guide once you have installed Radar and are ready to setup your dashboard.</li>
-<li><a href="faq/">Frequently Asked Questions</a> Reference this if you have any questions after setting up Radar.</li>
-<li><a href="performance/">Performance Optimization Guide</a> Follow this guide if your Radar instance isn't meeting your performance standards.</li>
+<li><strong>Zero Client-Side Overhead</strong>: Status checks performed server-side only</li>
+<li><strong>Configurable Intervals</strong>: 1-60 minute check intervals (30 min default)</li>
+<li><strong>Database Caching</strong>: Fast SQLite-backed status cache</li>
+<li><strong>Rate Limiting</strong>: Protection against abuse and server overload</li>
+<li><strong>Efficient Retries</strong>: Failed checks automatically retried once</li>
+</ul>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="installation/">Installation Guide</a> - Follow this guide to learn how to setup Radar for your institution.</li>
+<li><a href="usage/">Usage Guide</a> - Follow this guide once you have installed Radar and are ready to setup your dashboard.</li>
+<li><a href="faq/">Frequently Asked Questions</a> - Reference this if you have any questions after setting up Radar.</li>
+<li><a href="performance/">Performance Optimization Guide</a> - Learn about Radar's server-side architecture and optimization features.</li>
 </ul>
   </div>
 </article>
@@ -571,10 +585,18 @@
         
 
         
-        <a href="#talbe-of-contents"
+        <a href="#performance-highlights"
             class="text-muted-foreground hover:text-foreground data-[active=true]:text-foreground text-[0.8rem] no-underline transition-colors data-[depth=3]:pl-4 data-[depth=4]:pl-6"
             data-active="false" data-depth="2">
-            Talbe of contents
+            Performance Highlights
+        </a>
+        
+
+        
+        <a href="#table-of-contents"
+            class="text-muted-foreground hover:text-foreground data-[active=true]:text-foreground text-[0.8rem] no-underline transition-colors data-[depth=3]:pl-4 data-[depth=4]:pl-6"
+            data-active="false" data-depth="2">
+            Table of Contents
         </a>
         
 

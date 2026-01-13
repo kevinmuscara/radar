@@ -4,6 +4,8 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 const puppeteer = require("puppeteer");
 const resources = require('../config/ResourceManager');
+const DatabaseManager = require('../config/DatabaseManager');
+const statusChecker = require('../config/StatusChecker');
 
 // Simple in-memory request limiter to prevent abuse
 const requestLimiter = new Map();
@@ -213,35 +215,6 @@ async function checkStatus(resource) {
     return { status: 'Unknown', last_checked: new Date().toISOString(), status_url: url };
   }
 }
-
-router.get("/check-status", async (request, response) => {
-  // Rate limiting to prevent server overload
-  const clientIp = request.ip || request.connection.remoteAddress || 'unknown';
-  if (!checkRateLimit(clientIp)) {
-    return response.status(429).json({ error: 'Too many requests. Please try again later.' });
-  }
-
-  const { url, name } = request.query;
-
-  if (!url && !name) {
-    return response.status(400).json({ error: 'Missing url or name parameter' });
-  }
-
-  const resource = {
-    resource_name: name || 'Unknown',
-    status_page: url || '',
-    check_type: request.query.check_type || 'api',
-    scrape_keywords: request.query.scrape_keywords || '',
-    api_config: request.query.api_config || null
-  };
-
-  try {
-    const statusInfo = await checkStatus(resource);
-    response.json(statusInfo);
-  } catch (error) {
-    response.status(500).json({ error: 'Failed to check status', details: error.message });
-  }
-});
 
 // New endpoint to fetch and analyze API structure for field selection
 router.post("/analyze-api", async (request, response) => {
@@ -465,5 +438,73 @@ function escapeXml(unsafe) {
     }
   });
 }
+
+// New endpoint: Get all cached resource statuses
+router.get("/cached-statuses", async (_request, response) => {
+  try {
+    const statuses = await DatabaseManager.getAllResourceStatuses();
+    response.json({ statuses });
+  } catch (error) {
+    console.error('Error fetching cached statuses:', error);
+    response.status(500).json({ error: 'Failed to fetch statuses' });
+  }
+});
+
+// New endpoint: Get cached status for a specific resource
+router.get("/cached-status/:resourceName", async (request, response) => {
+  try {
+    const { resourceName } = request.params;
+    const status = await DatabaseManager.getResourceStatusByName(resourceName);
+    
+    if (!status) {
+      return response.status(404).json({ error: 'Status not found' });
+    }
+    
+    response.json(status);
+  } catch (error) {
+    console.error('Error fetching cached status:', error);
+    response.status(500).json({ error: 'Failed to fetch status' });
+  }
+});
+
+// New endpoint: Force refresh all statuses (admin only)
+let lastForceRefresh = 0;
+const FORCE_REFRESH_COOLDOWN = 60 * 1000; // 1 minute
+
+router.post("/force-refresh", async (_request, response) => {
+  try {
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastForceRefresh;
+    
+    if (timeSinceLastRefresh < FORCE_REFRESH_COOLDOWN) {
+      const secondsRemaining = Math.ceil((FORCE_REFRESH_COOLDOWN - timeSinceLastRefresh) / 1000);
+      return response.status(429).json({ 
+        error: 'Rate limit exceeded', 
+        message: `Please wait ${secondsRemaining} seconds before refreshing again`,
+        secondsRemaining 
+      });
+    }
+    
+    lastForceRefresh = now;
+    
+    // Trigger an immediate check
+    statusChecker.forceCheck();
+    response.json({ success: true, message: 'Status refresh initiated' });
+  } catch (error) {
+    console.error('Error forcing refresh:', error);
+    response.status(500).json({ error: 'Failed to force refresh' });
+  }
+});
+
+// New endpoint: Get check progress
+router.get("/check-progress", async (_request, response) => {
+  try {
+    const progress = statusChecker.getProgress();
+    response.json(progress);
+  } catch (error) {
+    console.error('Error getting progress:', error);
+    response.status(500).json({ error: 'Failed to get progress' });
+  }
+});
 
 module.exports = router;

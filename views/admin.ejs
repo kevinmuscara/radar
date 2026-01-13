@@ -53,6 +53,11 @@
           </h1>
         </div>
         <div class="flex gap-2">
+          <button id="force-refresh-btn" type="button" title="Refresh Errors" aria-label="Refresh Errors" class="p-2 rounded-md bg-white text-gray-600 border border-slate-200 hover:bg-slate-50">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10a9 9 0 0115.464-4.464M21 14a9 9 0 01-15.464 4.464" />
+            </svg>
+          </button>
           <a href="/"
             class="rounded-md p-2.5 text-gray-600 hover:text-primary hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors"
             title="Go to Status Board">
@@ -73,6 +78,11 @@
           </a>
         </div>
       </div>
+    </div>
+    <!-- Progress bar -->
+    <div id="progress-container" class="h-1 bg-gray-100 hidden">
+      <div id="progress-bar" class="h-full bg-primary transition-all duration-300" style="width: 0%"></div>
+    </div>
   </nav>
 
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -107,6 +117,16 @@
                   <input id="schoolName" type="text" name="schoolName" required
                     value="<%= config.branding.schoolName %>"
                     class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6" />
+                </div>
+              </div>
+
+              <div>
+                <label for="refreshInterval" class="block text-sm/6 font-medium text-gray-900">Status Check Interval (minutes)</label>
+                <div class="mt-2">
+                  <input id="refreshInterval" type="number" name="refreshInterval" min="1" max="60" required
+                    value="<%= config.refreshIntervalMinutes %>"
+                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6" />
+                  <p class="mt-1 text-xs text-gray-500">How often to check resource statuses (1-60 minutes)</p>
                 </div>
               </div>
 

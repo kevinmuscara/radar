@@ -9,6 +9,7 @@ In this wizard, you can customize the following settings:
 - Admin account password
 - Dashboard/School name
 - Dashboard Branding/logo
+- Status Check Interval
 
 ![Setup Page](./images/setup_page.png)
 
@@ -72,4 +73,48 @@ Once you have completed your CSV import, you will see all of the categories and 
 
 Once you have added all your resources, you can click the home button in the upper right corner, or goto the `/` route of your Radar instance to view the dashboard.
 
+The dashboard automatically updates every 5 minutes with the latest status information from the server. Status checks are performed server-side at the interval you configured (default: 30 minutes).
+
 ![Home Page](./images/home_page.png)
+
+## Server-Side Status Monitoring
+
+Radar uses server-side status checking for optimal performance:
+
+- **Automatic Checks**: Status checks run at your configured interval (1-60 minutes)
+- **Instant Dashboard**: All users see cached results instantly
+- **Auto-Refresh**: Dashboard updates every 5 minutes with latest cached data
+- **Smart Retries**: Failed checks are automatically retried once
+- **Error Logging**: Persistent failures are logged in the admin dashboard
+
+### Adjusting Check Interval
+
+To change how often resources are checked:
+
+1. Navigate to Admin Dashboard
+2. Go to Dashboard Settings
+3. Adjust "Status Check Interval" (1-60 minutes)
+4. Click "Save Changes"
+
+The new interval takes effect immediately without restarting the server.
+
+### Manual Refresh
+
+Administrators can force an immediate status check:
+
+1. Go to Admin Dashboard
+2. Click "Refresh All Statuses" button in the header
+3. Watch the progress bar to track completion
+
+**Note**: Manual refresh is rate-limited to once per minute to prevent server overload.
+
+### Monitoring Errors
+
+Failed status checks are logged in the admin dashboard:
+
+1. Go to Admin Dashboard
+2. Scroll to "Status Check Errors" section
+3. Review resources that failed both initial and retry attempts
+4. Click "Clear Errors" to remove resolved issues
+
+This helps identify resources with incorrect URLs or configuration issues.

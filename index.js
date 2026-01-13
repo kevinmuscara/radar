@@ -6,6 +6,7 @@ const MemoryStore = require("memorystore")(session);
 
 const configuration = require("./config/SetupManager");
 const resources = require("./config/ResourceManager");
+const statusChecker = require("./config/StatusChecker");
 
 // Import routes
 const setupRoute = require("./routes/setup");
@@ -91,4 +92,14 @@ server.get("/", async (_request, response) => {
 const PORT = process.env.PORT || 80;
 const HOST = process.env.HOST || "0.0.0.0";
 
-server.listen(PORT, HOST, () => console.log(`Radar live on ${HOST}:${PORT}`));
+server.listen(PORT, HOST, async () => {
+  console.log(`Radar live on ${HOST}:${PORT}`);
+  
+  // Start the status checker if setup is complete
+  if (await configuration.isSetupComplete()) {
+    const config = await configuration.getConfig();
+    const intervalMs = config.refreshIntervalMinutes * 60 * 1000;
+    console.log(`[Server] Starting status checker with ${config.refreshIntervalMinutes} minute interval...`);
+    statusChecker.start(intervalMs);
+  }
+});

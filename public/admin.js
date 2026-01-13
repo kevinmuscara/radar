@@ -17,6 +17,90 @@ async function addCategory() {
   }
 }
 
+// Force refresh all statuses
+document.addEventListener('DOMContentLoaded', () => {
+  const forceRefreshBtn = document.getElementById('force-refresh-btn');
+  const progressContainer = document.getElementById('progress-container');
+  const progressBar = document.getElementById('progress-bar');
+  let progressInterval = null;
+
+  // Function to update progress
+  async function updateProgress() {
+    try {
+      const response = await fetch('/api/check-progress');
+      const progress = await response.json();
+
+      if (progress.isChecking) {
+        // Show progress bar
+        if (progressContainer) {
+          progressContainer.classList.remove('hidden');
+          if (progressBar) {
+            progressBar.style.width = `${progress.percentage}%`;
+          }
+        }
+
+        // Update button text
+        if (forceRefreshBtn && progress.currentResourceName) {
+          forceRefreshBtn.title = `Checking: ${progress.currentResourceName} (${progress.currentProgress}/${progress.totalResources})`;
+        }
+      } else {
+        // Hide progress bar
+        if (progressContainer) {
+          progressContainer.classList.add('hidden');
+        }
+        
+        // Reset button
+        if (forceRefreshBtn) {
+          forceRefreshBtn.title = 'Refresh All Statuses';
+          forceRefreshBtn.disabled = false;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching progress:', error);
+    }
+  }
+
+  // Start polling for progress
+  function startProgressPolling() {
+    if (progressInterval) return;
+    progressInterval = setInterval(updateProgress, 500); // Poll every 500ms
+  }
+
+  // Initial progress check
+  updateProgress();
+  startProgressPolling();
+
+  if (forceRefreshBtn) {
+    forceRefreshBtn.addEventListener('click', async () => {
+      forceRefreshBtn.disabled = true;
+      forceRefreshBtn.title = 'Refreshing...';
+
+      try {
+        const response = await fetch('/api/force-refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.status === 429) {
+          const data = await response.json();
+          alert(data.message || 'Please wait before refreshing again');
+          forceRefreshBtn.disabled = false;
+        } else if (response.ok) {
+          // Progress polling will handle the UI updates
+          updateProgress();
+        } else {
+          alert('Failed to initiate refresh');
+          forceRefreshBtn.disabled = false;
+        }
+      } catch (error) {
+        console.error('Error forcing refresh:', error);
+        alert('Error initiating refresh');
+        forceRefreshBtn.disabled = false;
+      }
+    });
+  }
+});
+
 async function updateCategory(oldCategory) {
   const newCategory = prompt("Enter new category name:", oldCategory);
   if (!newCategory || newCategory === oldCategory) return;
