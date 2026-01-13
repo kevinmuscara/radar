@@ -15,49 +15,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     return 'bg-slate-400';
   };
 
-  const CACHE_DURATION = 10 * 60 * 1000;
-  const CACHE_KEY_PREFIX = 'status_cache_';
-  
-  // Request throttling configuration
-  const REQUEST_THROTTLE_CONFIG = {
-    maxConcurrentRequests: 3,  // Max 3 concurrent requests to prevent server overload
-    requestDelay: 200           // Delay (ms) between starting new requests
-  };
+  // Store cached statuses from server
+  let cachedStatuses = {};
 
-  let activeRequests = 0;
-  const requestQueue = [];
+  async function loadCachedStatuses() {
+    try {
+      const response = await fetch('/api/cached-statuses');
+      const data = await response.json();
+      
+      // Convert array to object keyed by resource name
+      cachedStatuses = {};
+      data.statuses.forEach(status => {
+        cachedStatuses[status.resource_name] = status;
+      });
 
-  // Throttle requests to prevent server overload
-  async function throttledRequest(fn) {
-    return new Promise((resolve) => {
-      const executeRequest = async () => {
-        activeRequests++;
-        try {
-          const result = await fn();
-          resolve(result);
-        } finally {
-          activeRequests--;
-          processQueue();
-        }
-      };
-
-      if (activeRequests < REQUEST_THROTTLE_CONFIG.maxConcurrentRequests) {
-        executeRequest();
-      } else {
-        requestQueue.push(executeRequest);
-      }
-    });
-  }
-
-  function processQueue() {
-    if (requestQueue.length > 0 && activeRequests < REQUEST_THROTTLE_CONFIG.maxConcurrentRequests) {
-      const executeRequest = requestQueue.shift();
-      setTimeout(executeRequest, REQUEST_THROTTLE_CONFIG.requestDelay);
+      console.log(`[Dashboard] Loaded ${data.statuses.length} cached statuses`);
+    } catch (error) {
+      console.error('Error loading cached statuses:', error);
     }
   }
 
   async function loadData() {
     try {
+      // Load cached statuses first
+      await loadCachedStatuses();
+
       const response = await fetch('/resources');
       let resourceData = await response.json();
       resourceData = resourceData.resources;
@@ -78,43 +60,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function getResourceStatus(resource) {
-    const cacheKey = CACHE_KEY_PREFIX + resource.resource_name;
-    const cached = localStorage.getItem(cacheKey);
-
-    // Check cache first - if valid, return immediately without making a request
-    if (cached) {
-      const { timestamp, data } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_DURATION) {
-        return data;
-      }
+    // Get status from server's cached statuses
+    const status = cachedStatuses[resource.resource_name];
+    
+    if (status) {
+      return {
+        status: status.status,
+        last_checked: status.last_checked,
+        status_url: status.status_url
+      };
     }
 
-    // Use throttled request to prevent server overload
-    return throttledRequest(async () => {
-      try {
-        const params = new URLSearchParams({
-          url: resource.status_page || '',
-          name: resource.resource_name
-        });
-        if (resource.check_type) params.set('check_type', resource.check_type);
-        if (resource.scrape_keywords) params.set('scrape_keywords', resource.scrape_keywords);
-        if (resource.api_config) params.set('api_config', resource.api_config);
-        const response = await fetch(`/api/check-status?${params}`);
-        const data = await response.json();
-
-        console.log(`[Status Check] ${resource.resource_name}: ${data.status}`);
-
-        localStorage.setItem(cacheKey, JSON.stringify({
-          timestamp: Date.now(),
-          data: data
-        }));
-
-        return data;
-      } catch (error) {
-        console.error('Status check failed:', error);
-        return { status: 'Unknown', last_checked: new Date().toISOString() };
-      }
-    });
+    // If no cached status found, return unknown
+    return { status: 'Unknown', last_checked: new Date().toISOString() };
   }
 
   // Derive a favicon URL for a resource's site. Attempts to extract the base domain from the
@@ -152,23 +110,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     Object.values(resourceData).forEach(list => {
       if (Array.isArray(list)) {
         list.forEach(resource => {
-          const cacheKey = CACHE_KEY_PREFIX + resource.resource_name;
-          const cached = localStorage.getItem(cacheKey);
-          let status = 'Unknown';
+          const status = cachedStatuses[resource.resource_name];
+          
+          if (status) {
+            const statusLower = (status.status || '').toLowerCase();
+            console.log(`[Current Issues Check] ${resource.resource_name}: ${statusLower}`);
 
-          if (cached) {
-            const { data } = JSON.parse(cached);
-            status = (data.status || '').toLowerCase();
-            console.log(`[Current Issues Check] ${resource.resource_name}: ${status}`);
-          }
-
-          if (status === 'outage' || status === 'down' || status === 'degraded' || status === 'maintenance') {
-            console.log(`[Current Issues] Adding ${resource.resource_name} with status ${status}`);
-            if (!downServices.some(r => r.resource_name === resource.resource_name)) {
-              downServices.push({
-                ...resource,
-                current_status: status.charAt(0).toUpperCase() + status.slice(1)
-              });
+            if (statusLower === 'outage' || statusLower === 'down' || statusLower === 'degraded' || statusLower === 'maintenance') {
+              console.log(`[Current Issues] Adding ${resource.resource_name} with status ${statusLower}`);
+              if (!downServices.some(r => r.resource_name === resource.resource_name)) {
+                downServices.push({
+                  ...resource,
+                  current_status: statusLower.charAt(0).toUpperCase() + statusLower.slice(1)
+                });
+              }
             }
           }
         });
@@ -486,47 +441,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   loadData();
 
-  // Auto-refresh every 5 minutes instead of on every page load
-  // This significantly reduces server load
-  const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  // Auto-refresh every 30 seconds to get latest data from server cache
+  const AUTO_REFRESH_INTERVAL = 30 * 1000; // 30 seconds
   setInterval(() => {
-    // Clear expired cache entries and refresh
-    const now = Date.now();
-    let hasExpiredCache = false;
-    
-    for (let key in localStorage) {
-      if (key.startsWith(CACHE_KEY_PREFIX)) {
-        try {
-          const { timestamp } = JSON.parse(localStorage.getItem(key));
-          if (now - timestamp >= CACHE_DURATION) {
-            localStorage.removeItem(key);
-            hasExpiredCache = true;
-          }
-        } catch (e) {
-          localStorage.removeItem(key);
-        }
-      }
-    }
-    
-    // Only refresh if cache has expired
-    if (hasExpiredCache) {
-      loadData();
-    }
+    loadData();
   }, AUTO_REFRESH_INTERVAL);
-
-  const refreshBtn = document.getElementById('refresh-btn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => {
-      // Clear only status cache, not entire localStorage
-      for (let key in localStorage) {
-        if (key.startsWith(CACHE_KEY_PREFIX)) {
-          localStorage.removeItem(key);
-        }
-      }
-      // Refresh data immediately
-      loadData();
-    });
-  }
 
   const searchInput = document.getElementById('search-input');
   searchInput.addEventListener('input', (e) => {

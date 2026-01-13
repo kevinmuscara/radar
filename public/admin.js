@@ -17,6 +17,44 @@ async function addCategory() {
   }
 }
 
+// Force refresh all statuses
+document.addEventListener('DOMContentLoaded', () => {
+  const forceRefreshBtn = document.getElementById('force-refresh-btn');
+  if (forceRefreshBtn) {
+    forceRefreshBtn.addEventListener('click', async () => {
+      const originalText = forceRefreshBtn.innerHTML;
+      forceRefreshBtn.disabled = true;
+      forceRefreshBtn.innerHTML = `
+        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Refreshing...
+      `;
+
+      try {
+        const response = await fetch('/api/force-refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          alert('Status refresh initiated! It may take a few minutes to complete.');
+        } else {
+          alert('Failed to initiate refresh');
+        }
+      } catch (error) {
+        console.error('Error forcing refresh:', error);
+        alert('Error initiating refresh');
+      } finally {
+        forceRefreshBtn.disabled = false;
+        forceRefreshBtn.innerHTML = originalText;
+      }
+    });
+  }
+});
+
 async function updateCategory(oldCategory) {
   const newCategory = prompt("Enter new category name:", oldCategory);
   if (!newCategory || newCategory === oldCategory) return;

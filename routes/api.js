@@ -4,6 +4,8 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 const puppeteer = require("puppeteer");
 const resources = require('../config/ResourceManager');
+const DatabaseManager = require('../config/DatabaseManager');
+const statusChecker = require('../config/StatusChecker');
 
 // Simple in-memory request limiter to prevent abuse
 const requestLimiter = new Map();
@@ -465,5 +467,45 @@ function escapeXml(unsafe) {
     }
   });
 }
+
+// New endpoint: Get all cached resource statuses
+router.get("/cached-statuses", async (_request, response) => {
+  try {
+    const statuses = await DatabaseManager.getAllResourceStatuses();
+    response.json({ statuses });
+  } catch (error) {
+    console.error('Error fetching cached statuses:', error);
+    response.status(500).json({ error: 'Failed to fetch statuses' });
+  }
+});
+
+// New endpoint: Get cached status for a specific resource
+router.get("/cached-status/:resourceName", async (request, response) => {
+  try {
+    const { resourceName } = request.params;
+    const status = await DatabaseManager.getResourceStatusByName(resourceName);
+    
+    if (!status) {
+      return response.status(404).json({ error: 'Status not found' });
+    }
+    
+    response.json(status);
+  } catch (error) {
+    console.error('Error fetching cached status:', error);
+    response.status(500).json({ error: 'Failed to fetch status' });
+  }
+});
+
+// New endpoint: Force refresh all statuses (admin only)
+router.post("/force-refresh", async (_request, response) => {
+  try {
+    // Trigger an immediate check
+    statusChecker.forceCheck();
+    response.json({ success: true, message: 'Status refresh initiated' });
+  } catch (error) {
+    console.error('Error forcing refresh:', error);
+    response.status(500).json({ error: 'Failed to force refresh' });
+  }
+});
 
 module.exports = router;

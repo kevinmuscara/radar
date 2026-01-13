@@ -56,6 +56,23 @@ class DatabaseManager {
               created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
               FOREIGN KEY (resource_id) REFERENCES resource_definitions(id) ON DELETE SET NULL
             );
+
+            CREATE TABLE IF NOT EXISTS resource_status_cache (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              resource_id INTEGER,
+              resource_name TEXT NOT NULL UNIQUE,
+              status TEXT NOT NULL,
+              status_url TEXT,
+              last_checked DATETIME NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (resource_id) REFERENCES resource_definitions(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_resource_status_cache_resource_id 
+            ON resource_status_cache(resource_id);
+            
+            CREATE INDEX IF NOT EXISTS idx_resource_status_cache_resource_name 
+            ON resource_status_cache(resource_name);
         `);
 
     // Check for potential migration
@@ -105,11 +122,95 @@ class DatabaseManager {
       console.error('Error ensuring resource_definitions columns:', e.message);
     }
 
+    // Fix resource_status_cache table if it has the wrong schema
+    try {
+      const cacheTableInfo = await db.all("PRAGMA table_info('resource_status_cache')");
+      if (cacheTableInfo.length > 0) {
+        // Check if resource_id is NOT NULL
+        const resourceIdCol = cacheTableInfo.find(c => c.name === 'resource_id');
+        const resourceNameCol = cacheTableInfo.find(c => c.name === 'resource_name');
+        
+        // Check if we need to migrate (resource_id is NOT NULL or resource_name is not UNIQUE)
+        if (resourceIdCol && resourceIdCol.notnull === 1) {
+          console.log('[DatabaseManager] Migrating resource_status_cache table to new schema...');
+          
+          // Save existing data
+          const existingData = await db.all('SELECT * FROM resource_status_cache');
+          
+          // Drop old table
+          await db.exec('DROP TABLE IF EXISTS resource_status_cache');
+          
+          // Create new table with correct schema
+          await db.exec(`
+            CREATE TABLE resource_status_cache (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              resource_id INTEGER,
+              resource_name TEXT NOT NULL UNIQUE,
+              status TEXT NOT NULL,
+              status_url TEXT,
+              last_checked DATETIME NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (resource_id) REFERENCES resource_definitions(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX idx_resource_status_cache_resource_id 
+            ON resource_status_cache(resource_id);
+            
+            CREATE INDEX idx_resource_status_cache_resource_name 
+            ON resource_status_cache(resource_name);
+          `);
+          
+          // Restore data
+          for (const row of existingData) {
+            try {
+              await db.run(
+                'INSERT INTO resource_status_cache (resource_id, resource_name, status, status_url, last_checked, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+                [row.resource_id || null, row.resource_name, row.status, row.status_url, row.last_checked, row.created_at]
+              );
+            } catch (insertError) {
+              console.warn(`[DatabaseManager] Could not restore status for ${row.resource_name}:`, insertError.message);
+            }
+          }
+          
+          console.log('[DatabaseManager] Migration complete');
+        }
+      }
+    } catch (e) {
+      console.error('Error migrating resource_status_cache table:', e.message);
+    }
+
     return db;
   }
 
   async getDb() {
     return this.dbPromise;
+  }
+
+  // Methods for resource_status_cache
+  async updateResourceStatus(resourceId, resourceName, status, statusUrl, lastChecked) {
+    const db = await this.getDb();
+    // Delete old status for this resource by name (more reliable)
+    await db.run('DELETE FROM resource_status_cache WHERE resource_name = ?', [resourceName]);
+    // Insert new status
+    await db.run(
+      'INSERT INTO resource_status_cache (resource_id, resource_name, status, status_url, last_checked) VALUES (?, ?, ?, ?, ?)',
+      [resourceId || null, resourceName, status, statusUrl, lastChecked]
+    );
+  }
+
+  async getResourceStatus(resourceId) {
+    const db = await this.getDb();
+    return db.get('SELECT * FROM resource_status_cache WHERE resource_id = ?', [resourceId]);
+  }
+
+  async getAllResourceStatuses() {
+    const db = await this.getDb();
+    return db.all('SELECT * FROM resource_status_cache ORDER BY resource_name');
+  }
+
+  async getResourceStatusByName(resourceName) {
+    const db = await this.getDb();
+    return db.get('SELECT * FROM resource_status_cache WHERE resource_name = ?', [resourceName]);
   }
 }
 

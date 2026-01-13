@@ -77,6 +77,16 @@ router.post("/update", upload.single('logo'), async (request, response) => {
 
   await configuration.updateBrandingSchoolName(request.body.schoolName);
   await configuration.updateAdminUser(request.body.username, request.body.password);
+  
+  // Update refresh interval if provided
+  if (request.body.refreshInterval) {
+    await configuration.updateRefreshIntervalMinutes(request.body.refreshInterval);
+    
+    // Update the status checker interval
+    const statusChecker = require('../config/StatusChecker');
+    const intervalMs = parseInt(request.body.refreshInterval, 10) * 60 * 1000;
+    statusChecker.updateInterval(intervalMs);
+  }
 
   response.redirect("/admin");
 });
