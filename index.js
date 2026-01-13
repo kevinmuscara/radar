@@ -76,11 +76,12 @@ server.get("/logout", async (request, response) => {
   response.redirect("/login");
 });
 
-server.get("/", async (_request, response) => {
+server.get("/", async (request, response) => {
   if (await configuration.isSetupComplete()) {
     response.render("dashboard", {
       config: await configuration.getConfig(),
-      resources: await resources.getResources()
+      resources: await resources.getResources(),
+      lotrMode: request.query.lotr === 'true'
     });
   } else {
     response.render("setup", {

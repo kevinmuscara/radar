@@ -18,18 +18,88 @@
             sans: ['Inter', 'sans-serif'],
           },
           colors: {
-            primary: '#1e3a8a',
-            secondary: '#64748b',
-            success: '#10b981',
-            warning: '#f59e0b',
-            danger: '#ef4444',
-            background: '#f1f5f9',
-            surface: '#ffffff',
+            primary: '<%= lotrMode ? "#8B7355" : "#1e3a8a" %>',
+            secondary: '<%= lotrMode ? "#4a5568" : "#64748b" %>',
+            success: '<%= lotrMode ? "#22c55e" : "#10b981" %>',
+            warning: '<%= lotrMode ? "#d97706" : "#f59e0b" %>',
+            danger: '<%= lotrMode ? "#dc2626" : "#ef4444" %>',
+            background: '<%= lotrMode ? "#1a1410" : "#f1f5f9" %>',
+            surface: '<%= lotrMode ? "#2d2416" : "#ffffff" %>',
           }
         }
       }
     }
   </script>
+  <% if (lotrMode) { %>
+  <style>
+    body {
+      background: linear-gradient(to bottom, #1a1410 0%, #2d2416 100%);
+      color: #d4c5a9;
+    }
+    header {
+      background: linear-gradient(to right, #2d2416 0%, #3a2f1f 50%, #2d2416 100%) !important;
+      border-bottom: 2px solid #8B7355 !important;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5) !important;
+    }
+    h1, h2, h3 {
+      font-family: 'Cinzel', 'Georgia', serif !important;
+      color: #d4c5a9 !important;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    }
+    .text-slate-800, .text-slate-900 {
+      color: #d4c5a9 !important;
+    }
+    .text-slate-500, .text-slate-600 {
+      color: #9ca3af !important;
+    }
+    .bg-white {
+      background: #2d2416 !important;
+    }
+    .bg-slate-50\/50, .bg-slate-100 {
+      background: #1a1410 !important;
+    }
+    .border-slate-200, .border-slate-100, .border-slate-300 {
+      border-color: #8B7355 !important;
+    }
+    input {
+      background: #1a1410 !important;
+      color: #d4c5a9 !important;
+      border-color: #8B7355 !important;
+    }
+    input::placeholder {
+      color: #6b5d4f !important;
+    }
+    button {
+      background: #3a2f1f !important;
+      color: #d4c5a9 !important;
+      border-color: #8B7355 !important;
+    }
+    button:hover {
+      background: #4a3f2f !important;
+    }
+    #dashboard-container > div {
+      background: linear-gradient(135deg, #2d2416 0%, #3a2f1f 100%) !important;
+      border: 2px solid #8B7355 !important;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+    }
+    /* Category header hover states */
+    section .cursor-pointer:hover {
+      background: linear-gradient(to right, #3a2f1f 0%, #4a3f2f 100%) !important;
+    }
+    /* Filter button hover states */
+    button:not(.bg-primary):hover {
+      background: #3a2f1f !important;
+      color: #d4c5a9 !important;
+    }
+    /* Resource card hover states */
+    .card-hover:hover {
+      background: linear-gradient(135deg, #3a2f1f 0%, #4a3f2f 100%) !important;
+      box-shadow: 0 8px 20px rgba(139, 115, 85, 0.4) !important;
+    }
+  </style>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap">
+  <% } %>
   <link rel="stylesheet" href="/style.css">
 </head>
 
@@ -47,9 +117,16 @@
         </div>
         <div>
           <h1 class="text-lg md:text-xl font-bold tracking-tight text-slate-900 leading-tight">
-            <%= config.branding.schoolName %>
+            <% if (lotrMode) { %>
+              The <%= config.branding.schoolName %> of Middle-earth
+            <% } else { %>
+              <%= config.branding.schoolName %>
+            <% } %>
           </h1>
           <p class="text-[10px] md:text-xs text-slate-500 font-medium uppercase tracking-wider">
+            <% if (lotrMode) { %>
+              <span class="text-xs font-medium hidden sm:inline-block mr-2" style="color: #8B7355;">⚔️ One Dashboard to Rule Them All</span>
+            <% } %>
             <span id="last-updated" class="text-xs text-slate-500 font-medium hidden sm:inline-block mr-2">Last
               updated:
               --:--</span>
@@ -85,8 +162,9 @@
       </div>
     </div>
     <!-- Filter Buttons Container -->
-    <div id="filter-container"
-      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-3 flex-wrap gap-2 border-t border-slate-100 bg-slate-50/50 hidden md:flex">
+    <div class="border-t border-slate-100 bg-slate-50/50 w-full">
+      <div id="filter-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-3 flex-wrap gap-2 hidden md:flex">
+      </div>
     </div>
   </header>
 
