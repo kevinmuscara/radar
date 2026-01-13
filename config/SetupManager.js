@@ -26,7 +26,7 @@ class SetupManager {
     // Init default settings
     await this.#setSetting("branding_logo", "logo.png");
     await this.#setSetting("branding_schoolName", "Your School Name");
-    await this.#setSetting("refresh_interval_minutes", "5");
+    await this.#setSetting("refresh_interval_minutes", "30");
     bcrypt.genSalt(10, (_err, salt) => {
       bcrypt.hash("password", salt, (_err, hash) => {
         this.#setSetting("admin_user", JSON.stringify({ username: "admin", password: hash }));
@@ -88,7 +88,7 @@ class SetupManager {
   async getRefreshIntervalMinutes() {
     await this.ready;
     const val = await this.#getSetting("refresh_interval_minutes");
-    return val ? parseInt(val, 10) : 5;
+    return val ? parseInt(val, 10) : 30;
   }
 
   async updateRefreshIntervalMinutes(minutes) {
