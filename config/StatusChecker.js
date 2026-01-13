@@ -8,9 +8,12 @@ class StatusChecker {
   constructor() {
     this.isRunning = false;
     this.checkInterval = null;
-    this.CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes by default
+    this.CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes by default
     this.isChecking = false;
     this.cancelCurrentCheck = false;
+    this.currentProgress = 0;
+    this.totalResources = 0;
+    this.currentResourceName = '';
   }
 
   normalizeStatus(statusText) {
@@ -165,19 +168,21 @@ class StatusChecker {
 
     } catch (error) {
       console.error(`Error checking status for ${resource.resource_name}:`, error.message);
-      return { status: 'Unknown', last_checked: new Date().toISOString(), status_url: url };
+      // Throw the error so it can be caught and retried
+      throw new Error(`Failed to check status: ${error.message}`);
     }
   }
 
   async checkAllResources() {
     if (this.isChecking) {
-      console.log('[StatusChecker] Check already in progress, skipping...');
       return;
     }
 
     this.isChecking = true;
     this.cancelCurrentCheck = false;
-    console.log('[StatusChecker] Starting resource status check...');
+    this.currentProgress = 0;
+    this.currentResourceName = '';
+    console.log('[StatusChecker] Starting status check...');
     
     try {
       const resources = await ResourceManager.getResources();
@@ -190,21 +195,27 @@ class StatusChecker {
         }
       }
 
-      console.log(`[StatusChecker] Checking ${allResources.length} resources`);
+      this.totalResources = allResources.length;
+      const failedResources = [];
+      console.log(`[StatusChecker] Checking ${this.totalResources} resources`);
 
       // Check resources sequentially to avoid overloading
-      for (const resource of allResources) {
+      for (let i = 0; i < allResources.length; i++) {
+        const resource = allResources[i];
+        
         // Check if cancellation was requested
         if (this.cancelCurrentCheck) {
-          console.log('[StatusChecker] Check cancelled, stopping...');
+          console.log('[StatusChecker] Check cancelled');
           break;
         }
 
         try {
           if (!resource.resource_name) {
-            console.warn('[StatusChecker] Skipping resource without name:', resource);
             continue;
           }
+
+          this.currentProgress = i + 1;
+          this.currentResourceName = resource.resource_name;
 
           const statusData = await this.checkResourceStatus(resource);
           
@@ -216,24 +227,75 @@ class StatusChecker {
             statusData.status_url,
             statusData.last_checked
           );
-
-          console.log(`[StatusChecker] Updated ${resource.resource_name}: ${statusData.status}`);
         } catch (error) {
-          console.error(`[StatusChecker] Error checking ${resource.resource_name}:`, error);
+          // Track failed resource for retry
+          failedResources.push({
+            resource,
+            error: error.message || 'Unknown error'
+          });
         }
 
         // Small delay between checks to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
+      // Retry failed resources once
+      if (failedResources.length > 0 && !this.cancelCurrentCheck) {
+        console.log(`[StatusChecker] Retrying ${failedResources.length} failed resources`);
+        this.totalResources = allResources.length + failedResources.length; // Update total for progress
+        
+        for (let i = 0; i < failedResources.length; i++) {
+          const { resource, error: firstError } = failedResources[i];
+          
+          if (this.cancelCurrentCheck) {
+            break;
+          }
+
+          this.currentProgress = allResources.length + i + 1;
+          this.currentResourceName = `${resource.resource_name} (retry)`;
+
+          try {
+            const statusData = await this.checkResourceStatus(resource);
+            
+            // Store in database
+            await DatabaseManager.updateResourceStatus(
+              resource.id || null,
+              resource.resource_name,
+              statusData.status,
+              statusData.status_url,
+              statusData.last_checked
+            );
+
+            console.log(`[StatusChecker] Retry successful: ${resource.resource_name}`);
+          } catch (retryError) {
+            console.error(`[StatusChecker] Failed: ${resource.resource_name} - ${retryError.message}`);
+            
+            // Log to error table after retry failure
+            await DatabaseManager.logStatusCheckError(
+              resource.id || null,
+              resource.resource_name,
+              resource.status_page,
+              resource.check_type || 'api',
+              retryError.message || 'Unknown error'
+            );
+          }
+
+          // Small delay between retries
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
       if (!this.cancelCurrentCheck) {
-        console.log('[StatusChecker] Completed resource status check');
+        console.log('[StatusChecker] Check complete');
       }
     } catch (error) {
-      console.error('[StatusChecker] Error in checkAllResources:', error);
+      console.error('[StatusChecker] Error:', error);
     } finally {
       this.isChecking = false;
       this.cancelCurrentCheck = false;
+      this.currentProgress = 0;
+      this.totalResources = 0;
+      this.currentResourceName = '';
     }
   }
 
@@ -242,18 +304,16 @@ class StatusChecker {
     
     // If already running and interval changed, restart
     if (this.isRunning && newInterval !== this.CHECK_INTERVAL_MS) {
-      console.log(`[StatusChecker] Interval changed, restarting...`);
       this.stop();
     }
 
     if (this.isRunning) {
-      console.log('[StatusChecker] Already running');
       return;
     }
 
     this.CHECK_INTERVAL_MS = newInterval;
     this.isRunning = true;
-    console.log(`[StatusChecker] Starting with interval: ${this.CHECK_INTERVAL_MS / 1000}s`);
+    console.log(`[StatusChecker] Started (${this.CHECK_INTERVAL_MS / 60000} min interval)`);
 
     // Check immediately on start
     this.checkAllResources();
@@ -266,7 +326,6 @@ class StatusChecker {
 
   stop() {
     if (!this.isRunning) {
-      console.log('[StatusChecker] Not running');
       return;
     }
 
@@ -275,15 +334,11 @@ class StatusChecker {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
     }
-    console.log('[StatusChecker] Stopped');
   }
 
   async forceCheck() {
-    console.log('[StatusChecker] Force checking all resources');
-    
     // Cancel any in-progress check
     if (this.isChecking) {
-      console.log('[StatusChecker] Cancelling current check in progress...');
       this.cancelCurrentCheck = true;
       
       // Wait for current check to stop (max 5 seconds)
@@ -304,6 +359,16 @@ class StatusChecker {
     } else {
       this.CHECK_INTERVAL_MS = intervalMs;
     }
+  }
+
+  getProgress() {
+    return {
+      isChecking: this.isChecking,
+      currentProgress: this.currentProgress,
+      totalResources: this.totalResources,
+      currentResourceName: this.currentResourceName,
+      percentage: this.totalResources > 0 ? Math.round((this.currentProgress / this.totalResources) * 100) : 0
+    };
   }
 }
 
