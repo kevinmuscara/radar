@@ -212,6 +212,14 @@ class DatabaseManager {
     const db = await this.getDb();
     return db.get('SELECT * FROM resource_status_cache WHERE resource_name = ?', [resourceName]);
   }
+
+  async logStatusCheckError(resourceId, resourceName, statusPage, checkType, errorMessage) {
+    const db = await this.getDb();
+    await db.run(
+      'INSERT INTO status_check_errors (resource_id, resource_name, status_page, check_type, error_message) VALUES (?, ?, ?, ?, ?)',
+      [resourceId || null, resourceName, statusPage, checkType, errorMessage]
+    );
+  }
 }
 
 // Singleton instance
