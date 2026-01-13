@@ -2,7 +2,7 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: ["gh-pages"]  # or your default branch
+    branches: ["main"]  # or your default branch
   workflow_dispatch:
 
 permissions:
@@ -32,7 +32,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'  # or your build output directory
+          path: 'site'  # or your build output directory
 
   deploy:
     environment:
