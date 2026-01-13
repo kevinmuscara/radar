@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 
 const resources = require("../config/ResourceManager");
+const statusChecker = require("../config/StatusChecker");
+const dbManager = require("../config/DatabaseManager");
 
 // Middleware to check authentication
 const checkAuth = (req, res, next) => {
@@ -94,6 +96,26 @@ router.post("/category/:category", checkAuth, async (request, response) => {
     scrape_keywords: request.body.scrape_keywords,
     api_config: request.body.api_config 
   });
+
+  // Immediately check the status of the newly created resource
+  try {
+    const resourceDef = await resources.getDefinition(resource_name);
+    if (resourceDef) {
+      const statusData = await statusChecker.checkResourceStatus(resourceDef);
+      await dbManager.updateResourceStatus(
+        resourceDef.id,
+        resource_name,
+        statusData.status,
+        statusData.status_url || resourceDef.status_page,
+        statusData.last_checked
+      );
+      console.log(`[Resources] Checked status for new resource: ${resource_name}`);
+    }
+  } catch (error) {
+    console.error(`[Resources] Failed to check status for new resource ${resource_name}:`, error.message);
+    // Don't fail the request if status check fails
+  }
+
   response.json({ status: 200 });
 });
 
@@ -147,6 +169,26 @@ router.put("/category/:category/:resource", checkAuth, async (request, response)
     scrape_keywords: request.body.scrape_keywords,
     api_config: request.body.api_config 
   });
+
+  // Immediately check the status of the updated resource
+  try {
+    const resourceDef = await resources.getDefinition(resource_name);
+    if (resourceDef) {
+      const statusData = await statusChecker.checkResourceStatus(resourceDef);
+      await dbManager.updateResourceStatus(
+        resourceDef.id,
+        resource_name,
+        statusData.status,
+        statusData.status_url || resourceDef.status_page,
+        statusData.last_checked
+      );
+      console.log(`[Resources] Checked status for updated resource: ${resource_name}`);
+    }
+  } catch (error) {
+    console.error(`[Resources] Failed to check status for updated resource ${resource_name}:`, error.message);
+    // Don't fail the request if status check fails
+  }
+
   response.json({ status: 200 });
 });
 
@@ -160,7 +202,7 @@ router.post("/import", checkAuth, async (request, response) => {
     }
 
     // Track categories and resources added/updated
-    const imported = { categories: new Set(), resources: 0 };
+    const imported = { categories: new Set(), resources: 0, resourceNames: [] };
 
     // Process each row
     for (const row of data) {
@@ -192,11 +234,36 @@ router.post("/import", checkAuth, async (request, response) => {
         });
 
         imported.resources++;
+        imported.resourceNames.push(resource_name);
       } catch (err) {
         console.error(`Failed to import ${category} > ${resource_name}:`, err);
         // Continue with next row instead of failing entire import
       }
     }
+
+    // Check status of all imported resources
+    console.log(`[Resources] Checking status for ${imported.resourceNames.length} imported resources...`);
+    let checkedCount = 0;
+    for (const resourceName of imported.resourceNames) {
+      try {
+        const resourceDef = await resources.getDefinition(resourceName);
+        if (resourceDef) {
+          const statusData = await statusChecker.checkResourceStatus(resourceDef);
+          await dbManager.updateResourceStatus(
+            resourceDef.id,
+            resourceName,
+            statusData.status,
+            statusData.status_url || resourceDef.status_page,
+            statusData.last_checked
+          );
+          checkedCount++;
+        }
+      } catch (error) {
+        console.error(`[Resources] Failed to check status for imported resource ${resourceName}:`, error.message);
+        // Continue checking other resources even if one fails
+      }
+    }
+    console.log(`[Resources] Successfully checked ${checkedCount}/${imported.resourceNames.length} imported resources`);
 
     response.json({ 
       status: 200, 
