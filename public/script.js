@@ -28,8 +28,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       data.statuses.forEach(status => {
         cachedStatuses[status.resource_name] = status;
       });
-
-      console.log(`[Dashboard] Loaded ${data.statuses.length} cached statuses`);
     } catch (error) {
       console.error('Error loading cached statuses:', error);
     }
@@ -114,10 +112,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           
           if (status) {
             const statusLower = (status.status || '').toLowerCase();
-            console.log(`[Current Issues Check] ${resource.resource_name}: ${statusLower}`);
 
             if (statusLower === 'outage' || statusLower === 'down' || statusLower === 'degraded' || statusLower === 'maintenance') {
-              console.log(`[Current Issues] Adding ${resource.resource_name} with status ${statusLower}`);
               if (!downServices.some(r => r.resource_name === resource.resource_name)) {
                 downServices.push({
                   ...resource,
@@ -129,8 +125,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
     });
-    
-    console.log(`[Current Issues] Found ${downServices.length} services with issues`);
 
     const currentIssuesSection = document.getElementById('current-issues-section');
     
@@ -441,8 +435,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   loadData();
 
-  // Auto-refresh every 30 seconds to get latest data from server cache
-  const AUTO_REFRESH_INTERVAL = 30 * 1000; // 30 seconds
+  // Auto-refresh every 5 minutes to get latest data from server cache
+  const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
   setInterval(() => {
     loadData();
   }, AUTO_REFRESH_INTERVAL);
