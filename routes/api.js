@@ -216,35 +216,6 @@ async function checkStatus(resource) {
   }
 }
 
-router.get("/check-status", async (request, response) => {
-  // Rate limiting to prevent server overload
-  const clientIp = request.ip || request.connection.remoteAddress || 'unknown';
-  if (!checkRateLimit(clientIp)) {
-    return response.status(429).json({ error: 'Too many requests. Please try again later.' });
-  }
-
-  const { url, name } = request.query;
-
-  if (!url && !name) {
-    return response.status(400).json({ error: 'Missing url or name parameter' });
-  }
-
-  const resource = {
-    resource_name: name || 'Unknown',
-    status_page: url || '',
-    check_type: request.query.check_type || 'api',
-    scrape_keywords: request.query.scrape_keywords || '',
-    api_config: request.query.api_config || null
-  };
-
-  try {
-    const statusInfo = await checkStatus(resource);
-    response.json(statusInfo);
-  } catch (error) {
-    response.status(500).json({ error: 'Failed to check status', details: error.message });
-  }
-});
-
 // New endpoint to fetch and analyze API structure for field selection
 router.post("/analyze-api", async (request, response) => {
   const clientIp = request.ip || request.connection.remoteAddress || 'unknown';
@@ -497,14 +468,42 @@ router.get("/cached-status/:resourceName", async (request, response) => {
 });
 
 // New endpoint: Force refresh all statuses (admin only)
+let lastForceRefresh = 0;
+const FORCE_REFRESH_COOLDOWN = 60 * 1000; // 1 minute
+
 router.post("/force-refresh", async (_request, response) => {
   try {
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastForceRefresh;
+    
+    if (timeSinceLastRefresh < FORCE_REFRESH_COOLDOWN) {
+      const secondsRemaining = Math.ceil((FORCE_REFRESH_COOLDOWN - timeSinceLastRefresh) / 1000);
+      return response.status(429).json({ 
+        error: 'Rate limit exceeded', 
+        message: `Please wait ${secondsRemaining} seconds before refreshing again`,
+        secondsRemaining 
+      });
+    }
+    
+    lastForceRefresh = now;
+    
     // Trigger an immediate check
     statusChecker.forceCheck();
     response.json({ success: true, message: 'Status refresh initiated' });
   } catch (error) {
     console.error('Error forcing refresh:', error);
     response.status(500).json({ error: 'Failed to force refresh' });
+  }
+});
+
+// New endpoint: Get check progress
+router.get("/check-progress", async (_request, response) => {
+  try {
+    const progress = statusChecker.getProgress();
+    response.json(progress);
+  } catch (error) {
+    console.error('Error getting progress:', error);
+    response.status(500).json({ error: 'Failed to get progress' });
   }
 });
 
