@@ -76,7 +76,14 @@ router.post("/update", upload.single('logo'), async (request, response) => {
   }
 
   await configuration.updateBrandingSchoolName(request.body.schoolName);
-  await configuration.updateAdminUser(request.body.username, request.body.password);
+  
+  // Only update admin credentials if password is provided (not empty)
+  if (request.body.password && request.body.password.trim() !== '') {
+    await configuration.updateAdminUser(request.body.username, request.body.password);
+  } else {
+    // Update only username, keep existing password
+    await configuration.updateAdminUsername(request.body.username);
+  }
   
   // Update refresh interval if provided
   if (request.body.refreshInterval) {

@@ -67,6 +67,13 @@ class SetupManager {
     });
   }
 
+  async updateAdminUsername(username) {
+    await this.ready;
+    const currentUser = await this.getAdminUser();
+    const user = { username, password: currentUser.password };
+    await this.#setSetting("admin_user", JSON.stringify(user));
+  }
+
   async getBrandingLogo() {
     await this.ready;
     const val = await this.#getSetting("branding_logo");
