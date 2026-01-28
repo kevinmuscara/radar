@@ -11,12 +11,12 @@ theme:
   topbar_sections: false # NEW!
   show_datetime: false 
 nav:
-  - Home: index.md
+  - Home: https://radar.muscara.net
   - Documentation:
-      - Installation: installation.md
-      - Usage: usage.md
-      - Performance: performance.md
-      - FAQ: faq.md
+      - Installation: https://radar.muscara.net/installation
+      - Usage: https://radar.muscara.net/usage
+      - Performance: https://radar.muscara.net/performance
+      - FAQ: https://radar.muscara.net/faq
 markdown_extensions:
   - codehilite
   - shadcn.extensions.codexec
