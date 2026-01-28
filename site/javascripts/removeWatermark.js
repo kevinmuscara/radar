@@ -1,1 +1,0 @@
-document.addEventListener("DOMContentLoaded", () => document.getElementsByClassName("leading-loose")[0].remove());

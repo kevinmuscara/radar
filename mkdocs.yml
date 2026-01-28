@@ -8,7 +8,6 @@ theme:
   pygments_style: # default styles 
         light: shadcn-light
         dark: github-dark
-  icon: heroicons:rocket-launch
   topbar_sections: false # NEW!
   show_datetime: false 
 nav:
