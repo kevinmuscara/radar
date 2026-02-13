@@ -180,10 +180,12 @@ async function deleteResource(category, resourceName) {
 }
 
 // Edit Modal Logic
-async function editResource(name, url) {
+async function editResource(name, url, faviconUrl = '') {
   document.getElementById('edit-original-name').value = name;
   document.getElementById('edit-name').value = name;
   document.getElementById('edit-url').value = url;
+  const editFaviconInput = document.getElementById('edit-favicon-url');
+  if (editFaviconInput) editFaviconInput.value = faviconUrl || '';
   document.getElementById('edit-original-name').dataset.originalCategories = "";
 
   // Fetch and set categories
@@ -210,11 +212,14 @@ async function editResource(name, url) {
           const ct = def.check_type || 'api';
           const sk = def.scrape_keywords || '';
           const apiConf = def.api_config || null;
+          const fav = def.favicon_url || '';
           
           const sel = document.getElementById('edit-check-type');
           const inpt = document.getElementById('edit-scrape-keywords');
+          const favInput = document.getElementById('edit-favicon-url');
           if (sel) sel.value = ct;
           if (inpt) inpt.value = sk;
+          if (favInput) favInput.value = fav;
 
           // Show/hide analyze button based on check type
           updateAnalyzeButtonVisibility('edit');
@@ -289,6 +294,7 @@ async function saveEdit() {
   const originalCategories = JSON.parse(document.getElementById('edit-original-name').dataset.originalCategories || "[]");
   const newName = document.getElementById('edit-name').value;
   const newUrl = document.getElementById('edit-url').value;
+  const newFaviconUrl = document.getElementById('edit-favicon-url') ? document.getElementById('edit-favicon-url').value.trim() : '';
 
   const checkboxes = document.querySelectorAll('input[name="edit-categories"]:checked');
   const newCategories = Array.from(checkboxes).map(cb => cb.value);
@@ -316,6 +322,7 @@ async function saveEdit() {
       const payload = { 
         resource_name: newName, 
         status_page: newUrl, 
+        favicon_url: newFaviconUrl,
         grade_level: cat, 
         check_type: editCheckType, 
         scrape_keywords: editScrape 
@@ -353,6 +360,7 @@ async function saveEdit() {
       const payload = {
         resource_name: newName,
         status_page: newUrl,
+        favicon_url: newFaviconUrl,
         grade_level: targetCat,
         check_type: editCheckType,
         scrape_keywords: editScrape
@@ -385,6 +393,8 @@ async function saveEdit() {
 function openAddModal(category) {
   document.getElementById('add-name').value = '';
   document.getElementById('add-url').value = '';
+  const addFaviconInput = document.getElementById('add-favicon-url');
+  if (addFaviconInput) addFaviconInput.value = '';
   const ct = document.getElementById('add-check-type');
   const sk = document.getElementById('add-scrape-keywords');
   if (ct) ct.value = 'api';
@@ -420,6 +430,7 @@ function closeAddModal() {
 async function saveNewResource() {
   const name = document.getElementById('add-name').value;
   const url = document.getElementById('add-url').value;
+  const faviconUrl = document.getElementById('add-favicon-url') ? document.getElementById('add-favicon-url').value.trim() : '';
 
   const checkboxes = document.querySelectorAll('input[name="add-categories"]:checked');
   const categories = Array.from(checkboxes).map(cb => cb.value);
@@ -442,6 +453,7 @@ async function saveNewResource() {
       const payload = {
         resource_name: name,
         status_page: url,
+        favicon_url: faviconUrl,
         grade_level: cat,
         check_type: addCT,
         scrape_keywords: addSK
@@ -623,7 +635,25 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('check-errors-table-body')) {
     loadErrors();
   }
+
+  if (window.IS_SUPERADMIN) {
+    loadManagedUsers();
+  }
 });
+
+function openAddUserModal() {
+  const usernameInput = document.getElementById('new-user-username');
+  const passwordInput = document.getElementById('new-user-password');
+  if (usernameInput) usernameInput.value = '';
+  if (passwordInput) passwordInput.value = '';
+  const modal = document.getElementById('add-user-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeAddUserModal() {
+  const modal = document.getElementById('add-user-modal');
+  if (modal) modal.classList.add('hidden');
+}
 
 async function loadErrors() {
   try {
@@ -699,6 +729,47 @@ function downloadCSVTemplate(event) {
   window.location.href = '/resources/template';
 }
 
+function parseCSVLine(line) {
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index++) {
+    const char = line[index];
+    const next = line[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        index++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === ',' && !inQuotes) {
+      values.push(current.trim());
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current.trim());
+  return values;
+}
+
+async function exportCSV() {
+  try {
+    window.location.href = '/resources/export';
+  } catch (error) {
+    console.error(error);
+    alert('Failed to export CSV');
+  }
+}
+
 async function importCSV() {
   const fileInput = document.getElementById('import-csv-file');
   if (!fileInput.files || fileInput.files.length === 0) {
@@ -708,14 +779,14 @@ async function importCSV() {
 
   const file = fileInput.files[0];
   const text = await file.text();
-  const lines = text.trim().split('\n');
+  const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
   
   if (lines.length < 2) {
     alert('CSV file must have at least a header row and one data row');
     return;
   }
 
-  const headers = lines[0].split(',').map(h => h.trim());
+  const headers = parseCSVLine(lines[0]);
   const requiredHeaders = ['category', 'resource_name', 'status_page', 'check_type'];
   
   // Validate headers
@@ -729,7 +800,7 @@ async function importCSV() {
   for (let i = 1; i < lines.length; i++) {
     if (lines[i].trim() === '') continue; // Skip empty lines
     
-    const values = lines[i].split(',').map(v => v.trim());
+    const values = parseCSVLine(lines[i]);
     const row = {};
     headers.forEach((header, index) => {
       row[header] = values[index] || '';
@@ -785,6 +856,106 @@ async function importCSV() {
   } catch (e) {
     console.error(e);
     alert('Error importing CSV');
+  }
+}
+
+async function loadManagedUsers() {
+  const tbody = document.getElementById('users-table-body');
+  if (!tbody) return;
+
+  try {
+    const response = await fetch('/setup/users');
+    if (!response.ok) {
+      throw new Error('Failed to load users');
+    }
+
+    const data = await response.json();
+    const users = data.users || [];
+
+    tbody.innerHTML = '';
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td class="py-2 pl-2 pr-3 text-sm text-gray-500" colspan="3">No users configured.</td></tr>';
+      return;
+    }
+
+    users.forEach(user => {
+      const tr = document.createElement('tr');
+      tr.className = 'odd:bg-white even:bg-gray-50';
+      const canDelete = user.role !== 'superadmin';
+      tr.innerHTML = `
+        <td class="py-2 pl-2 pr-3 text-sm text-gray-900">${user.username}</td>
+        <td class="py-2 px-3 text-sm text-gray-600">${user.role}</td>
+        <td class="py-2 px-2 text-right text-sm">
+          ${canDelete ? `<button type="button" data-username="${user.username}" class="delete-user-btn p-1 text-red-500 hover:text-red-600" title="Delete User" aria-label="Delete User">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline-block">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+            </svg>
+          </button>` : ''}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.delete-user-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const username = btn.getAttribute('data-username');
+        if (!username) return;
+        if (!confirm(`Delete user "${username}"?`)) return;
+
+        try {
+          const delResponse = await fetch(`/setup/users/${encodeURIComponent(username)}`, { method: 'DELETE' });
+          if (!delResponse.ok) {
+            const err = await delResponse.json();
+            throw new Error(err.error || 'Failed to delete user');
+          }
+          await loadManagedUsers();
+        } catch (error) {
+          console.error(error);
+          alert(error.message || 'Failed to delete user');
+        }
+      });
+    });
+  } catch (error) {
+    console.error(error);
+    tbody.innerHTML = '<tr><td class="py-2 pl-2 pr-3 text-sm text-gray-500" colspan="3">Unable to load users.</td></tr>';
+  }
+}
+
+async function createManagedUser(event) {
+  if (event && typeof event.preventDefault === 'function') {
+    event.preventDefault();
+  }
+  const usernameInput = document.getElementById('new-user-username');
+  const passwordInput = document.getElementById('new-user-password');
+  if (!usernameInput || !passwordInput) return;
+
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!username || !password) {
+    alert('Username and password are required');
+    return;
+  }
+
+  try {
+    const response = await fetch('/setup/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, role: 'resource_manager' })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || 'Failed to create user');
+    }
+
+    usernameInput.value = '';
+    passwordInput.value = '';
+    await loadManagedUsers();
+    closeAddUserModal();
+  } catch (error) {
+    console.error(error);
+    alert(error.message || 'Failed to create user');
   }
 }
 

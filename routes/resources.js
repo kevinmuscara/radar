@@ -13,6 +13,68 @@ const checkAuth = (req, res, next) => {
   next();
 };
 
+const checkResourceManagerAccess = (req, res, next) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const role = req.session.user.role || 'superadmin';
+  if (role !== 'superadmin' && role !== 'resource_manager') {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  next();
+};
+
+const checkSuperAdmin = (req, res, next) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  if ((req.session.user.role || 'superadmin') !== 'superadmin') {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  next();
+};
+
+function parseCategories(rawCategory) {
+  const unique = (list) => [...new Set(list.map(c => String(c).trim()).filter(Boolean))];
+  if (!rawCategory) return [];
+  if (Array.isArray(rawCategory)) {
+    return unique(rawCategory);
+  }
+
+  const text = String(rawCategory).trim();
+  if (!text) return [];
+
+  if (text.startsWith('[') && text.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) {
+        return unique(parsed);
+      }
+    } catch (_err) {
+    }
+  }
+
+  if (text.includes('|')) {
+    return unique(text.split('|'));
+  }
+  if (text.includes(';')) {
+    return unique(text.split(';'));
+  }
+  if (text.includes(',')) {
+    return unique(text.split(','));
+  }
+
+  return unique([text]);
+}
+
+function escapeCsvCell(value) {
+  const str = value === null || value === undefined ? '' : String(value);
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
 // get all resources in every category
 router.get("/", async (_request, response) => {
 
@@ -59,13 +121,13 @@ router.get('/definition/:resourceName', async (request, response) => {
 });
 
 // get recent check errors (admin)
-router.get('/errors', checkAuth, async (_request, response) => {
+router.get('/errors', checkSuperAdmin, async (_request, response) => {
   const errs = await resources.getCheckErrors ? await resources.getCheckErrors(200) : [];
   response.json({ status: 200, errors: errs });
 });
 
 // delete a single error
-router.delete('/errors/:id', checkAuth, async (request, response) => {
+router.delete('/errors/:id', checkSuperAdmin, async (request, response) => {
   const { id } = request.params;
   if (!resources.deleteCheckError) return response.status(500).json({ status: 500, error: 'Not supported' });
   await resources.deleteCheckError(id);
@@ -73,14 +135,14 @@ router.delete('/errors/:id', checkAuth, async (request, response) => {
 });
 
 // clear all errors
-router.delete('/errors', checkAuth, async (_request, response) => {
+router.delete('/errors', checkSuperAdmin, async (_request, response) => {
   if (!resources.clearCheckErrors) return response.status(500).json({ status: 500, error: 'Not supported' });
   await resources.clearCheckErrors();
   response.json({ status: 200 });
 });
 
 // create resource in category
-router.post("/category/:category", checkAuth, async (request, response) => {
+router.post("/category/:category", checkResourceManagerAccess, async (request, response) => {
 
   const { category } = request.params;
   const {
@@ -92,6 +154,7 @@ router.post("/category/:category", checkAuth, async (request, response) => {
   await resources.addResource(category, { 
     resource_name, 
     status_page, 
+    favicon_url: request.body.favicon_url,
     check_type: request.body.check_type, 
     scrape_keywords: request.body.scrape_keywords,
     api_config: request.body.api_config 
@@ -120,7 +183,7 @@ router.post("/category/:category", checkAuth, async (request, response) => {
 });
 
 // create category
-router.post("/category", checkAuth, async (request, response) => {
+router.post("/category", checkResourceManagerAccess, async (request, response) => {
 
   const { category } = request.body;
 
@@ -129,7 +192,7 @@ router.post("/category", checkAuth, async (request, response) => {
 });
 
 // Delete category
-router.delete("/category/:category", checkAuth, async (request, response) => {
+router.delete("/category/:category", checkResourceManagerAccess, async (request, response) => {
 
   const { category } = request.params;
   await resources.removeCategory(category);
@@ -137,7 +200,7 @@ router.delete("/category/:category", checkAuth, async (request, response) => {
 });
 
 // Update category
-router.put("/category/:category", checkAuth, async (request, response) => {
+router.put("/category/:category", checkResourceManagerAccess, async (request, response) => {
 
   const { category } = request.params;
   const { newCategory } = request.body;
@@ -146,7 +209,7 @@ router.put("/category/:category", checkAuth, async (request, response) => {
 });
 
 // Delete resource in category
-router.delete("/category/:category/:resource", checkAuth, async (request, response) => {
+router.delete("/category/:category/:resource", checkResourceManagerAccess, async (request, response) => {
 
   const { category, resource } = request.params;
   await resources.removeResource(category, resource);
@@ -154,7 +217,7 @@ router.delete("/category/:category/:resource", checkAuth, async (request, respon
 });
 
 // Update resource in category
-router.put("/category/:category/:resource", checkAuth, async (request, response) => {
+router.put("/category/:category/:resource", checkResourceManagerAccess, async (request, response) => {
 
   const { category, resource } = request.params;
   const {
@@ -165,6 +228,7 @@ router.put("/category/:category/:resource", checkAuth, async (request, response)
   await resources.updateResource(category, resource, { 
     resource_name, 
     status_page, 
+    favicon_url: request.body.favicon_url,
     check_type: request.body.check_type, 
     scrape_keywords: request.body.scrape_keywords,
     api_config: request.body.api_config 
@@ -193,7 +257,7 @@ router.put("/category/:category/:resource", checkAuth, async (request, response)
 });
 
 // bulk import from CSV
-router.post("/import", checkAuth, async (request, response) => {
+router.post("/import", checkResourceManagerAccess, async (request, response) => {
   try {
     const { data } = request.body;
     
@@ -206,9 +270,10 @@ router.post("/import", checkAuth, async (request, response) => {
 
     // Process each row
     for (const row of data) {
-      const { category, resource_name, status_page, check_type, scrape_keywords, api_config } = row;
+      const { category, resource_name, status_page, favicon_url, check_type, scrape_keywords, api_config } = row;
+      const categories = parseCategories(category);
 
-      if (!category || !resource_name || !status_page || !check_type) {
+      if (!resource_name || !status_page || !check_type || categories.length === 0) {
         return response.status(400).json({ error: "Invalid row: missing required fields" });
       }
 
@@ -217,24 +282,26 @@ router.post("/import", checkAuth, async (request, response) => {
       }
 
       try {
-        // Check if category exists, create if not
         const existingCategories = await resources.getCategories();
-        if (!existingCategories.includes(category)) {
-          await resources.addCategory(category);
-          imported.categories.add(category);
+
+        for (const singleCategory of categories) {
+          if (!existingCategories.includes(singleCategory)) {
+            await resources.addCategory(singleCategory);
+            imported.categories.add(singleCategory);
+          }
+
+          await resources.addResource(singleCategory, {
+            resource_name,
+            status_page,
+            favicon_url: favicon_url || null,
+            check_type,
+            scrape_keywords: scrape_keywords || '',
+            api_config: api_config || null
+          });
+
+          imported.resources++;
+          imported.resourceNames.push(resource_name);
         }
-
-        // Add resource to category
-        await resources.addResource(category, {
-          resource_name,
-          status_page,
-          check_type,
-          scrape_keywords: scrape_keywords || '',
-          api_config: api_config || null
-        });
-
-        imported.resources++;
-        imported.resourceNames.push(resource_name);
       } catch (err) {
         console.error(`Failed to import ${category} > ${resource_name}:`, err);
         // Continue with next row instead of failing entire import
@@ -281,6 +348,81 @@ router.get("/template", (_request, response) => {
   const path = require('path');
   const filePath = path.join(__dirname, '../template.csv');
   response.download(filePath, 'resources_template.csv');
+});
+
+router.get('/export', checkResourceManagerAccess, async (_request, response) => {
+  try {
+    const allResources = await resources.getResources();
+    const map = new Map();
+
+    Object.entries(allResources).forEach(([category, list]) => {
+      list.forEach(resource => {
+        if (!resource || !resource.resource_name) return;
+        const key = resource.resource_name;
+        if (!map.has(key)) {
+          map.set(key, {
+            resource_name: resource.resource_name,
+            status_page: resource.status_page || '',
+            check_type: resource.check_type || 'api',
+            scrape_keywords: resource.scrape_keywords || '',
+            api_config: resource.api_config || '',
+            favicon_url: resource.favicon_url || '',
+            categories: []
+          });
+        }
+
+        const existing = map.get(key);
+        if (!existing.categories.includes(category)) {
+          existing.categories.push(category);
+        }
+      });
+    });
+
+    const lines = ['category,resource_name,status_page,favicon_url,check_type,scrape_keywords,api_config'];
+    for (const item of map.values()) {
+      lines.push([
+        escapeCsvCell(item.categories.join('|')),
+        escapeCsvCell(item.resource_name),
+        escapeCsvCell(item.status_page),
+        escapeCsvCell(item.favicon_url),
+        escapeCsvCell(item.check_type),
+        escapeCsvCell(item.scrape_keywords),
+        escapeCsvCell(item.api_config)
+      ].join(','));
+    }
+
+    response.setHeader('Content-Type', 'text/csv');
+    response.setHeader('Content-Disposition', `attachment; filename="radar-export-${Date.now()}.csv"`);
+    response.send(lines.join('\n'));
+  } catch (error) {
+    console.error('Export error:', error);
+    response.status(500).json({ error: 'Failed to export CSV data' });
+  }
+});
+
+router.post('/report-issue/:resourceName', async (request, response) => {
+  try {
+    const { resourceName } = request.params;
+    if (!resourceName || !resourceName.trim()) {
+      return response.status(400).json({ error: 'resourceName is required' });
+    }
+
+    const report = await dbManager.reportIssue(resourceName.trim());
+    response.json({ status: 200, report });
+  } catch (error) {
+    console.error('Issue report error:', error);
+    response.status(500).json({ error: 'Failed to report issue' });
+  }
+});
+
+router.get('/issue-reports', async (_request, response) => {
+  try {
+    const reports = await dbManager.getActiveIssueReports();
+    response.json({ status: 200, reports });
+  } catch (error) {
+    console.error('Issue reports fetch error:', error);
+    response.status(500).json({ error: 'Failed to fetch issue reports' });
+  }
 });
 
 module.exports = router;

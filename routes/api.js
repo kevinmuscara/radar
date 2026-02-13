@@ -471,7 +471,14 @@ router.get("/cached-status/:resourceName", async (request, response) => {
 let lastForceRefresh = 0;
 const FORCE_REFRESH_COOLDOWN = 60 * 1000; // 1 minute
 
-router.post("/force-refresh", async (_request, response) => {
+router.post("/force-refresh", async (request, response) => {
+  if (!request.session.user) {
+    return response.status(401).json({ error: 'Unauthorized' });
+  }
+  if ((request.session.user.role || 'superadmin') !== 'superadmin') {
+    return response.status(403).json({ error: 'Forbidden' });
+  }
+
   try {
     const now = Date.now();
     const timeSinceLastRefresh = now - lastForceRefresh;

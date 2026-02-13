@@ -1,3 +1,3 @@
-category,resource_name,status_page,check_type,scrape_keywords,api_config
-K-12,Google Workspace for Education,https://www.google.com/appsstatus/dashboard/,scrape,No incidents,
-K-12,GitHub Status,https://www.githubstatus.com/api/v2/status.json,api,,status.indicator
+category,resource_name,status_page,favicon_url,check_type,scrape_keywords,api_config
+K-12|Middle School,Google Workspace for Education,https://www.google.com/appsstatus/dashboard/,,scrape,No incidents,
+"K-12,High School",GitHub Status,https://www.githubstatus.com/api/v2/status.json,https://www.github.com/favicon.ico,api,,status.indicator

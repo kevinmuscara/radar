@@ -29,13 +29,14 @@ class ResourceManager {
             const status_page = parts[idx['status_page']] || '';
             const check_type = (parts[idx['check_type']] || 'api').toLowerCase();
             const scrape_keywords = parts[idx['scrape_keywords']] || '';
+            const favicon_url = parts[idx['favicon_url']] || '';
 
             if (!resource_name) continue;
 
             await db.run("INSERT OR IGNORE INTO categories (name) VALUES (?)", [categoryName]);
             const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [categoryName]);
 
-            await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, check_type, scrape_keywords, api_config) VALUES (?, ?, ?, ?, ?)", [resource_name, status_page, check_type, scrape_keywords, null]);
+            await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, favicon_url, check_type, scrape_keywords, api_config) VALUES (?, ?, ?, ?, ?, ?)", [resource_name, status_page, favicon_url || null, check_type, scrape_keywords, null]);
             const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource_name, status_page]);
 
             if (catRow && resRow) {
@@ -72,7 +73,7 @@ class ResourceManager {
 
     // Get all resources mapped to categories
     const rows = await db.all(`
-      SELECT c.name as category, r.name as resource_name, r.status_page, r.check_type, r.scrape_keywords, r.api_config 
+      SELECT c.name as category, r.name as resource_name, r.status_page, r.favicon_url, r.check_type, r.scrape_keywords, r.api_config 
         FROM resource_category_mapping m
         JOIN categories c ON m.category_id = c.id
         JOIN resource_definitions r ON m.resource_id = r.id
@@ -87,6 +88,7 @@ class ResourceManager {
       resources[row.category].push({
         resource_name: row.resource_name,
         status_page: row.status_page,
+        favicon_url: row.favicon_url || '',
         check_type: row.check_type || 'api',
         scrape_keywords: row.scrape_keywords || '',
         api_config: row.api_config || null,
@@ -113,7 +115,12 @@ class ResourceManager {
     if (!catRow) return; // Should not happen if category exists
 
     // 2. Ensure/Get Resource Definition ID
-    await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, check_type, scrape_keywords, api_config) VALUES (?, ?, ?, ?, ?)", [resource.resource_name, resource.status_page, resource.check_type || 'api', resource.scrape_keywords || '', resource.api_config || null]);
+    await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, favicon_url, check_type, scrape_keywords, api_config) VALUES (?, ?, ?, ?, ?, ?)", [resource.resource_name, resource.status_page, resource.favicon_url || null, resource.check_type || 'api', resource.scrape_keywords || '', resource.api_config || null]);
+
+    await db.run(
+      "UPDATE resource_definitions SET favicon_url = COALESCE(?, favicon_url) WHERE name = ? AND status_page = ?",
+      [resource.favicon_url || null, resource.resource_name, resource.status_page]
+    );
     const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
 
     // 3. Create Mapping
@@ -124,7 +131,7 @@ class ResourceManager {
     await this.ready;
     const db = await this.dbManager.getDb();
     const row = await db.get(`
-      SELECT c.name as category, r.name as resource_name, r.status_page, r.check_type, r.scrape_keywords, r.api_config 
+      SELECT c.name as category, r.name as resource_name, r.status_page, r.favicon_url, r.check_type, r.scrape_keywords, r.api_config 
         FROM resource_category_mapping m
         JOIN categories c ON m.category_id = c.id
         JOIN resource_definitions r ON m.resource_id = r.id
@@ -136,6 +143,7 @@ class ResourceManager {
         category: row.category,
         resource_name: row.resource_name,
         status_page: row.status_page,
+        favicon_url: row.favicon_url || '',
         check_type: row.check_type || 'api',
         scrape_keywords: row.scrape_keywords || '',
         api_config: row.api_config || null,
@@ -156,7 +164,7 @@ class ResourceManager {
     await this.ready;
     const db = await this.dbManager.getDb();
     const rows = await db.all(`
-      SELECT r.name as resource_name, r.status_page, r.check_type, r.scrape_keywords, r.api_config 
+      SELECT r.name as resource_name, r.status_page, r.favicon_url, r.check_type, r.scrape_keywords, r.api_config 
         FROM resource_category_mapping m
         JOIN categories c ON m.category_id = c.id
         JOIN resource_definitions r ON m.resource_id = r.id
@@ -166,6 +174,7 @@ class ResourceManager {
     return rows.map(row => ({
       resource_name: row.resource_name,
       status_page: row.status_page,
+      favicon_url: row.favicon_url || '',
       check_type: row.check_type || 'api',
       scrape_keywords: row.scrape_keywords || '',
       api_config: row.api_config || null,
@@ -189,12 +198,13 @@ class ResourceManager {
   async getDefinition(resourceName) {
     await this.ready;
     const db = await this.dbManager.getDb();
-    const row = await db.get("SELECT id, name as resource_name, status_page, check_type, scrape_keywords, api_config FROM resource_definitions WHERE name = ?", [resourceName]);
+    const row = await db.get("SELECT id, name as resource_name, status_page, favicon_url, check_type, scrape_keywords, api_config FROM resource_definitions WHERE name = ?", [resourceName]);
     if (!row) return null;
     return {
       id: row.id,
       resource_name: row.resource_name,
       status_page: row.status_page,
+      favicon_url: row.favicon_url || '',
       check_type: row.check_type || 'api',
       scrape_keywords: row.scrape_keywords || '',
       api_config: row.api_config || null
@@ -246,8 +256,30 @@ class ResourceManager {
   async removeCategory(category) {
     await this.ready;
     const db = await this.dbManager.getDb();
+
+    const affectedResources = await db.all(`
+      SELECT DISTINCT r.name as resource_name
+      FROM resource_category_mapping m
+      JOIN categories c ON m.category_id = c.id
+      JOIN resource_definitions r ON m.resource_id = r.id
+      WHERE c.name = ?
+    `, [category]);
+
     await db.run("DELETE FROM categories WHERE name = ?", [category]);
     // Cascade delete handles mappings
+
+    for (const entry of affectedResources) {
+      const remaining = await db.get(`
+        SELECT COUNT(*) as count
+        FROM resource_category_mapping m
+        JOIN resource_definitions r ON m.resource_id = r.id
+        WHERE r.name = ?
+      `, [entry.resource_name]);
+
+      if (!remaining || remaining.count === 0) {
+        await this.dbManager.deleteIssueReportsByResourceName(entry.resource_name);
+      }
+    }
   }
 
   async removeResource(category, resourceName) {
@@ -260,24 +292,30 @@ class ResourceManager {
 
     if (catRow && resRow) {
       await db.run("DELETE FROM resource_category_mapping WHERE resource_id = ? AND category_id = ?", [resRow.id, catRow.id]);
+
+      const remainingMappings = await db.get("SELECT COUNT(*) as count FROM resource_category_mapping WHERE resource_id = ?", [resRow.id]);
+      if (!remainingMappings || remainingMappings.count === 0) {
+        await this.dbManager.deleteIssueReportsByResourceName(resourceName);
+      }
     }
 
     // Optional: Clean up orphaned resource definitions?
     // For now, keep them to allow easy re-adding or if they exist in other categories (which we don't check yet here)
   }
 
-  async updateResource(category, oldResourceName, { resource_name, status_page, check_type, scrape_keywords, api_config }) {
+  async updateResource(category, oldResourceName, { resource_name, status_page, favicon_url, check_type, scrape_keywords, api_config }) {
     await this.ready;
     const db = await this.dbManager.getDb();
 
     // 1. Get the definition of the OLD resource
-    const oldResRow = await db.get("SELECT id, check_type, scrape_keywords, api_config FROM resource_definitions WHERE name = ?", [oldResourceName]);
+    const oldResRow = await db.get("SELECT id, favicon_url, check_type, scrape_keywords, api_config FROM resource_definitions WHERE name = ?", [oldResourceName]);
     if (!oldResRow) return;
 
     // 2. Update the definition itself directly?
     // Updating the definition affects ALL categories this resource is in. This matches the "Tag" philosophy.
     // If the user changes the URL for "Google" in one category, it should update everywhere using "Google".
-    await db.run("UPDATE resource_definitions SET name = ?, status_page = ?, check_type = ?, scrape_keywords = ?, api_config = ? WHERE id = ?", [resource_name, status_page, check_type || oldResRow.check_type, scrape_keywords || oldResRow.scrape_keywords, api_config !== undefined ? api_config : oldResRow.api_config, oldResRow.id]);
+    const nextFaviconUrl = favicon_url !== undefined ? (favicon_url || null) : oldResRow.favicon_url;
+    await db.run("UPDATE resource_definitions SET name = ?, status_page = ?, favicon_url = ?, check_type = ?, scrape_keywords = ?, api_config = ? WHERE id = ?", [resource_name, status_page, nextFaviconUrl, check_type || oldResRow.check_type, scrape_keywords || oldResRow.scrape_keywords, api_config !== undefined ? api_config : oldResRow.api_config, oldResRow.id]);
   }
 
   async updateCategory(oldCategory, newCategory) {

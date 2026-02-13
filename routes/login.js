@@ -16,35 +16,42 @@ router.get("/", async (request, response) => {
 
 router.post("/", async (request, response) => {
   const { username, password } = request.body;
-  const admin_user = await configuration.getAdminUser();
+  const users = await configuration.getUsers();
+  const matchedUser = users.find(user => user.username === username);
 
-  if (admin_user.username == username) {
-    bcrypt.compare(password, admin_user.password, (_err, res) => {
-      if (res) {
-        request.session.regenerate((err) => {
-          if (err) {
-            console.error(err);
+  if (!matchedUser) {
+    response.json({ status: 401, message: "inv_user" });
+    return;
+  }
+
+  bcrypt.compare(password, matchedUser.password, (_err, isValid) => {
+    if (isValid) {
+      request.session.regenerate((err) => {
+        if (err) {
+          console.error(err);
+          response.json({ status: 500, message: "server_err" });
+          return;
+        }
+
+        request.session.user = {
+          username: matchedUser.username,
+          role: matchedUser.role || 'superadmin'
+        };
+
+        request.session.save((saveErr) => {
+          if (saveErr) {
+            console.error(saveErr);
             response.json({ status: 500, message: "server_err" });
+            return;
           }
 
-          request.session.user = admin_user;
-
-          request.session.save((err) => {
-            if (err) {
-              console.error(err);
-              response.json({ status: 500, message: "server_err" });
-            }
-
-            response.redirect("/admin");
-          });
+          response.redirect("/admin");
         });
-      } else {
-        response.json({ status: 401, message: "inv_pass" });
-      }
-    });
-  } else {
-    response.json({ status: 401, message: "inv_user" });
-  }
+      });
+    } else {
+      response.json({ status: 401, message: "inv_pass" });
+    }
+  });
 });
 
 module.exports = router;

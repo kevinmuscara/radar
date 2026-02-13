@@ -24,6 +24,16 @@ const checkAuth = (req, res, next) => {
   next();
 };
 
+const checkSuperAdmin = (req, res, next) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  if ((req.session.user.role || 'superadmin') !== 'superadmin') {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  next();
+};
+
 router.post("/", upload.single('logo'), async (request, response) => {
   const isSetupComplete = await configuration.isSetupComplete();
 
@@ -54,7 +64,10 @@ router.post("/", upload.single('logo'), async (request, response) => {
           return response.redirect('/');
         }
 
-        request.session.user = admin_user;
+        request.session.user = {
+          username: request.body.username,
+          role: 'superadmin'
+        };
         request.session.save((err) => {
           if (err) {
             console.error('Session save error after setup:', err);
@@ -70,7 +83,7 @@ router.post("/", upload.single('logo'), async (request, response) => {
   }
 });
 
-router.post("/update", upload.single('logo'), async (request, response) => {
+router.post("/update", checkSuperAdmin, upload.single('logo'), async (request, response) => {
   if (request.file) {
     await configuration.updateBrandingLogo(request.file.filename);
   }
@@ -96,6 +109,39 @@ router.post("/update", upload.single('logo'), async (request, response) => {
   }
 
   response.redirect("/admin");
+});
+
+router.get('/users', checkSuperAdmin, async (_request, response) => {
+  const users = await configuration.getSafeUsers();
+  response.json({ status: 200, users });
+});
+
+router.post('/users', checkSuperAdmin, async (request, response) => {
+  const { username, password, role } = request.body;
+  if (!username || !password) {
+    return response.status(400).json({ error: 'username and password are required' });
+  }
+
+  if (role !== 'resource_manager') {
+    return response.status(400).json({ error: 'Only resource_manager role can be created' });
+  }
+
+  try {
+    await configuration.addResourceManagerUser(username.trim(), password);
+    response.json({ status: 200 });
+  } catch (error) {
+    response.status(400).json({ error: error.message || 'Failed to create user' });
+  }
+});
+
+router.delete('/users/:username', checkSuperAdmin, async (request, response) => {
+  const { username } = request.params;
+  try {
+    await configuration.removeUser(username);
+    response.json({ status: 200 });
+  } catch (error) {
+    response.status(400).json({ error: error.message || 'Failed to remove user' });
+  }
 });
 
 module.exports = router;

@@ -32,6 +32,7 @@ class DatabaseManager {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
               status_page TEXT NOT NULL,
+              favicon_url TEXT DEFAULT NULL,
               check_type TEXT DEFAULT 'api',
               scrape_keywords TEXT DEFAULT '',
               api_config TEXT DEFAULT NULL,
@@ -68,11 +69,22 @@ class DatabaseManager {
               FOREIGN KEY (resource_id) REFERENCES resource_definitions(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS resource_issue_reports (
+              resource_name TEXT PRIMARY KEY,
+              report_count INTEGER NOT NULL DEFAULT 1,
+              first_reported_at DATETIME NOT NULL,
+              expires_at DATETIME NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE INDEX IF NOT EXISTS idx_resource_status_cache_resource_id 
             ON resource_status_cache(resource_id);
             
             CREATE INDEX IF NOT EXISTS idx_resource_status_cache_resource_name 
             ON resource_status_cache(resource_name);
+
+            CREATE INDEX IF NOT EXISTS idx_resource_issue_reports_expires_at
+            ON resource_issue_reports(expires_at);
         `);
 
     // Check for potential migration
@@ -117,6 +129,9 @@ class DatabaseManager {
       }
       if (!colNames.includes('scrape_keywords')) {
         await db.exec("ALTER TABLE resource_definitions ADD COLUMN scrape_keywords TEXT DEFAULT '';");
+      }
+      if (!colNames.includes('favicon_url')) {
+        await db.exec("ALTER TABLE resource_definitions ADD COLUMN favicon_url TEXT DEFAULT NULL;");
       }
     } catch (e) {
       console.error('Error ensuring resource_definitions columns:', e.message);
@@ -179,6 +194,18 @@ class DatabaseManager {
       console.error('Error migrating resource_status_cache table:', e.message);
     }
 
+    // Ensure report_count exists on resource_issue_reports for existing DBs
+    try {
+      const issueCols = await db.all("PRAGMA table_info('resource_issue_reports')");
+      const issueColNames = issueCols.map(c => c.name);
+      if (!issueColNames.includes('report_count')) {
+        await db.exec("ALTER TABLE resource_issue_reports ADD COLUMN report_count INTEGER NOT NULL DEFAULT 1;");
+      }
+      await db.exec("UPDATE resource_issue_reports SET report_count = 1 WHERE report_count IS NULL OR report_count < 1;");
+    } catch (e) {
+      console.error('Error ensuring resource_issue_reports columns:', e.message);
+    }
+
     return db;
   }
 
@@ -211,6 +238,55 @@ class DatabaseManager {
   async getResourceStatusByName(resourceName) {
     const db = await this.getDb();
     return db.get('SELECT * FROM resource_status_cache WHERE resource_name = ?', [resourceName]);
+  }
+
+  async clearExpiredIssueReports() {
+    const db = await this.getDb();
+    await db.run("DELETE FROM resource_issue_reports WHERE expires_at <= datetime('now')");
+  }
+
+  async reportIssue(resourceName) {
+    const db = await this.getDb();
+    await this.clearExpiredIssueReports();
+
+    const existing = await db.get(
+      "SELECT resource_name, report_count, first_reported_at, expires_at FROM resource_issue_reports WHERE resource_name = ?",
+      [resourceName]
+    );
+
+    if (existing) {
+      await db.run(
+        "UPDATE resource_issue_reports SET report_count = report_count + 1 WHERE resource_name = ?",
+        [resourceName]
+      );
+      return db.get(
+        "SELECT resource_name, report_count, first_reported_at, expires_at FROM resource_issue_reports WHERE resource_name = ?",
+        [resourceName]
+      );
+    }
+
+    await db.run(
+      "INSERT INTO resource_issue_reports (resource_name, report_count, first_reported_at, expires_at) VALUES (?, 1, datetime('now'), datetime('now', '+1 hour'))",
+      [resourceName]
+    );
+
+    return db.get(
+      "SELECT resource_name, report_count, first_reported_at, expires_at FROM resource_issue_reports WHERE resource_name = ?",
+      [resourceName]
+    );
+  }
+
+  async getActiveIssueReports() {
+    const db = await this.getDb();
+    await this.clearExpiredIssueReports();
+    return db.all(
+      "SELECT resource_name, report_count, first_reported_at, expires_at FROM resource_issue_reports WHERE expires_at > datetime('now')"
+    );
+  }
+
+  async deleteIssueReportsByResourceName(resourceName) {
+    const db = await this.getDb();
+    await db.run('DELETE FROM resource_issue_reports WHERE resource_name = ?', [resourceName]);
   }
 
   async logStatusCheckError(resourceId, resourceName, statusPage, checkType, errorMessage) {

@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Store cached statuses from server
   let cachedStatuses = {};
+  let activeIssueReports = {};
 
   async function loadCachedStatuses() {
     try {
@@ -33,10 +34,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  async function loadIssueReports() {
+    try {
+      const response = await fetch('/resources/issue-reports');
+      const data = await response.json();
+      const reports = Array.isArray(data.reports) ? data.reports : [];
+
+      activeIssueReports = {};
+      reports.forEach(report => {
+        if (report && report.resource_name) {
+          activeIssueReports[report.resource_name] = report;
+        }
+      });
+    } catch (error) {
+      console.error('Error loading issue reports:', error);
+    }
+  }
+
   async function loadData() {
     try {
       // Load cached statuses first
       await loadCachedStatuses();
+      await loadIssueReports();
 
       const response = await fetch('/resources');
       let resourceData = await response.json();
@@ -51,6 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       renderDashboard(resourceData);
+      refreshAllIssueIndicators();
     } catch (error) {
       console.error('Error fetching data:', error);
       container.innerHTML = '<div class="text-center text-red-500 py-12">Failed to load resources. Please try again later.</div>';
@@ -76,6 +96,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Derive a favicon URL for a resource's site. Attempts to extract the base domain from the
   // status_page (falling back to resource name) and uses Google's favicon service.
   function getFaviconUrl(resource) {
+    if (resource && resource.favicon_url && String(resource.favicon_url).trim() !== '') {
+      return String(resource.favicon_url).trim();
+    }
+
     let host = '';
     const tryExtract = (u) => {
       try {
@@ -108,18 +132,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     Object.values(resourceData).forEach(list => {
       if (Array.isArray(list)) {
         list.forEach(resource => {
+          const isUserReported = !!activeIssueReports[resource.resource_name];
           const status = cachedStatuses[resource.resource_name];
-          
-          if (status) {
-            const statusLower = (status.status || '').toLowerCase();
 
-            if (statusLower === 'outage' || statusLower === 'down' || statusLower === 'degraded' || statusLower === 'maintenance') {
-              if (!downServices.some(r => r.resource_name === resource.resource_name)) {
-                downServices.push({
-                  ...resource,
-                  current_status: statusLower.charAt(0).toUpperCase() + statusLower.slice(1)
-                });
-              }
+          const statusLower = status ? (status.status || '').toLowerCase() : '';
+          const hasStatusIssue = statusLower === 'outage' || statusLower === 'down' || statusLower === 'degraded' || statusLower === 'maintenance';
+
+          if (isUserReported || hasStatusIssue) {
+            if (!downServices.some(r => r.resource_name === resource.resource_name)) {
+              downServices.push({
+                ...resource,
+                current_status: status ? (status.status || 'Unknown') : 'Unknown'
+              });
             }
           }
         });
@@ -311,6 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function createResourceCard(resource, isSpecial) {
     const card = document.createElement('div');
       card.className = 'bg-white rounded-xl border border-slate-200 card-hover flex flex-col h-full shadow relative overflow-hidden status-unknown transition-shadow hover:shadow-lg';
+      card.dataset.resourceName = resource.resource_name;
       // compute favicon URL for this resource
       const faviconUrl = getFaviconUrl(resource);
 
@@ -350,19 +375,109 @@ document.addEventListener('DOMContentLoaded', async () => {
           })()}
                     </div>
                   </div>
+
+                  <div class="absolute top-2 right-2 issue-flag hidden" title="Other users have reported an issue with this resource" aria-label="Other users have reported an issue with this resource">
+                    <span class="text-xs">🚩</span>
+                  </div>
                   
                   <!-- Status label at bottom -->
-                  <div class="mt-auto">
+                  <div class="mt-auto flex items-center justify-between gap-2">
                     <div class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-100">
                       <div class="status-indicator w-2 h-2 rounded-full bg-slate-300" title="" aria-hidden="true"></div>
                       <span class="status-text text-xs font-medium text-slate-600">Unknown</span>
                     </div>
+                    <button type="button" title="Report issue" aria-label="Report issue" class="report-issue-btn inline-flex items-center justify-center h-7 w-7 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18m0-9h12.75c.621 0 1.125-.504 1.125-1.125V5.625A1.125 1.125 0 0 0 15.75 4.5H3v7.5Z" />
+                      </svg>
+                    </button>
                   </div>
                   <div class="status-tooltip hidden" style="display:none; position:absolute; right:4; bottom:60px; white-space:nowrap; background:#fff; border:1px solid #e6e9ee; padding:6px 8px; border-radius:6px; box-shadow:0 6px 18px rgba(15,23,42,0.08); font-size:12px; color:#0f172a; z-index:10;">Status</div>
                 </div>
               </div>
             `;
+
+    const reportButton = card.querySelector('.report-issue-btn');
+    if (reportButton) {
+      reportButton.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        await reportResourceIssue(resource.resource_name, reportButton);
+      });
+    }
+
+    updateIssueIndicator(card, resource.resource_name);
     return card;
+  }
+
+  function updateIssueIndicator(card, resourceName) {
+    const flag = card.querySelector('.issue-flag');
+    if (!flag) return;
+    const report = activeIssueReports[resourceName] || null;
+    const hasIssue = !!report;
+
+    if (hasIssue) {
+      const reportCount = Math.max(parseInt(report.report_count || 1, 10) || 1, 1);
+      const otherUsers = Math.max(reportCount - 1, 0);
+      const hoverText = `${otherUsers} other users have reported an issue with this resource`;
+      flag.setAttribute('title', hoverText);
+      flag.setAttribute('aria-label', hoverText);
+    }
+
+    if (hasIssue) {
+      flag.classList.remove('hidden');
+    } else {
+      flag.removeAttribute('title');
+      flag.removeAttribute('aria-label');
+      flag.classList.add('hidden');
+    }
+  }
+
+  function refreshAllIssueIndicators() {
+    const allCards = document.querySelectorAll('.card-hover[data-resource-name]');
+    allCards.forEach(card => {
+      const resourceName = card.getAttribute('data-resource-name');
+      if (resourceName) {
+        updateIssueIndicator(card, resourceName);
+      }
+    });
+  }
+
+  async function reportResourceIssue(resourceName, button) {
+    if (!resourceName) return;
+
+    try {
+      if (button) {
+        button.disabled = true;
+        button.classList.add('opacity-50');
+      }
+
+      const response = await fetch(`/resources/report-issue/${encodeURIComponent(resourceName)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to report issue');
+      }
+
+      const data = await response.json();
+      if (data && data.report) {
+        activeIssueReports[resourceName] = data.report;
+      }
+      refreshAllIssueIndicators();
+      if (window.currentResourceData) {
+        updateCurrentIssues(window.currentResourceData);
+      }
+    } catch (error) {
+      console.error('Issue reporting failed:', error);
+      alert('Could not report issue right now. Please try again.');
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.classList.remove('opacity-50');
+      }
+    }
   }
 
   async function updateCardStatus(card, resource) {
@@ -440,6 +555,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(() => {
     loadData();
   }, AUTO_REFRESH_INTERVAL);
+
+  setInterval(async () => {
+    await loadIssueReports();
+    refreshAllIssueIndicators();
+    if (window.currentResourceData) {
+      updateCurrentIssues(window.currentResourceData);
+    }
+  }, 60 * 1000);
 
   const searchInput = document.getElementById('search-input');
   searchInput.addEventListener('input', (e) => {
