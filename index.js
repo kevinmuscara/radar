@@ -7,6 +7,7 @@ const MemoryStore = require("memorystore")(session);
 const configuration = require("./config/SetupManager");
 const resources = require("./config/ResourceManager");
 const statusChecker = require("./config/StatusChecker");
+const dbManager = require("./config/DatabaseManager");
 
 // Import routes
 const setupRoute = require("./routes/setup");
@@ -95,6 +96,20 @@ const HOST = process.env.HOST || "0.0.0.0";
 
 server.listen(PORT, HOST, async () => {
   console.log(`Radar live on ${HOST}:${PORT}`);
+
+  try {
+    await dbManager.clearExpiredAnnouncements();
+  } catch (cleanupError) {
+    console.error('[Server] Failed initial announcement cleanup:', cleanupError.message);
+  }
+
+  setInterval(async () => {
+    try {
+      await dbManager.clearExpiredAnnouncements();
+    } catch (cleanupError) {
+      console.error('[Server] Failed to clear expired announcements:', cleanupError.message);
+    }
+  }, 5 * 60 * 1000);
   
   // Start the status checker if setup is complete
   if (await configuration.isSetupComplete()) {

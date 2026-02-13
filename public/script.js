@@ -18,6 +18,177 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Store cached statuses from server
   let cachedStatuses = {};
   let activeIssueReports = {};
+  let activeAnnouncements = [];
+  let announcementExpiryTimer = null;
+  const REPORT_COOLDOWN_MS = 60 * 60 * 1000;
+  const REPORT_COOLDOWN_STORAGE_KEY = 'resourceIssueReportCooldowns';
+
+  function getReportCooldowns() {
+    try {
+      const raw = localStorage.getItem(REPORT_COOLDOWN_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_error) {
+      return {};
+    }
+  }
+
+  function setReportCooldowns(cooldowns) {
+    try {
+      localStorage.setItem(REPORT_COOLDOWN_STORAGE_KEY, JSON.stringify(cooldowns || {}));
+    } catch (_error) {
+    }
+  }
+
+  function getReportCooldownExpiry(resourceName) {
+    if (!resourceName) return 0;
+    const cooldowns = getReportCooldowns();
+    const expiry = Number(cooldowns[resourceName] || 0);
+    return Number.isFinite(expiry) ? expiry : 0;
+  }
+
+  function setReportCooldown(resourceName, expiryTs) {
+    if (!resourceName) return;
+    const cooldowns = getReportCooldowns();
+    cooldowns[resourceName] = expiryTs;
+    setReportCooldowns(cooldowns);
+  }
+
+  function clearExpiredReportCooldowns() {
+    const now = Date.now();
+    const cooldowns = getReportCooldowns();
+    let changed = false;
+
+    Object.keys(cooldowns).forEach((resourceName) => {
+      const expiry = Number(cooldowns[resourceName] || 0);
+      if (!Number.isFinite(expiry) || expiry <= now) {
+        delete cooldowns[resourceName];
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      setReportCooldowns(cooldowns);
+    }
+  }
+
+  function getCooldownRemainingMs(resourceName) {
+    const expiry = getReportCooldownExpiry(resourceName);
+    return Math.max(expiry - Date.now(), 0);
+  }
+
+  function formatCooldown(remainingMs) {
+    const totalMinutes = Math.ceil(remainingMs / 60000);
+    if (totalMinutes >= 60) {
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+    }
+    return `${Math.max(totalMinutes, 1)}m`;
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function renderAnnouncements() {
+    const announcementContainer = document.getElementById('announcement-container');
+    if (!announcementContainer) return;
+
+    pruneExpiredAnnouncements();
+
+    announcementContainer.innerHTML = '';
+    if (!activeAnnouncements.length) return;
+
+    activeAnnouncements.forEach((announcement) => {
+      const expiresAtRaw = announcement.expires_at ? String(announcement.expires_at).replace(' ', 'T') : '';
+      const expiresAtText = expiresAtRaw
+        ? new Date(expiresAtRaw).toLocaleString()
+        : 'Unknown';
+
+      const banner = document.createElement('div');
+      banner.className = 'rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-blue-900';
+      banner.innerHTML = `
+        <div class="flex items-start gap-2">
+          <span class="text-sm">ℹ️</span>
+          <div class="min-w-0">
+            <p class="text-sm font-medium break-words">${escapeHtml(announcement.message)}</p>
+            <p class="text-xs text-blue-700 mt-1">Valid until: ${escapeHtml(expiresAtText)}</p>
+          </div>
+        </div>
+      `;
+      announcementContainer.appendChild(banner);
+    });
+  }
+
+  function getAnnouncementExpiryTimestamp(announcement) {
+    if (!announcement || !announcement.expires_at) return null;
+    const expiresAtRaw = String(announcement.expires_at).replace(' ', 'T');
+    const expiresAt = new Date(expiresAtRaw);
+    if (Number.isNaN(expiresAt.getTime())) return null;
+    return expiresAt.getTime();
+  }
+
+  function pruneExpiredAnnouncements() {
+    const now = Date.now();
+    activeAnnouncements = activeAnnouncements.filter((announcement) => {
+      const expiryTs = getAnnouncementExpiryTimestamp(announcement);
+      if (expiryTs === null) return true;
+      return expiryTs > now;
+    });
+  }
+
+  function scheduleAnnouncementExpiryRefresh() {
+    if (announcementExpiryTimer) {
+      clearTimeout(announcementExpiryTimer);
+      announcementExpiryTimer = null;
+    }
+
+    pruneExpiredAnnouncements();
+    const now = Date.now();
+    const futureExpiryTimes = activeAnnouncements
+      .map(getAnnouncementExpiryTimestamp)
+      .filter((ts) => ts !== null && ts > now);
+
+    if (!futureExpiryTimes.length) return;
+
+    const nextExpiry = Math.min(...futureExpiryTimes);
+    const delay = Math.max(nextExpiry - now + 200, 50);
+
+    announcementExpiryTimer = setTimeout(async () => {
+      pruneExpiredAnnouncements();
+      renderAnnouncements();
+      scheduleAnnouncementExpiryRefresh();
+
+      try {
+        await loadAnnouncements();
+      } catch (_error) {
+      }
+    }, delay);
+  }
+
+  async function loadAnnouncements() {
+    try {
+      const response = await fetch('/resources/announcements/active');
+      const data = await response.json();
+      activeAnnouncements = Array.isArray(data.announcements) ? data.announcements : [];
+      renderAnnouncements();
+      scheduleAnnouncementExpiryRefresh();
+    } catch (error) {
+      console.error('Error loading announcements:', error);
+      activeAnnouncements = [];
+      renderAnnouncements();
+      if (announcementExpiryTimer) {
+        clearTimeout(announcementExpiryTimer);
+        announcementExpiryTimer = null;
+      }
+    }
+  }
 
   async function loadCachedStatuses() {
     try {
@@ -43,7 +214,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       activeIssueReports = {};
       reports.forEach(report => {
         if (report && report.resource_name) {
-          activeIssueReports[report.resource_name] = report;
+          const normalizedCount = Math.max(parseInt(report.report_count, 10) || 1, 1);
+          activeIssueReports[report.resource_name] = {
+            ...report,
+            report_count: normalizedCount
+          };
         }
       });
     } catch (error) {
@@ -56,6 +231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Load cached statuses first
       await loadCachedStatuses();
       await loadIssueReports();
+      await loadAnnouncements();
 
       const response = await fetch('/resources');
       let resourceData = await response.json();
@@ -376,8 +552,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                   </div>
 
-                  <div class="absolute top-2 right-2 issue-flag hidden" title="Other users have reported an issue with this resource" aria-label="Other users have reported an issue with this resource">
-                    <span class="text-xs">🚩</span>
+                  <div class="absolute top-2 right-2 issue-flag hidden" aria-label="User reported issue">
+                    <span class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                      <span>🚩</span>
+                      <span class="issue-count">1</span>
+                    </span>
                   </div>
                   
                   <!-- Status label at bottom -->
@@ -412,24 +591,49 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function updateIssueIndicator(card, resourceName) {
     const flag = card.querySelector('.issue-flag');
+    const issueCount = card.querySelector('.issue-count');
     if (!flag) return;
     const report = activeIssueReports[resourceName] || null;
     const hasIssue = !!report;
 
     if (hasIssue) {
-      const reportCount = Math.max(parseInt(report.report_count || 1, 10) || 1, 1);
-      const otherUsers = Math.max(reportCount - 1, 0);
-      const hoverText = `${otherUsers} other users have reported an issue with this resource`;
-      flag.setAttribute('title', hoverText);
-      flag.setAttribute('aria-label', hoverText);
+      const reportCount = Math.max(parseInt(report.report_count, 10) || 1, 1);
+      if (issueCount) {
+        issueCount.textContent = String(reportCount);
+      }
+      flag.setAttribute('aria-label', `User reported issue count: ${reportCount}`);
     }
 
     if (hasIssue) {
       flag.classList.remove('hidden');
     } else {
-      flag.removeAttribute('title');
       flag.removeAttribute('aria-label');
+      if (issueCount) {
+        issueCount.textContent = '1';
+      }
       flag.classList.add('hidden');
+    }
+  }
+
+  function updateReportButtonState(card, resourceName) {
+    const button = card.querySelector('.report-issue-btn');
+    if (!button) return;
+
+    clearExpiredReportCooldowns();
+    const remainingMs = getCooldownRemainingMs(resourceName);
+    const isCoolingDown = remainingMs > 0;
+
+    if (isCoolingDown) {
+      const remainingText = formatCooldown(remainingMs);
+      button.disabled = true;
+      button.classList.add('opacity-50', 'cursor-not-allowed');
+      button.setAttribute('title', `Already reported. Try again in ${remainingText}`);
+      button.setAttribute('aria-label', `Already reported. Try again in ${remainingText}`);
+    } else {
+      button.disabled = false;
+      button.classList.remove('opacity-50', 'cursor-not-allowed');
+      button.setAttribute('title', 'Report issue');
+      button.setAttribute('aria-label', 'Report issue');
     }
   }
 
@@ -439,6 +643,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const resourceName = card.getAttribute('data-resource-name');
       if (resourceName) {
         updateIssueIndicator(card, resourceName);
+        updateReportButtonState(card, resourceName);
       }
     });
   }
@@ -446,10 +651,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function reportResourceIssue(resourceName, button) {
     if (!resourceName) return;
 
+    clearExpiredReportCooldowns();
+    const remainingMs = getCooldownRemainingMs(resourceName);
+    if (remainingMs > 0) {
+      alert(`You already reported this resource. Please wait ${formatCooldown(remainingMs)} before reporting again.`);
+      refreshAllIssueIndicators();
+      return;
+    }
+
+    const confirmed = window.confirm(`Report an issue for "${resourceName}"?`);
+    if (!confirmed) {
+      return;
+    }
+
     try {
       if (button) {
         button.disabled = true;
-        button.classList.add('opacity-50');
+        button.classList.add('opacity-50', 'cursor-not-allowed');
       }
 
       const response = await fetch(`/resources/report-issue/${encodeURIComponent(resourceName)}`, {
@@ -457,14 +675,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         headers: { 'Content-Type': 'application/json' }
       });
 
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 429) {
+        const retryAfterSeconds = Math.max(parseInt(data.retry_after_seconds, 10) || 0, 0);
+        const cooldownExpiry = Date.now() + (retryAfterSeconds > 0 ? retryAfterSeconds * 1000 : REPORT_COOLDOWN_MS);
+        setReportCooldown(resourceName, cooldownExpiry);
+
+        if (data && data.report) {
+          const normalizedCount = Math.max(parseInt(data.report.report_count, 10) || 1, 1);
+          activeIssueReports[resourceName] = {
+            ...data.report,
+            report_count: normalizedCount
+          };
+        }
+
+        refreshAllIssueIndicators();
+        if (window.currentResourceData) {
+          updateCurrentIssues(window.currentResourceData);
+        }
+
+        alert(data.error || 'You can only report the same resource once per hour.');
+        return;
+      }
+
       if (!response.ok) {
         throw new Error('Failed to report issue');
       }
 
-      const data = await response.json();
       if (data && data.report) {
-        activeIssueReports[resourceName] = data.report;
+        const normalizedCount = Math.max(parseInt(data.report.report_count, 10) || 1, 1);
+        activeIssueReports[resourceName] = {
+          ...data.report,
+          report_count: normalizedCount
+        };
       }
+
+      setReportCooldown(resourceName, Date.now() + REPORT_COOLDOWN_MS);
       refreshAllIssueIndicators();
       if (window.currentResourceData) {
         updateCurrentIssues(window.currentResourceData);
@@ -473,18 +720,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.error('Issue reporting failed:', error);
       alert('Could not report issue right now. Please try again.');
     } finally {
-      if (button) {
-        button.disabled = false;
-        button.classList.remove('opacity-50');
-      }
+      refreshAllIssueIndicators();
     }
   }
 
   async function updateCardStatus(card, resource) {
     const statusData = await getResourceStatus(resource);
+    const hasUserReportedIssue = !!activeIssueReports[resource.resource_name];
 
-    const statusColor = getStatusColor(statusData.status);
-    const statusText = statusData.status || 'Unknown';
+    const statusText = hasUserReportedIssue ? 'User Reported Issue' : (statusData.status || 'Unknown');
+    const statusColor = hasUserReportedIssue ? 'bg-orange-500' : getStatusColor(statusData.status);
 
     const indicator = card.querySelector('.status-indicator');
     const statusBar = card.querySelector('.status-indicator-bar');
@@ -558,6 +803,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setInterval(async () => {
     await loadIssueReports();
+    await loadAnnouncements();
+    clearExpiredReportCooldowns();
     refreshAllIssueIndicators();
     if (window.currentResourceData) {
       updateCurrentIssues(window.currentResourceData);

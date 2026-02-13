@@ -407,8 +407,20 @@ router.post('/report-issue/:resourceName', async (request, response) => {
       return response.status(400).json({ error: 'resourceName is required' });
     }
 
-    const report = await dbManager.reportIssue(resourceName.trim());
-    response.json({ status: 200, report });
+    const reporterKey = request.sessionID
+      ? `sid:${request.sessionID}`
+      : `ip:${request.ip || request.socket?.remoteAddress || 'unknown'}|ua:${request.get('user-agent') || 'unknown'}`;
+
+    const result = await dbManager.reportIssue(resourceName.trim(), reporterKey);
+    if (result && result.limited) {
+      return response.status(429).json({
+        error: 'You can only report the same resource once per hour.',
+        retry_after_seconds: result.retryAfterSeconds || 0,
+        report: result.report || null
+      });
+    }
+
+    response.json({ status: 200, report: result.report });
   } catch (error) {
     console.error('Issue report error:', error);
     response.status(500).json({ error: 'Failed to report issue' });
@@ -422,6 +434,107 @@ router.get('/issue-reports', async (_request, response) => {
   } catch (error) {
     console.error('Issue reports fetch error:', error);
     response.status(500).json({ error: 'Failed to fetch issue reports' });
+  }
+});
+
+router.delete('/issue-reports/:resourceName', checkResourceManagerAccess, async (request, response) => {
+  try {
+    const resourceName = String(request.params.resourceName || '').trim();
+    if (!resourceName) {
+      return response.status(400).json({ error: 'resourceName is required' });
+    }
+
+    const result = await dbManager.clearIssueReportStateByResourceName(resourceName);
+    response.json({ status: 200, ...result });
+  } catch (error) {
+    console.error('Issue report clear error:', error);
+    response.status(500).json({ error: 'Failed to clear issue report state' });
+  }
+});
+
+router.get('/announcements/active', async (_request, response) => {
+  try {
+    const announcements = await dbManager.getActiveAnnouncements();
+    response.json({ status: 200, announcements });
+  } catch (error) {
+    console.error('Active announcements fetch error:', error);
+    response.status(500).json({ error: 'Failed to fetch announcements' });
+  }
+});
+
+router.get('/announcements', checkResourceManagerAccess, async (_request, response) => {
+  try {
+    const announcements = await dbManager.getActiveAnnouncements();
+    response.json({ status: 200, announcements });
+  } catch (error) {
+    console.error('Announcements fetch error:', error);
+    response.status(500).json({ error: 'Failed to fetch announcements' });
+  }
+});
+
+router.post('/announcements', checkResourceManagerAccess, async (request, response) => {
+  try {
+    const { message, expires_at } = request.body;
+    const cleanMessage = String(message || '').trim();
+
+    if (!cleanMessage) {
+      return response.status(400).json({ error: 'Announcement message is required' });
+    }
+
+    const expiresAtRaw = String(expires_at || '').trim();
+    const localPattern = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/;
+    const match = expiresAtRaw.match(localPattern);
+
+    if (!match) {
+      return response.status(400).json({ error: 'A valid expiration date is required' });
+    }
+
+    const [, datePart, hourPart, minutePart, secondPart] = match;
+    const sec = secondPart || '00';
+    const expiresDate = new Date(`${datePart}T${hourPart}:${minutePart}:${sec}`);
+
+    if (Number.isNaN(expiresDate.getTime())) {
+      return response.status(400).json({ error: 'A valid expiration date is required' });
+    }
+
+    if (expiresDate.getTime() <= Date.now()) {
+      return response.status(400).json({ error: 'Expiration date must be in the future' });
+    }
+
+    const sqliteExpiresAt = `${datePart} ${hourPart}:${minutePart}:${sec}`;
+    const createdBy = request.session.user?.username || null;
+    const createdByRole = request.session.user?.role || 'superadmin';
+
+    const created = await dbManager.createAnnouncement(
+      cleanMessage,
+      sqliteExpiresAt,
+      createdBy,
+      createdByRole
+    );
+
+    response.json({ status: 200, announcement: created });
+  } catch (error) {
+    console.error('Announcement create error:', error);
+    response.status(500).json({ error: 'Failed to create announcement' });
+  }
+});
+
+router.delete('/announcements/:id', checkResourceManagerAccess, async (request, response) => {
+  try {
+    const id = Number(request.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return response.status(400).json({ error: 'Invalid announcement id' });
+    }
+
+    const removed = await dbManager.revokeAnnouncement(id);
+    if (!removed) {
+      return response.status(404).json({ error: 'Announcement not found' });
+    }
+
+    response.json({ status: 200 });
+  } catch (error) {
+    console.error('Announcement revoke error:', error);
+    response.status(500).json({ error: 'Failed to revoke announcement' });
   }
 });
 
