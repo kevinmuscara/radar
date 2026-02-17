@@ -1026,8 +1026,10 @@ async function importCSV() {
       return;
     }
 
-    if (!['api', 'scrape', 'heartbeat'].includes(row.check_type)) {
-      alert(`Row ${i + 1}: check_type must be 'api', 'scrape', or 'heartbeat'`);
+    row.check_type = String(row.check_type || '').trim().toLowerCase();
+
+    if (!['api', 'scrape', 'heartbeat', 'icmp'].includes(row.check_type)) {
+      alert(`Row ${i + 1}: check_type must be 'api', 'scrape', 'heartbeat', or 'icmp'`);
       return;
     }
 

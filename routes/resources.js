@@ -272,13 +272,14 @@ router.post("/import", checkResourceManagerAccess, async (request, response) => 
     for (const row of data) {
       const { category, resource_name, status_page, favicon_url, check_type, scrape_keywords, api_config } = row;
       const categories = parseCategories(category);
+      const normalizedCheckType = String(check_type || '').trim().toLowerCase();
 
-      if (!resource_name || !status_page || !check_type || categories.length === 0) {
+      if (!resource_name || !status_page || !normalizedCheckType || categories.length === 0) {
         return response.status(400).json({ error: "Invalid row: missing required fields" });
       }
 
-      if (!['api', 'scrape', 'heartbeat'].includes(check_type)) {
-        return response.status(400).json({ error: "Invalid check_type: must be 'api', 'scrape', or 'heartbeat'" });
+      if (!['api', 'scrape', 'heartbeat', 'icmp'].includes(normalizedCheckType)) {
+        return response.status(400).json({ error: "Invalid check_type: must be 'api', 'scrape', 'heartbeat', or 'icmp'" });
       }
 
       try {
@@ -294,7 +295,7 @@ router.post("/import", checkResourceManagerAccess, async (request, response) => 
             resource_name,
             status_page,
             favicon_url: favicon_url || null,
-            check_type,
+            check_type: normalizedCheckType,
             scrape_keywords: scrape_keywords || '',
             api_config: api_config || null
           });

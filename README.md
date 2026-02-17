@@ -22,7 +22,7 @@ This repository includes the full Radar application, documentation, and various 
 
 - **Server-Side Status Monitoring**: Efficient server-side checking eliminates client-side overhead
 - **Instant Dashboard Loads**: Pre-computed cached data serves all users in milliseconds
-- **Multiple Check Methods**: Supports API-based checks, web scraping, and simple heartbeat monitoring
+- **Multiple Check Methods**: Supports API-based checks, web scraping, heartbeat monitoring, and ICMP echo (ping) checks for server/infrastructure resources
 - **Configurable Intervals**: Set check frequency from 1-60 minutes (30 min default)
 - **Smart Retry Logic**: Automatic retry for failed checks before logging errors
 - **Responsive Dashboard**: Clean, intuitive interface that works on desktop and mobile devices

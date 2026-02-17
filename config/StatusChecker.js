@@ -1,8 +1,12 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 const puppeteer = require("puppeteer");
+const { execFile } = require('child_process');
+const { promisify } = require('util');
 const DatabaseManager = require('./DatabaseManager');
 const ResourceManager = require('./ResourceManager');
+
+const execFileAsync = promisify(execFile);
 
 class StatusChecker {
   constructor() {
@@ -34,6 +38,52 @@ class StatusChecker {
     return 'Unknown';
   }
 
+  extractIcmpTarget(input) {
+    const raw = String(input || '').trim();
+    if (!raw) return '';
+
+    try {
+      if (/^[a-z]+:\/\//i.test(raw)) {
+        return new URL(raw).hostname;
+      }
+
+      const parsed = new URL(`http://${raw}`);
+      if (parsed.hostname) {
+        return parsed.hostname;
+      }
+    } catch (_error) {
+    }
+
+    return raw.replace(/^\[|\]$/g, '');
+  }
+
+  async performIcmpCheck(resource) {
+    const target = this.extractIcmpTarget(resource.status_page);
+
+    if (!target) {
+      return { status: 'Unknown', last_checked: new Date().toISOString() };
+    }
+
+    const argsByPlatform = {
+      win32: ['-n', '1', '-w', '3000', target],
+      darwin: ['-c', '1', '-W', '3000', target],
+      linux: ['-c', '1', '-W', '3', target]
+    };
+
+    const args = argsByPlatform[process.platform] || ['-c', '1', target];
+
+    try {
+      await execFileAsync('ping', args, { timeout: 5000, windowsHide: true });
+      return { status: 'Operational', last_checked: new Date().toISOString(), status_url: target };
+    } catch (error) {
+      if (error && error.code === 'ENOENT') {
+        throw new Error('ICMP check failed: ping command is not available on this host');
+      }
+
+      return { status: 'Outage', last_checked: new Date().toISOString(), status_url: target };
+    }
+  }
+
   async checkResourceStatus(resource) {
     let url = resource.status_page;
     const method = (resource.check_type || 'api').toLowerCase();
@@ -51,6 +101,10 @@ class StatusChecker {
 
     if (!url || url.trim() === "") {
       return { status: 'Unknown', last_checked: new Date().toISOString() };
+    }
+
+    if (method === 'icmp') {
+      return this.performIcmpCheck(resource);
     }
 
     if (!url.startsWith('http')) {
@@ -228,6 +282,19 @@ class StatusChecker {
             statusData.last_checked
           );
         } catch (error) {
+          // Immediately mark failed checks as Unknown to avoid stale statuses
+          try {
+            await DatabaseManager.updateResourceStatus(
+              resource.id || null,
+              resource.resource_name,
+              'Unknown',
+              resource.status_page || null,
+              new Date().toISOString()
+            );
+          } catch (cacheError) {
+            console.error(`[StatusChecker] Failed to update Unknown status for ${resource.resource_name}: ${cacheError.message}`);
+          }
+
           // Track failed resource for retry
           failedResources.push({
             resource,
@@ -269,6 +336,19 @@ class StatusChecker {
             console.log(`[StatusChecker] Retry successful: ${resource.resource_name}`);
           } catch (retryError) {
             console.error(`[StatusChecker] Failed: ${resource.resource_name} - ${retryError.message}`);
+
+            // Keep cache in Unknown state on retry failure
+            try {
+              await DatabaseManager.updateResourceStatus(
+                resource.id || null,
+                resource.resource_name,
+                'Unknown',
+                resource.status_page || null,
+                new Date().toISOString()
+              );
+            } catch (cacheError) {
+              console.error(`[StatusChecker] Failed to update Unknown status after retry for ${resource.resource_name}: ${cacheError.message}`);
+            }
             
             // Log to error table after retry failure
             await DatabaseManager.logStatusCheckError(

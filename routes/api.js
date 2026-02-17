@@ -3,9 +3,13 @@ const router = express.Router();
 const axios = require("axios");
 const cheerio = require("cheerio");
 const puppeteer = require("puppeteer");
+const { execFile } = require('child_process');
+const { promisify } = require('util');
 const resources = require('../config/ResourceManager');
 const DatabaseManager = require('../config/DatabaseManager');
 const statusChecker = require('../config/StatusChecker');
+
+const execFileAsync = promisify(execFile);
 
 // Simple in-memory request limiter to prevent abuse
 const requestLimiter = new Map();
@@ -64,6 +68,52 @@ function normalizeStatus(statusText) {
   return 'Unknown';
 }
 
+function extractIcmpTarget(input) {
+  const raw = String(input || '').trim();
+  if (!raw) return '';
+
+  try {
+    if (/^[a-z]+:\/\//i.test(raw)) {
+      return new URL(raw).hostname;
+    }
+
+    const parsed = new URL(`http://${raw}`);
+    if (parsed.hostname) {
+      return parsed.hostname;
+    }
+  } catch (_error) {
+  }
+
+  return raw.replace(/^\[|\]$/g, '');
+}
+
+async function performIcmpCheck(resource) {
+  const target = extractIcmpTarget(resource.status_page);
+
+  if (!target) {
+    return { status: 'Unknown', last_checked: new Date().toISOString() };
+  }
+
+  const argsByPlatform = {
+    win32: ['-n', '1', '-w', '3000', target],
+    darwin: ['-c', '1', '-W', '3000', target],
+    linux: ['-c', '1', '-W', '3', target]
+  };
+
+  const args = argsByPlatform[process.platform] || ['-c', '1', target];
+
+  try {
+    await execFileAsync('ping', args, { timeout: 5000, windowsHide: true });
+    return { status: 'Operational', last_checked: new Date().toISOString(), status_url: target };
+  } catch (error) {
+    if (error && error.code === 'ENOENT') {
+      throw new Error('ICMP check failed: ping command is not available on this host');
+    }
+
+    return { status: 'Outage', last_checked: new Date().toISOString(), status_url: target };
+  }
+}
+
 async function checkStatus(resource) {
   let url = resource.status_page;
   const method = (resource.check_type || 'api').toLowerCase();
@@ -81,6 +131,10 @@ async function checkStatus(resource) {
 
   if (!url || url.trim() === "") {
     return { status: 'Unknown', last_checked: new Date().toISOString() };
+  }
+
+  if (method === 'icmp') {
+    return performIcmpCheck(resource);
   }
 
   if (!url.startsWith('http')) {
