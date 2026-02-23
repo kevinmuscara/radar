@@ -323,3 +323,98 @@
     display: none;
   }
 }
+
+body.lotr-mode {
+  background: linear-gradient(180deg, #f3ead2 0%, #e4d6b2 48%, #cfbe95 100%);
+}
+
+body.lotr-mode .header-entry-animate {
+  border-color: #6b4f1d;
+  color: #3f2f14;
+  background: linear-gradient(180deg, #fff8e6 0%, #f3e3b5 100%);
+  box-shadow: 4px 4px 0 0 #6b4f1d;
+}
+
+body.lotr-mode .header-entry-animate h1,
+body.lotr-mode .header-entry-animate p {
+  color: #3f2f14;
+}
+
+body.lotr-mode details {
+  border-color: #6b4f1d;
+  box-shadow: 4px 4px 0 0 #6b4f1d;
+}
+
+body.lotr-mode details > summary {
+  background-color: #fff4d6;
+}
+
+body.lotr-mode details > summary:hover,
+body.lotr-mode details > summary:focus {
+  background-color: #f7e5b4;
+}
+
+body.lotr-mode details > div {
+  background-color: #fff9e8;
+}
+
+body.lotr-mode .category-tag.active {
+  background-color: #f5d98f;
+  border-color: #6b4f1d;
+  color: #3a2a0f;
+}
+
+body.lotr-mode .category-tag:not(.active) {
+  background-color: #fff8e8;
+  border-color: #b09054;
+  color: #5a4420;
+}
+
+body.lotr-mode .resource-card {
+  border-color: #b48a38;
+  background: #fffaf0;
+}
+
+body.lotr-mode .resource-card:hover {
+  box-shadow: 0 12px 24px rgba(107, 79, 29, 0.25) !important;
+}
+
+body.lotr-mode #current-issues-accordion {
+  border-color: #7c3b1a;
+  background-color: #fde9c8;
+}
+
+body.lotr-mode #current-issues-accordion > summary {
+  background-color: #f9d9a7;
+  color: #5c2b12;
+}
+
+body.lotr-mode #current-issues-accordion > div {
+  border-top-color: #7c3b1a;
+}
+
+body.lotr-mode #current-issues-count {
+  background-color: #f4c97f;
+  color: #5c2b12;
+  border-color: #b2672d;
+}
+
+body.lotr-mode #mobile-filter-toggle {
+  background-color: #fff6df;
+  border-color: #b09054;
+  color: #5a4420;
+}
+
+body.lotr-mode #search-input {
+  background-color: #fffdf6;
+  border-color: #b09054;
+  color: #3f2f14;
+}
+
+body.lotr-mode #search-input::placeholder {
+  color: #8a6f3d;
+}
+
+body.lotr-mode #no-results p {
+  color: #5a4420;
+}

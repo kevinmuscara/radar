@@ -7,6 +7,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   const contentRoot = document.querySelector('.content-entry-animate .space-y-8');
   const lastUpdated = document.getElementById('last-updated');
   const currentIssuesGridId = 'current-issues-grid';
+  const isLotrMode = document.body?.dataset?.lotrMode === 'true';
+
+  const uiText = isLotrMode
+    ? {
+        allResources: 'All Resources',
+        currentIssues: 'Shadows Rising',
+        currentIssuesEmpty: 'The realm stands at peace.',
+        noResults: 'No realms match your search.',
+        searchPlaceholder: 'Search the realms of Middle-earth...',
+        reportIssue: 'Raise the beacon',
+        announcementTitle: 'Herald',
+        announcementExpiresPrefix: 'Word carries until',
+        announcementNoExpiration: 'Word carries with no set ending',
+        lastUpdatedPrefix: 'Last watch'
+      }
+    : {
+        allResources: 'All Resources',
+        currentIssues: 'Current Issues',
+        currentIssuesEmpty: 'No current issues.',
+        noResults: 'No resources found matching your search.',
+        searchPlaceholder: 'Search for a resource...',
+        reportIssue: 'Report issue',
+        announcementTitle: 'Announcement',
+        announcementExpiresPrefix: 'Valid until',
+        announcementNoExpiration: 'Valid until: No expiration',
+        lastUpdatedPrefix: 'Last updated'
+      };
 
   let resourcesByCategory = {};
   let cachedStatuses = {};
@@ -170,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!categoryTagWrap) return;
     categoryTagWrap.innerHTML = '';
 
-    const defs = [{ slug: 'all', label: 'All Resources' }].concat(
+    const defs = [{ slug: 'all', label: uiText.allResources }].concat(
       categorySlugs.map((entry) => ({ slug: entry.slug, label: entry.name }))
     );
 
@@ -300,7 +327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const title = document.createElement('p');
       title.className = 'announcement-card-title text-sm font-bold uppercase tracking-wide';
-      title.textContent = 'Announcement';
+      title.textContent = uiText.announcementTitle;
 
       const message = document.createElement('p');
       message.className = 'announcement-card-message mt-1 text-sm font-medium break-words sm:text-base';
@@ -309,8 +336,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const expires = document.createElement('p');
       expires.className = 'announcement-card-expires mt-2 text-xs font-semibold sm:text-sm';
       expires.textContent = Number.isFinite(expiryTime)
-        ? `Valid until: ${new Date(expiryTime).toLocaleString()}`
-        : 'Valid until: No expiration';
+        ? `${uiText.announcementExpiresPrefix}: ${new Date(expiryTime).toLocaleString()}`
+        : uiText.announcementNoExpiration;
 
       card.appendChild(title);
       card.appendChild(message);
@@ -326,8 +353,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const status = statusMeta(getStatusFor(resource.resource_name));
     const reportCount = issueCountFor(resource.resource_name);
     const reportLabel = reportCount > 0
-      ? `Report issue (${reportCount} existing report${reportCount === 1 ? '' : 's'})`
-      : 'Report issue';
+      ? `${uiText.reportIssue} (${reportCount} existing report${reportCount === 1 ? '' : 's'})`
+      : uiText.reportIssue;
     const reportCountMarkup = reportCount > 0
       ? `<span class="report-count inline-flex min-w-5 items-center justify-center rounded-full bg-yellow-100 px-1.5 py-0.5 text-xs font-bold text-yellow-800">${reportCount}</span>`
       : '';
@@ -382,7 +409,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <details class="group border-2 border-black shadow-[4px_4px_0_0] [&_summary::-webkit-details-marker]:hidden" id="current-issues-accordion" ${currentIssuesOpen ? 'open' : ''}>
         <summary class="flex cursor-pointer items-center justify-between gap-4 bg-white px-4 py-3 font-medium text-gray-900 hover:bg-yellow-100 focus:bg-yellow-100 focus:outline-0">
           <div class="flex items-center gap-3">
-            <span class="font-semibold">Current Issues</span>
+            <span class="font-semibold">${uiText.currentIssues}</span>
             <span id="current-issues-count" class="inline-block px-2.5 py-1 text-sm font-bold bg-yellow-100 text-yellow-800 border border-yellow-400 rounded-full">${currentIssues.length}</span>
           </div>
           <svg class="size-5 shrink-0 group-open:-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -391,7 +418,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </summary>
         <div class="border-t-2 border-black p-4 bg-white">
           <div id="${currentIssuesGridId}" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">${currentIssues.map(renderCard).join('')}</div>
-          <p id="current-issues-empty" class="${currentIssues.length ? 'hidden' : ''} text-sm text-gray-600">No current issues.</p>
+          <p id="current-issues-empty" class="${currentIssues.length ? 'hidden' : ''} text-sm text-gray-600">${uiText.currentIssuesEmpty}</p>
         </div>
       </details>
     `);
@@ -526,7 +553,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await Promise.all([loadResources(), loadCachedStatuses(), loadIssueReports(), loadAnnouncements()]);
 
     if (lastUpdated) {
-      lastUpdated.textContent = `Last updated: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      lastUpdated.textContent = `${uiText.lastUpdatedPrefix}: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }
 
     renderFilterButtons();
@@ -535,6 +562,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   initializeFromUrl();
+
+  if (searchInput) {
+    searchInput.placeholder = uiText.searchPlaceholder;
+  }
+
+  if (noResults) {
+    const noResultsMessage = noResults.querySelector('p');
+    if (noResultsMessage) {
+      noResultsMessage.textContent = uiText.noResults;
+    }
+  }
 
   if (searchInput) {
     searchInput.addEventListener('input', (event) => {
@@ -567,7 +605,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await Promise.all([loadCachedStatuses(), loadIssueReports(), loadAnnouncements()]);
       renderDashboard();
       if (lastUpdated) {
-        lastUpdated.textContent = `Last updated: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        lastUpdated.textContent = `${uiText.lastUpdatedPrefix}: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
       }
     } catch (_error) {
     }

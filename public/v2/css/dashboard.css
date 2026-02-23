@@ -343,3 +343,196 @@ body.dashboard-no-rerender-animations .grid > div {
     display: none;
   }
 }
+
+body.lotr-mode {
+  background: linear-gradient(180deg, #1f120d 0%, #2a1810 36%, #3a2417 68%, #22140d 100%);
+  color: #f3dfc2;
+}
+
+body.lotr-mode #wave-container {
+  mix-blend-mode: normal;
+}
+
+body.lotr-mode .header-entry-animate {
+  border-color: #8b5e34;
+  background: linear-gradient(180deg, #5a3723 0%, #442a1c 100%);
+  box-shadow: 6px 6px 0 0 rgba(25, 12, 8, 0.85);
+}
+
+body.lotr-mode .header-entry-animate h1,
+body.lotr-mode .header-entry-animate p,
+body.lotr-mode .header-entry-animate span {
+  color: #f3dfc2;
+}
+
+body.lotr-mode .district-logo-badge {
+  background: rgba(28, 15, 10, 0.6);
+  border: 2px solid #8b5e34;
+}
+
+body.lotr-mode details {
+  border-color: #8b5e34;
+  box-shadow: 6px 6px 0 0 rgba(25, 12, 8, 0.8);
+}
+
+body.lotr-mode details > summary {
+  background: linear-gradient(180deg, #5c3925 0%, #492d1e 100%);
+  color: #f7e7cf;
+}
+
+body.lotr-mode details > summary:hover,
+body.lotr-mode details > summary:focus {
+  background: linear-gradient(180deg, #694028 0%, #543523 100%);
+}
+
+body.lotr-mode details > div {
+  background: #2f1d14;
+  border-top-color: #8b5e34;
+}
+
+body.lotr-mode .category-tag.active {
+  background-color: #7f4f2d;
+  border-color: #b57b42;
+  color: #fff2dd;
+}
+
+body.lotr-mode .category-tag:not(.active) {
+  background-color: #4a2d1d;
+  border-color: #805334;
+  color: #e8cfb1;
+}
+
+body.lotr-mode .category-tag:hover:not(.active) {
+  background-color: #5b3622;
+  border-color: #a36b3e;
+  color: #fff0da;
+}
+
+body.lotr-mode .resource-card {
+  border-color: #8b5e34;
+  background: linear-gradient(180deg, #4a2d1d 0%, #3c2418 100%);
+  color: #f4e3cc;
+}
+
+body.lotr-mode .resource-card h3 {
+  color: #f9ead2;
+}
+
+body.lotr-mode .resource-card .report-issue-btn {
+  color: #d4b08a;
+}
+
+body.lotr-mode .resource-card .report-issue-btn:hover {
+  color: #ffc06b;
+}
+
+body.lotr-mode .resource-card:hover {
+  box-shadow: 0 14px 26px rgba(19, 9, 6, 0.72) !important;
+}
+
+body.lotr-mode .icon-square {
+  border-color: #8b5e34 !important;
+  background: linear-gradient(180deg, #6c432a 0%, #4d3020 100%) !important;
+}
+
+body.lotr-mode .icon-square img {
+  filter: sepia(0.45) saturate(0.85) contrast(1.05);
+}
+
+body.lotr-mode #current-issues-accordion {
+  border-color: #b14f2f;
+  background: #3d1e16;
+}
+
+body.lotr-mode #current-issues-accordion > summary {
+  background: linear-gradient(180deg, #7b2f22 0%, #602419 100%);
+  color: #ffd7b0;
+}
+
+body.lotr-mode #current-issues-accordion > summary:hover,
+body.lotr-mode #current-issues-accordion > summary:focus {
+  background: linear-gradient(180deg, #8f3a27 0%, #6d2a1c 100%);
+}
+
+body.lotr-mode #current-issues-count {
+  background-color: #9d3e22;
+  border-color: #d06a3d;
+  color: #ffe6ca;
+}
+
+body.lotr-mode #search-input {
+  background: #2f1d14;
+  border-color: #8b5e34;
+  color: #f4dec0;
+}
+
+body.lotr-mode #search-input::placeholder {
+  color: #cfaa80;
+}
+
+body.lotr-mode #search-input:focus {
+  border-color: #c27d44;
+}
+
+body.lotr-mode #mobile-filter-toggle {
+  background-color: #4a2d1d;
+  border-color: #8b5e34;
+  color: #e9cfaf;
+}
+
+body.lotr-mode #mobile-filter-toggle:hover {
+  border-color: #bf7d45;
+  color: #ffe2bf;
+}
+
+body.lotr-mode #no-results p,
+body.lotr-mode #current-issues-empty {
+  color: #dbbb95;
+}
+
+body.lotr-mode .announcement-card {
+  border-color: #8b5e34;
+  background: linear-gradient(180deg, #5b3723 0%, #3d2418 100%);
+  box-shadow: 6px 6px 0 0 rgba(19, 9, 6, 0.7);
+}
+
+body.lotr-mode .announcement-card .announcement-card-title,
+body.lotr-mode .announcement-card .announcement-card-expires {
+  color: #f6dfc2;
+}
+
+body.lotr-mode .announcement-card .announcement-card-message {
+  color: #f2d4ad;
+}
+
+body.lotr-mode .announcement-card[data-announcement-type="danger"] {
+  border-color: #c4552e;
+  background: linear-gradient(180deg, #7f2d1f 0%, #5e2118 100%);
+}
+
+body.lotr-mode .announcement-card[data-announcement-type="warning"] {
+  border-color: #aa6f3b;
+  background: linear-gradient(180deg, #724827 0%, #5a381e 100%);
+}
+
+body.lotr-mode .announcement-card[data-announcement-type="success"],
+body.lotr-mode .announcement-card[data-announcement-type="informative"] {
+  border-color: #8b5e34;
+  background: linear-gradient(180deg, #5b3723 0%, #3d2418 100%);
+}
+
+body.lotr-mode .bg-green-100,
+body.lotr-mode .bg-blue-100,
+body.lotr-mode .bg-amber-100,
+body.lotr-mode .bg-red-100,
+body.lotr-mode .bg-slate-100 {
+  background-color: #704529 !important;
+}
+
+body.lotr-mode .text-green-800,
+body.lotr-mode .text-blue-800,
+body.lotr-mode .text-amber-800,
+body.lotr-mode .text-red-800,
+body.lotr-mode .text-slate-700 {
+  color: #ffe4bf !important;
+}

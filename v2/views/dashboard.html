@@ -6,9 +6,9 @@
   <link href="/v2/css/output.css" rel="stylesheet">
   <link href="/v2/css/animate.css" rel="stylesheet">
   <link href="/v2/css/dashboard.css" rel="stylesheet">
-  <title><%= config.branding.schoolName %> Dashboard</title>
+  <title><%= config.branding.schoolName %> <%= lotrMode ? 'Middle-earth Status Board' : 'Dashboard' %></title>
 </head>
-<body class="relative min-h-screen overflow-x-hidden overflow-y-auto bg-[#FCFBF4]" data-school-name="<%= config.branding.schoolName %>" data-school-logo="/branding/<%= config.branding.logo %>">
+<body class="relative min-h-screen overflow-x-hidden overflow-y-auto bg-[#FCFBF4] <%= lotrMode ? 'lotr-mode' : '' %>" data-school-name="<%= config.branding.schoolName %>" data-school-logo="/branding/<%= config.branding.logo %>" data-lotr-mode="<%= lotrMode ? 'true' : 'false' %>">
   <div id="wave-container" class="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true"></div>
 
   <!-- container start -->
@@ -28,7 +28,7 @@
         <input 
           type="text" 
           id="search-input" 
-          placeholder="Search for a resource..." 
+          placeholder="<%= lotrMode ? 'Search the realms of Middle-earth...' : 'Search for a resource...' %>" 
           class="w-full flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black focus:ring-0 text-gray-900"
         >
         <button
@@ -70,7 +70,7 @@
 
     <!-- No results message -->
     <div id="no-results" class="no-results-entry-animate hidden text-center py-12">
-      <p class="text-xl text-gray-600">No resources found matching your search.</p>
+      <p class="text-xl text-gray-600"><%= lotrMode ? 'No realms match your search.' : 'No resources found matching your search.' %></p>
     </div>
 
     <div class="content-entry-animate w-full">
