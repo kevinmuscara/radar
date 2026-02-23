@@ -73,7 +73,7 @@ class ResourceManager {
 
     // Get all resources mapped to categories
     const rows = await db.all(`
-      SELECT c.name as category, r.name as resource_name, r.status_page, r.favicon_url, r.check_type, r.scrape_keywords, r.api_config 
+      SELECT c.name as category, r.id, r.name as resource_name, r.status_page, r.favicon_url, r.check_type, r.scrape_keywords, r.api_config 
         FROM resource_category_mapping m
         JOIN categories c ON m.category_id = c.id
         JOIN resource_definitions r ON m.resource_id = r.id
@@ -86,6 +86,7 @@ class ResourceManager {
     rows.forEach(row => {
       // Logic for grade_level: equal to category name per new request
       resources[row.category].push({
+        id: row.id,
         resource_name: row.resource_name,
         status_page: row.status_page,
         favicon_url: row.favicon_url || '',
@@ -118,8 +119,15 @@ class ResourceManager {
     await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, favicon_url, check_type, scrape_keywords, api_config) VALUES (?, ?, ?, ?, ?, ?)", [resource.resource_name, resource.status_page, resource.favicon_url || null, resource.check_type || 'api', resource.scrape_keywords || '', resource.api_config || null]);
 
     await db.run(
-      "UPDATE resource_definitions SET favicon_url = COALESCE(?, favicon_url) WHERE name = ? AND status_page = ?",
-      [resource.favicon_url || null, resource.resource_name, resource.status_page]
+      "UPDATE resource_definitions SET favicon_url = COALESCE(?, favicon_url), check_type = COALESCE(?, check_type), scrape_keywords = COALESCE(?, scrape_keywords), api_config = ? WHERE name = ? AND status_page = ?",
+      [
+        resource.favicon_url || null,
+        resource.check_type || 'api',
+        resource.scrape_keywords !== undefined ? resource.scrape_keywords : '',
+        resource.api_config !== undefined ? resource.api_config : null,
+        resource.resource_name,
+        resource.status_page
+      ]
     );
     const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
 

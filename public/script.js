@@ -47,6 +47,53 @@ document.addEventListener('DOMContentLoaded', async () => {
   let hasCapturedAccordionState = false;
   let hasRenderedDashboardOnce = false;
 
+  function isValidHexColor(value) {
+    return /^#([0-9a-fA-F]{6})$/.test(String(value || '').trim());
+  }
+
+  function hexToRgb(hex) {
+    const normalized = String(hex || '').trim();
+    if (!isValidHexColor(normalized)) return null;
+    return {
+      r: parseInt(normalized.slice(1, 3), 16),
+      g: parseInt(normalized.slice(3, 5), 16),
+      b: parseInt(normalized.slice(5, 7), 16)
+    };
+  }
+
+  function rgbToHex({ r, g, b }) {
+    const clamp = (value) => Math.max(0, Math.min(255, Math.round(value)));
+    const toHex = (value) => clamp(value).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+
+  function mixHexWithWhite(hex, whiteRatio) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return '#f3f4f6';
+    return rgbToHex({
+      r: rgb.r + (255 - rgb.r) * whiteRatio,
+      g: rgb.g + (255 - rgb.g) * whiteRatio,
+      b: rgb.b + (255 - rgb.b) * whiteRatio
+    });
+  }
+
+  function contrastTextColor(hex) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return '#111827';
+    const luminance = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+    return luminance > 0.6 ? '#111827' : '#ffffff';
+  }
+
+  function applyThemeVariables() {
+    const root = document.documentElement;
+    const primary = String(document.body?.dataset?.primaryColor || '#6b7280').trim().toLowerCase();
+    const normalizedPrimary = isValidHexColor(primary) ? primary : '#6b7280';
+    root.style.setProperty('--theme-primary', normalizedPrimary);
+    root.style.setProperty('--theme-primary-soft', mixHexWithWhite(normalizedPrimary, 0.87));
+    root.style.setProperty('--theme-primary-contrast', contrastTextColor(normalizedPrimary));
+    root.style.setProperty('--theme-card-border', mixHexWithWhite(normalizedPrimary, 0.68));
+  }
+
   function clearSearchFeedback() {
     if (!searchInput) return;
     searchInput.classList.remove('search-shake', 'search-no-results');
@@ -562,6 +609,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   initializeFromUrl();
+  applyThemeVariables();
 
   if (searchInput) {
     searchInput.placeholder = uiText.searchPlaceholder;

@@ -7,7 +7,7 @@
   <link href="/v2/css/animate.css" rel="stylesheet">
   <title><%= config.branding.schoolName %> Admin Dashboard</title>
 </head>
-<body class="admin-page relative min-h-screen overflow-x-hidden bg-[#FCFBF4]" data-role="<%= (currentUser && currentUser.role) ? currentUser.role : 'superadmin' %>" data-is-superadmin="<%= isSuperAdmin ? 'true' : 'false' %>" data-school-name="<%= config.branding.schoolName %>" data-refresh-interval="<%= config.refreshIntervalMinutes %>" data-admin-username="<%= (config.adminUser && config.adminUser.username) ? config.adminUser.username : 'admin' %>" data-branding-logo="<%= config.branding.logo %>">
+<body class="admin-page relative min-h-screen overflow-x-hidden bg-[#FCFBF4]" data-role="<%= (currentUser && currentUser.role) ? currentUser.role : 'superadmin' %>" data-is-superadmin="<%= isSuperAdmin ? 'true' : 'false' %>" data-school-name="<%= config.branding.schoolName %>" data-refresh-interval="<%= config.refreshIntervalMinutes %>" data-admin-username="<%= (config.adminUser && config.adminUser.username) ? config.adminUser.username : 'admin' %>" data-branding-logo="<%= config.branding.logo %>" data-primary-color="<%= (config.branding && config.branding.primaryColor) ? config.branding.primaryColor : '#6b7280' %>">
   <div id="wave-container" class="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true"></div>
   <!-- container start -->
   <div class="relative z-10 mx-auto max-w-7xl px-4 pt-10 pb-96 sm:pb-64 lg:pb-32 sm:px-6 lg:px-8">
@@ -554,8 +554,15 @@
                 <p class="mt-1 text-sm text-gray-600">Set how often checks run, in minutes.</p>
 
                 <div class="mt-3">
-                  <label for="status-check-interval" class="block text-sm font-medium text-gray-900">Interval (minutes)</label>
-                  <input id="status-check-interval" type="number" min="1" step="1" inputmode="numeric" placeholder="5" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                  <form id="status-interval-form" class="space-y-3">
+                    <div>
+                      <label for="status-check-interval" class="block text-sm font-medium text-gray-900">Interval (minutes)</label>
+                      <input id="status-check-interval" type="number" min="1" step="1" inputmode="numeric" placeholder="5" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <button type="submit" class="mt-4 block w-full rounded-lg border border-blue-600 bg-blue-600 px-12 py-3 text-sm font-medium text-white transition-colors hover:bg-transparent hover:text-blue-600">
+                      Update Status Check Rate
+                    </button>
+                  </form>
                 </div>
               </div>
 
@@ -580,10 +587,15 @@
               <p class="mt-1 text-sm text-gray-600">Reconfigure your dashboard's branding and appearance.</p>
 
               <div class="mt-4">
-                <form>
+                <form id="branding-settings-form">
                   <div>
                     <label class="block text-sm font-medium text-gray-900" for="school.name">School Name</label>
                     <input class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none" id="school.name" type="text" placeholder="City Schools">
+                  </div>
+
+                  <div class="mt-3">
+                    <label class="block text-sm font-medium text-gray-900" for="primary-color">Primary Color</label>
+                    <input class="mt-1 h-10 w-full rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none" id="primary-color" type="color" value="#6b7280">
                   </div>
 
                   <div class="mt-3">
@@ -752,15 +764,8 @@
               <input type="url" id="resource-url" name="resource-url" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" placeholder="https://status.example.org/resource">
             </div>
             <div>
-              <label for="resource-category" class="block text-sm font-medium text-gray-900 mb-1">Category</label>
-              <select id="resource-category" name="resource-category" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
-                <option value="">Select a category</option>
-                <option value="Technology">Technology</option>
-                <option value="Connectivity">Connectivity</option>
-                <option value="Academics">Academics</option>
-                <option value="Learning">Learning</option>
-                <option value="Activities">Activities</option>
-              </select>
+              <label for="resource-category" class="block text-sm font-medium text-gray-900 mb-1">Categories</label>
+              <div id="resource-category-options" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
             </div>
 
             <div>
@@ -1002,15 +1007,8 @@
               <input type="url" id="edit-resource-url" name="resource-url" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" placeholder="https://status.example.org/resource">
             </div>
             <div>
-              <label for="edit-resource-category" class="block text-sm font-medium text-gray-900 mb-1">Category</label>
-              <select id="edit-resource-category" name="resource-category" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
-                <option value="">Select a category</option>
-                <option value="Technology">Technology</option>
-                <option value="Connectivity">Connectivity</option>
-                <option value="Academics">Academics</option>
-                <option value="Learning">Learning</option>
-                <option value="Activities">Activities</option>
-              </select>
+              <label for="edit-resource-category" class="block text-sm font-medium text-gray-900 mb-1">Categories</label>
+              <div id="edit-resource-category-options" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"></div>
             </div>
 
             <div>

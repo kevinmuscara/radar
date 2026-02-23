@@ -281,29 +281,41 @@ router.post("/category/:category", checkResourceManagerAccess, async (request, r
     grade_level,
   } = request.body;
 
-  await resources.addResource(category, { 
-    resource_name, 
-    status_page, 
+  const selectedCategories = parseCategories(request.body.categories && request.body.categories.length ? request.body.categories : category);
+  const categoriesToUse = selectedCategories.length > 0 ? selectedCategories : [category];
+
+  const existingCategories = new Set(await resources.getCategories());
+  for (const selectedCategory of categoriesToUse) {
+    if (!existingCategories.has(selectedCategory)) {
+      await resources.addCategory(selectedCategory);
+      existingCategories.add(selectedCategory);
+    }
+  }
+
+  const definitionPayload = {
+    resource_name,
+    status_page,
     favicon_url: request.body.favicon_url,
-    check_type: request.body.check_type, 
+    check_type: request.body.check_type,
     scrape_keywords: request.body.scrape_keywords,
-    api_config: request.body.api_config 
-  });
+    api_config: request.body.api_config
+  };
+
+  for (const selectedCategory of categoriesToUse) {
+    await resources.addResource(selectedCategory, definitionPayload);
+  }
 
   // Immediately check the status of the newly created resource
   try {
-    const resourceDef = await resources.getDefinition(resource_name);
-    if (resourceDef) {
-      const statusData = await statusChecker.checkResourceStatus(resourceDef);
-      await dbManager.updateResourceStatus(
-        resourceDef.id,
-        resource_name,
-        statusData.status,
-        statusData.status_url || resourceDef.status_page,
-        statusData.last_checked
-      );
-      console.log(`[Resources] Checked status for new resource: ${resource_name}`);
-    }
+    const statusData = await statusChecker.checkResourceStatus(definitionPayload);
+    await dbManager.updateResourceStatus(
+      null,
+      resource_name,
+      statusData.status,
+      statusData.status_url || definitionPayload.status_page,
+      statusData.last_checked
+    );
+    console.log(`[Resources] Checked status for new resource: ${resource_name}`);
   } catch (error) {
     console.error(`[Resources] Failed to check status for new resource ${resource_name}:`, error.message);
     // Don't fail the request if status check fails
@@ -355,29 +367,52 @@ router.put("/category/:category/:resource", checkResourceManagerAccess, async (r
     status_page,
     grade_level,
   } = request.body;
-  await resources.updateResource(category, resource, { 
-    resource_name, 
-    status_page, 
+  const selectedCategories = parseCategories(request.body.categories && request.body.categories.length ? request.body.categories : category);
+  const categoriesToUse = selectedCategories.length > 0 ? selectedCategories : [category];
+
+  const existingCategories = new Set(await resources.getCategories());
+  for (const selectedCategory of categoriesToUse) {
+    if (!existingCategories.has(selectedCategory)) {
+      await resources.addCategory(selectedCategory);
+      existingCategories.add(selectedCategory);
+    }
+  }
+
+  const previousCategories = await resources.getResourceCategories(resource);
+  const definitionPayload = {
+    resource_name,
+    status_page,
     favicon_url: request.body.favicon_url,
-    check_type: request.body.check_type, 
+    check_type: request.body.check_type,
     scrape_keywords: request.body.scrape_keywords,
-    api_config: request.body.api_config 
-  });
+    api_config: request.body.api_config
+  };
+
+  await resources.updateResource(category, resource, definitionPayload);
+
+  for (const selectedCategory of categoriesToUse) {
+    if (!previousCategories.includes(selectedCategory)) {
+      await resources.addResource(selectedCategory, definitionPayload);
+    }
+  }
+
+  for (const previousCategory of previousCategories) {
+    if (!categoriesToUse.includes(previousCategory)) {
+      await resources.removeResource(previousCategory, resource_name);
+    }
+  }
 
   // Immediately check the status of the updated resource
   try {
-    const resourceDef = await resources.getDefinition(resource_name);
-    if (resourceDef) {
-      const statusData = await statusChecker.checkResourceStatus(resourceDef);
-      await dbManager.updateResourceStatus(
-        resourceDef.id,
-        resource_name,
-        statusData.status,
-        statusData.status_url || resourceDef.status_page,
-        statusData.last_checked
-      );
-      console.log(`[Resources] Checked status for updated resource: ${resource_name}`);
-    }
+    const statusData = await statusChecker.checkResourceStatus(definitionPayload);
+    await dbManager.updateResourceStatus(
+      null,
+      resource_name,
+      statusData.status,
+      statusData.status_url || definitionPayload.status_page,
+      statusData.last_checked
+    );
+    console.log(`[Resources] Checked status for updated resource: ${resource_name}`);
   } catch (error) {
     console.error(`[Resources] Failed to check status for updated resource ${resource_name}:`, error.message);
     // Don't fail the request if status check fails

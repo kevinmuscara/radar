@@ -20,6 +20,27 @@ class StatusChecker {
     this.currentResourceName = '';
   }
 
+  hasMappedApiField(resource) {
+    if (!resource || !resource.api_config) return false;
+    try {
+      const parsed = typeof resource.api_config === 'string'
+        ? JSON.parse(resource.api_config)
+        : resource.api_config;
+      return Boolean(parsed && parsed.fieldPath && String(parsed.fieldPath).trim());
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  scoreResourceDefinition(resource) {
+    if (!resource) return 0;
+    let score = 0;
+    if (resource.status_page) score += 1;
+    if ((resource.check_type || 'api').toLowerCase() === 'api') score += 1;
+    if (this.hasMappedApiField(resource)) score += 2;
+    return score;
+  }
+
   normalizeStatus(statusText) {
     if (!statusText) return 'Unknown';
     const lower = statusText.toLowerCase();
@@ -249,13 +270,30 @@ class StatusChecker {
         }
       }
 
-      this.totalResources = allResources.length;
+      const dedupedByName = new Map();
+      for (const resource of allResources) {
+        const key = String(resource && resource.resource_name ? resource.resource_name : '').trim().toLowerCase();
+        if (!key) continue;
+
+        if (!dedupedByName.has(key)) {
+          dedupedByName.set(key, resource);
+          continue;
+        }
+
+        const current = dedupedByName.get(key);
+        if (this.scoreResourceDefinition(resource) >= this.scoreResourceDefinition(current)) {
+          dedupedByName.set(key, resource);
+        }
+      }
+
+      const uniqueResources = Array.from(dedupedByName.values());
+      this.totalResources = uniqueResources.length;
       const failedResources = [];
       console.log(`[StatusChecker] Checking ${this.totalResources} resources`);
 
       // Check resources sequentially to avoid overloading
-      for (let i = 0; i < allResources.length; i++) {
-        const resource = allResources[i];
+      for (let i = 0; i < uniqueResources.length; i++) {
+        const resource = uniqueResources[i];
         
         // Check if cancellation was requested
         if (this.cancelCurrentCheck) {
@@ -309,7 +347,7 @@ class StatusChecker {
       // Retry failed resources once
       if (failedResources.length > 0 && !this.cancelCurrentCheck) {
         console.log(`[StatusChecker] Retrying ${failedResources.length} failed resources`);
-        this.totalResources = allResources.length + failedResources.length; // Update total for progress
+        this.totalResources = uniqueResources.length + failedResources.length; // Update total for progress
         
         for (let i = 0; i < failedResources.length; i++) {
           const { resource, error: firstError } = failedResources[i];
@@ -318,7 +356,7 @@ class StatusChecker {
             break;
           }
 
-          this.currentProgress = allResources.length + i + 1;
+          this.currentProgress = uniqueResources.length + i + 1;
           this.currentResourceName = `${resource.resource_name} (retry)`;
 
           try {

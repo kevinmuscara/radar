@@ -1,3 +1,11 @@
+/* Theme variables (overridden at runtime from branding primary color) */
+:root {
+  --theme-primary: #6b7280;
+  --theme-primary-soft: #f3f4f6;
+  --theme-primary-contrast: #111827;
+  --theme-card-border: #e5e7eb;
+}
+
 /* Page load animations */
 @keyframes fadeInUp {
   from {
@@ -114,11 +122,13 @@
 /* Card hover animation */
 .resource-card {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-color: var(--theme-card-border) !important;
 }
 
 .resource-card:hover {
   transform: translateY(-4px) scale(1.02);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+  border-color: var(--theme-primary) !important;
 }
 
 .icon-square {
@@ -147,22 +157,58 @@
 }
 
 .category-tag.active {
-  background-color: #f3f4f6;
-  border-color: #6b7280;
-  color: #111827;
+  background-color: var(--theme-primary-soft);
+  border-color: var(--theme-primary);
+  color: var(--theme-primary-contrast);
   font-weight: 600;
 }
 
 .category-tag:not(.active) {
   background-color: #ffffff;
-  border-color: #d1d5db;
-  color: #4b5563;
+  border-color: var(--theme-card-border);
+  color: var(--theme-primary);
 }
 
 .category-tag:hover:not(.active) {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
-  color: #374151;
+  background-color: var(--theme-primary-soft);
+  border-color: var(--theme-primary);
+  color: var(--theme-primary-contrast);
+}
+
+.header-entry-animate {
+  border-color: var(--theme-primary) !important;
+  box-shadow: 4px 4px 0 0 var(--theme-primary) !important;
+}
+
+.content-entry-animate > .space-y-8 > details {
+  border-color: var(--theme-primary) !important;
+  box-shadow: 4px 4px 0 0 var(--theme-primary) !important;
+}
+
+.content-entry-animate > .space-y-8 > details > div {
+  border-top-color: var(--theme-primary) !important;
+}
+
+.content-entry-animate > .space-y-8 > details > summary {
+  color: var(--theme-primary-contrast) !important;
+}
+
+.content-entry-animate > .space-y-8 > details > summary:hover,
+.content-entry-animate > .space-y-8 > details > summary:focus {
+  background-color: var(--theme-primary-soft) !important;
+  color: var(--theme-primary-contrast) !important;
+}
+
+.content-entry-animate > .space-y-8 > details[open] > summary {
+  background-color: var(--theme-primary-soft) !important;
+  color: var(--theme-primary-contrast) !important;
+}
+
+.content-entry-animate > .space-y-8 > details[open] > summary span.inline-block,
+.content-entry-animate > .space-y-8 > details > summary span.inline-block {
+  border-color: var(--theme-primary) !important;
+  color: var(--theme-primary) !important;
+  background-color: #ffffff !important;
 }
 
 .details-hidden {
@@ -178,28 +224,28 @@
 }
 
 #current-issues-accordion {
-  border-color: #dc2626;
-  background-color: #fef2f2;
+  border-color: var(--theme-primary) !important;
+  background-color: var(--theme-primary-soft) !important;
 }
 
 #current-issues-accordion > summary {
-  background-color: #fee2e2;
-  color: #7f1d1d;
+  background-color: var(--theme-primary-soft) !important;
+  color: var(--theme-primary-contrast) !important;
 }
 
 #current-issues-accordion > summary:hover,
 #current-issues-accordion > summary:focus {
-  background-color: #fecaca;
+  background-color: var(--theme-primary-soft) !important;
 }
 
 #current-issues-accordion > div {
-  border-top-color: #dc2626;
+  border-top-color: var(--theme-primary) !important;
 }
 
 #current-issues-count {
-  background-color: #fee2e2;
-  color: #b91c1c;
-  border-color: #ef4444;
+  background-color: #ffffff !important;
+  color: var(--theme-primary) !important;
+  border-color: var(--theme-primary) !important;
 }
 
 .district-logo-badge {

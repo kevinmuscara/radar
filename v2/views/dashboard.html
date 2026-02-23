@@ -8,7 +8,7 @@
   <link href="/v2/css/dashboard.css" rel="stylesheet">
   <title><%= config.branding.schoolName %> <%= lotrMode ? 'Middle-earth Status Board' : 'Dashboard' %></title>
 </head>
-<body class="relative min-h-screen overflow-x-hidden overflow-y-auto bg-[#FCFBF4] <%= lotrMode ? 'lotr-mode' : '' %>" data-school-name="<%= config.branding.schoolName %>" data-school-logo="/branding/<%= config.branding.logo %>" data-lotr-mode="<%= lotrMode ? 'true' : 'false' %>">
+<body class="relative min-h-screen overflow-x-hidden overflow-y-auto bg-[#FCFBF4] <%= lotrMode ? 'lotr-mode' : '' %>" data-school-name="<%= config.branding.schoolName %>" data-school-logo="/branding/<%= config.branding.logo %>" data-lotr-mode="<%= lotrMode ? 'true' : 'false' %>" data-primary-color="<%= (config.branding && config.branding.primaryColor) ? config.branding.primaryColor : '#6b7280' %>">
   <div id="wave-container" class="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true"></div>
 
   <!-- container start -->

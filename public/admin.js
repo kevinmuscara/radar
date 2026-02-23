@@ -38,6 +38,31 @@ function qsa(selector, root = document) {
   return Array.from(root.querySelectorAll(selector));
 }
 
+function getSelectedValues(selector) {
+  const element = qs(selector);
+  if (!element) return [];
+
+  if (element.tagName === 'SELECT') {
+    return Array.from(element.selectedOptions || [])
+      .map((option) => String(option.value || '').trim())
+      .filter(Boolean);
+  }
+
+  const checked = qsa('input[type="checkbox"]:checked', element);
+  return checked
+    .map((input) => String(input.value || '').trim())
+    .filter(Boolean);
+}
+
+function setCheckedValues(selector, values) {
+  const element = qs(selector);
+  if (!element) return;
+  const selectedValues = new Set((values || []).map((value) => String(value || '').trim()));
+  qsa('input[type="checkbox"]', element).forEach((input) => {
+    input.checked = selectedValues.has(String(input.value || '').trim());
+  });
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -313,8 +338,9 @@ function renderEnhancedTable(tableId, options = {}) {
   const filtered = rows.filter((row) => {
     const text = row.textContent.toLowerCase();
     const filterCell = row.children[2] ? row.children[2].textContent.trim() : '';
+    const filterValues = filterCell.split(',').map((value) => value.trim()).filter(Boolean);
     const queryOk = !query || text.includes(query);
-    const filterOk = !selected || filterCell === selected;
+    const filterOk = !selected || filterValues.includes(selected);
     return queryOk && filterOk;
   });
 
@@ -444,7 +470,7 @@ function renderCategoryFilterOptions() {
   if (!select) return;
   const current = select.value;
   select.innerHTML = '<option value="">All Categories</option>';
-  [...new Set(state.resources.map((item) => item.primaryCategory).filter(Boolean))]
+  [...new Set(state.resources.flatMap((item) => item.categories || []).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b))
     .forEach((category) => {
       const option = document.createElement('option');
@@ -461,25 +487,26 @@ function renderResourceCategoryOptions() {
   const categoryOptions = state.categories
     .slice()
     .sort((a, b) => a.localeCompare(b))
-    .map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
+    .map((category) => `
+      <label class="flex items-center gap-2 py-1.5">
+        <input type="checkbox" class="h-4 w-4" value="${escapeHtml(category)}">
+        <span>${escapeHtml(category)}</span>
+      </label>
+    `)
     .join('');
 
-  const createSelect = qs('#resource-category');
-  if (createSelect) {
-    const current = createSelect.value;
-    createSelect.innerHTML = `<option value="">Select a category</option>${categoryOptions}`;
-    if (Array.from(createSelect.options).some((option) => option.value === current)) {
-      createSelect.value = current;
-    }
+  const createWrap = qs('#resource-category-options');
+  if (createWrap) {
+    const current = getSelectedValues('#resource-category-options');
+    createWrap.innerHTML = categoryOptions;
+    setCheckedValues('#resource-category-options', current);
   }
 
-  const editSelect = qs('#edit-resource-category');
-  if (editSelect) {
-    const current = editSelect.value;
-    editSelect.innerHTML = `<option value="">Select a category</option>${categoryOptions}`;
-    if (Array.from(editSelect.options).some((option) => option.value === current)) {
-      editSelect.value = current;
-    }
+  const editWrap = qs('#edit-resource-category-options');
+  if (editWrap) {
+    const current = getSelectedValues('#edit-resource-category-options');
+    editWrap.innerHTML = categoryOptions;
+    setCheckedValues('#edit-resource-category-options', current);
   }
 }
 
@@ -534,13 +561,13 @@ function renderResources() {
     <tr class="*:text-gray-900 *:first:font-medium">
       <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(resource.resource_name)}</td>
       <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(resource.status_page)}</td>
-      <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(resource.primaryCategory || '')}</td>
+      <td class="px-3 py-2 whitespace-nowrap">${escapeHtml((resource.categories || []).join(', '))}</td>
       <td class="px-3 py-2 whitespace-nowrap">
         <div class="flex items-center gap-2">
           <button type="button" aria-label="Clear ${escapeHtml(resource.resource_name)}" class="rounded border border-gray-300 p-1.5 text-gray-700 hover:bg-gray-100" data-action="clear-issue" data-resource-name="${escapeHtml(resource.resource_name)}">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1.5m0 15V21m9-9h-1.5M4.5 12H3m15.364 6.364-1.06-1.06M6.697 6.697l-1.06-1.06m12.727 0-1.06 1.06M6.697 17.303l-1.06 1.06M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
           </button>
-          <button type="button" aria-label="Edit ${escapeHtml(resource.resource_name)}" class="edit-btn-animated rounded border border-gray-300 p-1.5 text-gray-700 hover:bg-gray-100" data-edit-type="resource" data-edit-name="${escapeHtml(resource.resource_name)}" data-edit-url="${escapeHtml(resource.status_page)}" data-edit-category="${escapeHtml(resource.primaryCategory || '')}" data-edit-check-type="${escapeHtml(resource.check_type || 'api')}" data-edit-scrape-keywords="${escapeHtml(resource.scrape_keywords || '')}" data-edit-api-config="${escapeHtml(resource.api_config || '')}" data-edit-favicon="${escapeHtml(resource.favicon_url || '')}">
+          <button type="button" aria-label="Edit ${escapeHtml(resource.resource_name)}" class="edit-btn-animated rounded border border-gray-300 p-1.5 text-gray-700 hover:bg-gray-100" data-edit-type="resource" data-edit-name="${escapeHtml(resource.resource_name)}" data-edit-url="${escapeHtml(resource.status_page)}" data-edit-category="${escapeHtml(resource.primaryCategory || '')}" data-edit-categories="${escapeHtml(JSON.stringify(resource.categories || []))}" data-edit-check-type="${escapeHtml(resource.check_type || 'api')}" data-edit-scrape-keywords="${escapeHtml(resource.scrape_keywords || '')}" data-edit-api-config="${escapeHtml(resource.api_config || '')}" data-edit-favicon="${escapeHtml(resource.favicon_url || '')}">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931ZM19.5 7.125 16.875 4.5"/></svg>
           </button>
           <button type="button" aria-label="Delete ${escapeHtml(resource.resource_name)}" class="delete-btn-animated rounded border border-gray-300 p-1.5 text-gray-700 hover:bg-gray-100" data-delete-type="resource" data-delete-item="${escapeHtml(resource.resource_name)}" data-resource-name="${escapeHtml(resource.resource_name)}">
@@ -709,12 +736,12 @@ async function loadAllData() {
   state.announcements = (announcementsRes.announcements || []).slice();
 
   if (state.isSuperAdmin) {
-    const [usersRes, errorsRes] = await Promise.all([
+    const [usersRes, errorsRes] = await Promise.allSettled([
       requestJson('/setup/users'),
       requestJson('/resources/errors')
     ]);
-    state.users = usersRes.users || [];
-    state.errors = errorsRes.errors || [];
+    state.users = usersRes.status === 'fulfilled' ? (usersRes.value.users || []) : [];
+    state.errors = errorsRes.status === 'fulfilled' ? (errorsRes.value.errors || []) : [];
   } else {
     state.users = [];
     state.errors = [];
@@ -994,7 +1021,26 @@ function bindGlobalActions() {
       if (editType === 'resource') {
         qs('#edit-resource-name').value = editButton.getAttribute('data-edit-name') || '';
         qs('#edit-resource-url').value = editButton.getAttribute('data-edit-url') || '';
-        qs('#edit-resource-category').value = editButton.getAttribute('data-edit-category') || '';
+        if (qs('#edit-resource-category-options')) {
+          let parsedCategories = [];
+          const rawCategories = editButton.getAttribute('data-edit-categories') || '';
+          if (rawCategories) {
+            try {
+              const decoded = JSON.parse(rawCategories);
+              if (Array.isArray(decoded)) {
+                parsedCategories = decoded.map((value) => String(value || '').trim()).filter(Boolean);
+              }
+            } catch (_error) {
+            }
+          }
+          
+          if (parsedCategories.length === 0) {
+            const fallback = editButton.getAttribute('data-edit-category') || '';
+            if (fallback) parsedCategories = [fallback];
+          }
+          
+          setCheckedValues('#edit-resource-category-options', parsedCategories);
+        }
         qs('#edit-resource-check-type').value = toUiCheckType(editButton.getAttribute('data-edit-check-type') || 'api');
         qs('#edit-resource-scrape-keywords').value = editButton.getAttribute('data-edit-scrape-keywords') || '';
         qs('#edit-resource-api-mapped-field').value = '';
@@ -1082,6 +1128,7 @@ function bindGlobalActions() {
         state.errors = data.errors || [];
         renderErrors();
         initEnhancedTables();
+        refreshEmptyStates();
       } catch (error) {
         alert(error.message || 'Failed to load errors');
       }
@@ -1096,6 +1143,7 @@ function bindGlobalActions() {
         state.errors = [];
         renderErrors();
         initEnhancedTables();
+        refreshEmptyStates();
       } catch (error) {
         alert(error.message || 'Failed to clear errors');
       }
@@ -1277,26 +1325,27 @@ function bindForms() {
     event.preventDefault();
     const name = qs('#resource-name').value.trim();
     const url = qs('#resource-url').value.trim();
-    const category = qs('#resource-category').value;
+    const categories = getSelectedValues('#resource-category-options');
     const checkTypeValue = qs('#resource-check-type').value;
     const checkType = toApiCheckType(checkTypeValue);
     const scrapeKeywords = qs('#resource-scrape-keywords').value.trim();
     const fieldPath = qs('#resource-api-mapped-field').value.trim();
 
-    if (!name || !url || !category) return alert('Name, URL, and category are required');
+    if (!name || !url || categories.length === 0) return alert('Name, URL, and at least one category are required');
     if (!checkTypeValue) return alert('Check type is required');
 
     const payload = {
       resource_name: name,
       status_page: url,
-      grade_level: category,
+      grade_level: categories[0],
+      categories,
       check_type: checkType,
       scrape_keywords: scrapeKeywords,
       api_config: fieldPath && checkType === 'api' ? JSON.stringify({ fieldPath }) : null
     };
 
     try {
-      await requestJson(`/resources/category/${encodeURIComponent(category)}`, {
+      await requestJson(`/resources/category/${encodeURIComponent(categories[0])}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1338,41 +1387,31 @@ function bindForms() {
 
     const newName = qs('#edit-resource-name').value.trim();
     const newUrl = qs('#edit-resource-url').value.trim();
-    const newCategory = qs('#edit-resource-category').value;
+    const newCategories = getSelectedValues('#edit-resource-category-options');
     const checkTypeValue = qs('#edit-resource-check-type').value;
     const checkType = toApiCheckType(checkTypeValue);
     const scrapeKeywords = qs('#edit-resource-scrape-keywords').value.trim();
     const fieldPath = qs('#edit-resource-api-mapped-field').value.trim();
 
-    if (!newName || !newUrl || !newCategory) return alert('Name, URL, and category are required');
+    if (!newName || !newUrl || newCategories.length === 0) return alert('Name, URL, and at least one category are required');
     if (!checkTypeValue) return alert('Check type is required');
 
     const payload = {
       resource_name: newName,
       status_page: newUrl,
-      grade_level: newCategory,
+      grade_level: newCategories[0],
+      categories: newCategories,
       check_type: checkType,
       scrape_keywords: scrapeKeywords,
       api_config: fieldPath && checkType === 'api' ? JSON.stringify({ fieldPath }) : null
     };
 
     try {
-      if (state.editContext.oldCategory !== newCategory) {
-        await requestJson(`/resources/category/${encodeURIComponent(newCategory)}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        await requestJson(`/resources/category/${encodeURIComponent(state.editContext.oldCategory)}/${encodeURIComponent(state.editContext.oldName)}`, {
-          method: 'DELETE'
-        });
-      } else {
-        await requestJson(`/resources/category/${encodeURIComponent(state.editContext.oldCategory)}/${encodeURIComponent(state.editContext.oldName)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      }
+      await requestJson(`/resources/category/${encodeURIComponent(state.editContext.oldCategory)}/${encodeURIComponent(state.editContext.oldName)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
       closeModal('edit-resources');
       state.editContext = null;
@@ -1469,10 +1508,12 @@ function bindForms() {
       try {
         const formData = new FormData();
         const schoolName = qs('#school\\.name')?.value?.trim() || document.body.dataset.schoolName || '';
+          const primaryColor = qs('#primary-color')?.value || document.body.dataset.primaryColor || '#6b7280';
         const refreshInterval = qs('#status-check-interval')?.value || document.body.dataset.refreshInterval || '30';
         formData.set('username', username);
         formData.set('password', password || '');
         formData.set('schoolName', schoolName);
+          formData.set('primaryColor', primaryColor);
         formData.set('refreshInterval', refreshInterval);
 
         const response = await fetch('/setup/update', { method: 'POST', body: formData });
@@ -1579,19 +1620,19 @@ function bindForms() {
     fileNameWrap && fileNameWrap.classList.remove('hidden');
   });
 
-  const settingsForm = qs('#panel-settings form');
+  const settingsForm = qs('#branding-settings-form');
   settingsForm && settingsForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData();
     const schoolName = qs('#school\\.name')?.value?.trim() || document.body.dataset.schoolName || '';
-    const refreshInterval = qs('#status-check-interval')?.value || document.body.dataset.refreshInterval || '30';
+    const primaryColor = qs('#primary-color')?.value || document.body.dataset.primaryColor || '#6b7280';
     const username = document.body.dataset.adminUsername || 'admin';
     const logo = qs('#school-logo')?.files?.[0];
 
     formData.set('username', username);
     formData.set('password', '');
     formData.set('schoolName', schoolName);
-    formData.set('refreshInterval', refreshInterval);
+    formData.set('primaryColor', primaryColor);
     if (logo) formData.set('logo', logo);
 
     try {
@@ -1600,6 +1641,28 @@ function bindForms() {
       window.location.reload();
     } catch (error) {
       alert(error.message || 'Failed to update settings');
+    }
+  });
+
+  const intervalForm = qs('#status-interval-form');
+  intervalForm && intervalForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const refreshInterval = String(qs('#status-check-interval')?.value || '').trim();
+
+    if (!refreshInterval) {
+      return alert('Interval (minutes) is required');
+    }
+
+    try {
+      await requestJson('/setup/refresh-interval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshInterval })
+      });
+      document.body.dataset.refreshInterval = refreshInterval;
+      alert('Status check interval updated');
+    } catch (error) {
+      alert(error.message || 'Failed to update status check interval');
     }
   });
 }
@@ -1642,9 +1705,11 @@ function initDefaultsFromServer() {
   const schoolName = document.body.dataset.schoolName || '';
   const interval = document.body.dataset.refreshInterval || '30';
   const brandingLogo = document.body.dataset.brandingLogo || '';
+    const primaryColor = document.body.dataset.primaryColor || '#6b7280';
   const schoolInput = qs('#school\\.name');
   const intervalInput = qs('#status-check-interval');
   const uploadLabelText = qs('label[for="school-logo"] span.text-sm.font-medium.text-gray-700');
+    const primaryColorInput = qs('#primary-color');
   const announcementExpiry = qs('#announcement-expires');
   const editAnnouncementExpiry = qs('#edit-announcement-expires');
 
@@ -1653,6 +1718,7 @@ function initDefaultsFromServer() {
   if (uploadLabelText && brandingLogo) {
     uploadLabelText.textContent = `Current logo: ${brandingLogo} (click to replace)`;
   }
+  if (primaryColorInput) primaryColorInput.value = primaryColor;
   if (announcementExpiry) announcementExpiry.type = 'datetime-local';
   if (editAnnouncementExpiry) editAnnouncementExpiry.type = 'datetime-local';
 }

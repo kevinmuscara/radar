@@ -16,6 +16,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const configuration = require("../config/SetupManager");
+const statusChecker = require('../config/StatusChecker');
 
 const checkAuth = (req, res, next) => {
   if (!req.session.user) {
@@ -45,6 +46,9 @@ router.post("/", upload.single('logo'), async (request, response) => {
     }
 
     await configuration.updateBrandingSchoolName(request.body.schoolName);
+    if (request.body.primaryColor) {
+      await configuration.updateBrandingPrimaryColor(request.body.primaryColor);
+    }
 
     // Update admin user in settings (existing async helper will also run)
     await configuration.updateAdminUser(request.body.username, request.body.password);
@@ -89,6 +93,9 @@ router.post("/update", checkSuperAdmin, upload.single('logo'), async (request, r
   }
 
   await configuration.updateBrandingSchoolName(request.body.schoolName);
+  if (request.body.primaryColor) {
+    await configuration.updateBrandingPrimaryColor(request.body.primaryColor);
+  }
   
   // Only update admin credentials if password is provided (not empty)
   if (request.body.password && request.body.password.trim() !== '') {
@@ -103,12 +110,24 @@ router.post("/update", checkSuperAdmin, upload.single('logo'), async (request, r
     await configuration.updateRefreshIntervalMinutes(request.body.refreshInterval);
     
     // Update the status checker interval
-    const statusChecker = require('../config/StatusChecker');
     const intervalMs = parseInt(request.body.refreshInterval, 10) * 60 * 1000;
     statusChecker.updateInterval(intervalMs);
   }
 
   response.redirect("/admin");
+});
+
+router.post('/refresh-interval', checkSuperAdmin, async (request, response) => {
+  const refreshInterval = parseInt(request.body.refreshInterval, 10);
+
+  if (!Number.isFinite(refreshInterval) || refreshInterval < 1) {
+    return response.status(400).json({ error: 'refreshInterval must be a positive integer' });
+  }
+
+  await configuration.updateRefreshIntervalMinutes(refreshInterval);
+  statusChecker.updateInterval(refreshInterval * 60 * 1000);
+
+  response.json({ status: 200, refreshIntervalMinutes: await configuration.getRefreshIntervalMinutes() });
 });
 
 router.get('/users', checkSuperAdmin, async (_request, response) => {
