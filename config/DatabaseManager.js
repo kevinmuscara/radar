@@ -87,6 +87,7 @@ class DatabaseManager {
             CREATE TABLE IF NOT EXISTS announcements (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               message TEXT NOT NULL,
+              type TEXT NOT NULL DEFAULT 'informative',
               expires_at DATETIME NOT NULL,
               created_by TEXT,
               created_by_role TEXT,
@@ -158,6 +159,8 @@ class DatabaseManager {
     } catch (e) {
       console.error('Error ensuring resource_definitions columns:', e.message);
     }
+
+    await this.ensureAnnouncementsSchema(db);
 
     // Fix resource_status_cache table if it has the wrong schema
     try {
@@ -263,6 +266,36 @@ class DatabaseManager {
 
   async getDb() {
     return this.dbPromise;
+  }
+
+  normalizeAnnouncementType(type) {
+    const normalized = String(type || '').trim().toLowerCase();
+    const allowedTypes = new Set(['informative', 'warning', 'danger', 'success']);
+    return allowedTypes.has(normalized) ? normalized : 'informative';
+  }
+
+  async ensureAnnouncementsSchema(db) {
+    const database = db || await this.getDb();
+
+    try {
+      const announcementCols = await database.all("PRAGMA table_info('announcements')");
+      const announcementColNames = announcementCols.map((c) => c.name);
+      const hasTypeColumn = announcementColNames.includes('type');
+
+      if (!hasTypeColumn) {
+        await database.exec("ALTER TABLE announcements ADD COLUMN type TEXT DEFAULT 'informative';");
+      }
+
+      await database.exec(`
+        UPDATE announcements
+        SET type = 'informative'
+        WHERE type IS NULL
+          OR trim(type) = ''
+          OR lower(type) NOT IN ('informative', 'warning', 'danger', 'success');
+      `);
+    } catch (e) {
+      console.error('Error ensuring announcements schema:', e.message);
+    }
   }
 
   // Methods for resource_status_cache
@@ -407,30 +440,63 @@ class DatabaseManager {
 
   async clearExpiredAnnouncements() {
     const db = await this.getDb();
+    await this.ensureAnnouncementsSchema(db);
     await db.run("DELETE FROM announcements WHERE expires_at <= datetime('now', 'localtime')");
   }
 
-  async createAnnouncement(message, expiresAt, createdBy, createdByRole) {
+  async createAnnouncement(message, expiresAt, createdBy, createdByRole, type = 'informative') {
     const db = await this.getDb();
+    await this.ensureAnnouncementsSchema(db);
     await this.clearExpiredAnnouncements();
+    const normalizedType = this.normalizeAnnouncementType(type);
 
-    const result = await db.run(
-      'INSERT INTO announcements (message, expires_at, created_by, created_by_role) VALUES (?, ?, ?, ?)',
-      [message, expiresAt, createdBy || null, createdByRole || null]
-    );
+    try {
+      const result = await db.run(
+        'INSERT INTO announcements (message, type, expires_at, created_by, created_by_role) VALUES (?, ?, ?, ?, ?)',
+        [message, normalizedType, expiresAt, createdBy || null, createdByRole || null]
+      );
 
-    return db.get(
-      'SELECT id, message, expires_at, created_by, created_by_role, created_at FROM announcements WHERE id = ?',
-      [result.lastID]
-    );
+      return db.get(
+        'SELECT id, message, type, expires_at, created_by, created_by_role, created_at FROM announcements WHERE id = ?',
+        [result.lastID]
+      );
+    } catch (error) {
+      if (!String(error?.message || '').includes('type')) throw error;
+
+      const result = await db.run(
+        'INSERT INTO announcements (message, expires_at, created_by, created_by_role) VALUES (?, ?, ?, ?)',
+        [message, expiresAt, createdBy || null, createdByRole || null]
+      );
+
+      const announcement = await db.get(
+        'SELECT id, message, expires_at, created_by, created_by_role, created_at FROM announcements WHERE id = ?',
+        [result.lastID]
+      );
+
+      return {
+        ...announcement,
+        type: 'informative'
+      };
+    }
   }
 
   async getActiveAnnouncements() {
     const db = await this.getDb();
+    await this.ensureAnnouncementsSchema(db);
     await this.clearExpiredAnnouncements();
-    return db.all(
-      "SELECT id, message, expires_at, created_by, created_by_role, created_at FROM announcements WHERE expires_at > datetime('now', 'localtime') ORDER BY created_at DESC"
-    );
+    try {
+      return db.all(
+        "SELECT id, message, type, expires_at, created_by, created_by_role, created_at FROM announcements WHERE expires_at > datetime('now', 'localtime') ORDER BY created_at DESC"
+      );
+    } catch (error) {
+      if (!String(error?.message || '').includes('type')) throw error;
+
+      const rows = await db.all(
+        "SELECT id, message, expires_at, created_by, created_by_role, created_at FROM announcements WHERE expires_at > datetime('now', 'localtime') ORDER BY created_at DESC"
+      );
+
+      return rows.map((row) => ({ ...row, type: 'informative' }));
+    }
   }
 
   async revokeAnnouncement(id) {

@@ -1,9 +1,139 @@
 const express = require("express");
 const router = express.Router();
+const crypto = require("crypto");
 
 const resources = require("../config/ResourceManager");
 const statusChecker = require("../config/StatusChecker");
 const dbManager = require("../config/DatabaseManager");
+
+const importJobs = new Map();
+const IMPORT_JOB_TTL_MS = 10 * 60 * 1000;
+
+function createImportJob() {
+  const jobId = crypto.randomUUID();
+  const job = {
+    id: jobId,
+    status: 'queued',
+    total: 0,
+    processed: 0,
+    remaining: 0,
+    importedResources: 0,
+    failedResources: 0,
+    message: 'Queued',
+    error: null,
+    startedAt: Date.now(),
+    completedAt: null
+  };
+
+  importJobs.set(jobId, job);
+  return job;
+}
+
+function scheduleImportJobCleanup(jobId) {
+  setTimeout(() => {
+    importJobs.delete(jobId);
+  }, IMPORT_JOB_TTL_MS);
+}
+
+async function processImportJob(job, rows) {
+  job.status = 'running';
+  job.message = 'Preparing import';
+
+  const validRows = [];
+  for (const row of rows) {
+    const { category, resource_name, status_page, favicon_url, check_type, scrape_keywords, api_config } = row || {};
+    const categories = parseCategories(category);
+    const normalizedCheckType = String(check_type || '').trim().toLowerCase();
+
+    if (!resource_name || !status_page || !normalizedCheckType || categories.length === 0) {
+      continue;
+    }
+
+    if (!['api', 'scrape', 'heartbeat', 'icmp'].includes(normalizedCheckType)) {
+      continue;
+    }
+
+    validRows.push({
+      categories,
+      resource_name,
+      status_page,
+      favicon_url: favicon_url || null,
+      check_type: normalizedCheckType,
+      scrape_keywords: scrape_keywords || '',
+      api_config: api_config || null
+    });
+  }
+
+  if (validRows.length === 0) {
+    throw new Error('No valid import rows found');
+  }
+
+  job.total = validRows.length;
+  job.processed = 0;
+  job.remaining = validRows.length;
+  job.message = 'Importing resources';
+
+  const imported = { categories: new Set(), resources: 0, resourceNames: [] };
+  const existingCategories = new Set(await resources.getCategories());
+
+  for (const row of validRows) {
+    try {
+      for (const singleCategory of row.categories) {
+        if (!existingCategories.has(singleCategory)) {
+          await resources.addCategory(singleCategory);
+          existingCategories.add(singleCategory);
+          imported.categories.add(singleCategory);
+        }
+
+        await resources.addResource(singleCategory, {
+          resource_name: row.resource_name,
+          status_page: row.status_page,
+          favicon_url: row.favicon_url,
+          check_type: row.check_type,
+          scrape_keywords: row.scrape_keywords,
+          api_config: row.api_config
+        });
+      }
+
+      imported.resources += 1;
+      imported.resourceNames.push(row.resource_name);
+      job.importedResources += 1;
+    } catch (error) {
+      job.failedResources += 1;
+      console.error(`Failed to import ${row.resource_name}:`, error);
+    } finally {
+      job.processed += 1;
+      job.remaining = Math.max(0, job.total - job.processed);
+      job.message = `Importing resources (${job.remaining} remaining)`;
+    }
+  }
+
+  const uniqueNames = [...new Set(imported.resourceNames)];
+
+  job.status = 'completed';
+  job.completedAt = Date.now();
+  job.message = `Successfully imported ${job.importedResources} resource${job.importedResources === 1 ? '' : 's'}`;
+
+  setImmediate(async () => {
+    for (const resourceName of uniqueNames) {
+      try {
+        const resourceDef = await resources.getDefinition(resourceName);
+        if (resourceDef) {
+          const statusData = await statusChecker.checkResourceStatus(resourceDef);
+          await dbManager.updateResourceStatus(
+            resourceDef.id,
+            resourceName,
+            statusData.status,
+            statusData.status_url || resourceDef.status_page,
+            statusData.last_checked
+          );
+        }
+      } catch (error) {
+        console.error(`[Resources] Failed to check status for imported resource ${resourceName}:`, error.message);
+      }
+    }
+  });
+}
 
 // Middleware to check authentication
 const checkAuth = (req, res, next) => {
@@ -265,83 +395,50 @@ router.post("/import", checkResourceManagerAccess, async (request, response) => 
       return response.status(400).json({ error: "Invalid data: must be a non-empty array" });
     }
 
-    // Track categories and resources added/updated
-    const imported = { categories: new Set(), resources: 0, resourceNames: [] };
+    const job = createImportJob();
+    response.status(202).json({ status: 202, jobId: job.id, message: 'Import started' });
 
-    // Process each row
-    for (const row of data) {
-      const { category, resource_name, status_page, favicon_url, check_type, scrape_keywords, api_config } = row;
-      const categories = parseCategories(category);
-      const normalizedCheckType = String(check_type || '').trim().toLowerCase();
-
-      if (!resource_name || !status_page || !normalizedCheckType || categories.length === 0) {
-        return response.status(400).json({ error: "Invalid row: missing required fields" });
-      }
-
-      if (!['api', 'scrape', 'heartbeat', 'icmp'].includes(normalizedCheckType)) {
-        return response.status(400).json({ error: "Invalid check_type: must be 'api', 'scrape', 'heartbeat', or 'icmp'" });
-      }
-
+    setImmediate(async () => {
       try {
-        const existingCategories = await resources.getCategories();
-
-        for (const singleCategory of categories) {
-          if (!existingCategories.includes(singleCategory)) {
-            await resources.addCategory(singleCategory);
-            imported.categories.add(singleCategory);
-          }
-
-          await resources.addResource(singleCategory, {
-            resource_name,
-            status_page,
-            favicon_url: favicon_url || null,
-            check_type: normalizedCheckType,
-            scrape_keywords: scrape_keywords || '',
-            api_config: api_config || null
-          });
-
-          imported.resources++;
-          imported.resourceNames.push(resource_name);
-        }
-      } catch (err) {
-        console.error(`Failed to import ${category} > ${resource_name}:`, err);
-        // Continue with next row instead of failing entire import
-      }
-    }
-
-    // Check status of all imported resources
-    console.log(`[Resources] Checking status for ${imported.resourceNames.length} imported resources...`);
-    let checkedCount = 0;
-    for (const resourceName of imported.resourceNames) {
-      try {
-        const resourceDef = await resources.getDefinition(resourceName);
-        if (resourceDef) {
-          const statusData = await statusChecker.checkResourceStatus(resourceDef);
-          await dbManager.updateResourceStatus(
-            resourceDef.id,
-            resourceName,
-            statusData.status,
-            statusData.status_url || resourceDef.status_page,
-            statusData.last_checked
-          );
-          checkedCount++;
-        }
+        await processImportJob(job, data);
       } catch (error) {
-        console.error(`[Resources] Failed to check status for imported resource ${resourceName}:`, error.message);
-        // Continue checking other resources even if one fails
+        job.status = 'failed';
+        job.completedAt = Date.now();
+        job.error = error.message || 'Import failed';
+        job.message = job.error;
+        console.error('Import error:', error);
+      } finally {
+        scheduleImportJobCleanup(job.id);
       }
-    }
-    console.log(`[Resources] Successfully checked ${checkedCount}/${imported.resourceNames.length} imported resources`);
-
-    response.json({ 
-      status: 200, 
-      message: `Successfully imported ${imported.resources} resources in ${imported.categories.size} categories`,
-      imported
     });
   } catch (error) {
     console.error('Import error:', error);
     response.status(500).json({ error: "Failed to import CSV data" });
   }
+});
+
+router.get('/import/progress/:jobId', checkResourceManagerAccess, (request, response) => {
+  const job = importJobs.get(request.params.jobId);
+  if (!job) {
+    return response.status(404).json({ error: 'Import job not found or expired' });
+  }
+
+  response.json({
+    status: 200,
+    job: {
+      id: job.id,
+      status: job.status,
+      total: job.total,
+      processed: job.processed,
+      remaining: job.remaining,
+      importedResources: job.importedResources,
+      failedResources: job.failedResources,
+      message: job.message,
+      error: job.error,
+      startedAt: job.startedAt,
+      completedAt: job.completedAt
+    }
+  });
 });
 
 // download CSV template
@@ -475,11 +572,17 @@ router.get('/announcements', checkResourceManagerAccess, async (_request, respon
 
 router.post('/announcements', checkResourceManagerAccess, async (request, response) => {
   try {
-    const { message, expires_at } = request.body;
+    const { message, expires_at, type } = request.body;
     const cleanMessage = String(message || '').trim();
+    const allowedTypes = new Set(['informative', 'warning', 'danger', 'success']);
+    const normalizedType = String(type || 'informative').trim().toLowerCase();
 
     if (!cleanMessage) {
       return response.status(400).json({ error: 'Announcement message is required' });
+    }
+
+    if (!allowedTypes.has(normalizedType)) {
+      return response.status(400).json({ error: 'Announcement type is invalid' });
     }
 
     const expiresAtRaw = String(expires_at || '').trim();
@@ -510,7 +613,8 @@ router.post('/announcements', checkResourceManagerAccess, async (request, respon
       cleanMessage,
       sqliteExpiresAt,
       createdBy,
-      createdByRole
+      createdByRole,
+      normalizedType
     );
 
     response.json({ status: 200, announcement: created });

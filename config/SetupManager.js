@@ -170,15 +170,25 @@ class SetupManager {
   }
 
   async addResourceManagerUser(username, password) {
+    return this.addUser(username, password, 'resource_manager');
+  }
+
+  async addUser(username, password, role = 'resource_manager') {
     await this.ready;
     const users = await this.getUsers();
+    const trimmedUsername = String(username || '').trim();
+    const normalizedRole = role === 'superadmin' ? 'superadmin' : 'resource_manager';
 
-    if (users.some(user => user.username === username)) {
+    if (!trimmedUsername) {
+      throw new Error('Username is required');
+    }
+
+    if (users.some(user => user.username === trimmedUsername)) {
       throw new Error('User already exists');
     }
 
     const hash = await bcrypt.hash(password, 10);
-    users.push({ username, password: hash, role: 'resource_manager' });
+    users.push({ username: trimmedUsername, password: hash, role: normalizedRole });
     await this.#setSetting("users", JSON.stringify(users));
   }
 

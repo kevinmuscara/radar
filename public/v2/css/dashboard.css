@@ -1,0 +1,345 @@
+/* Page load animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardHoverPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes announcementPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(120, 53, 15, 0.45);
+  }
+  50% {
+    transform: scale(1.01);
+    box-shadow: 0 0 0 10px rgba(120, 53, 15, 0);
+  }
+}
+
+/* Apply animations to page load */
+.header-entry-animate {
+  animation: slideInDown 0.55s ease-out both;
+}
+
+.banner-entry-animate {
+  animation: slideInRight 0.65s ease-out both;
+}
+
+.no-results-entry-animate {
+  animation: fadeInUp 0.55s ease-out both;
+}
+
+.content-entry-animate {
+  animation: slideInLeft 0.65s ease-out both;
+}
+
+.space-y-8 > details {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.space-y-8 > details:nth-child(odd) {
+  animation-name: slideInLeft;
+}
+
+.space-y-8 > details:nth-child(even) {
+  animation-name: slideInRight;
+}
+
+.space-y-8 > details:nth-child(1) { animation-delay: 0.1s; }
+.space-y-8 > details:nth-child(2) { animation-delay: 0.18s; }
+.space-y-8 > details:nth-child(3) { animation-delay: 0.26s; }
+.space-y-8 > details:nth-child(4) { animation-delay: 0.34s; }
+.space-y-8 > details:nth-child(5) { animation-delay: 0.42s; }
+
+body.dashboard-no-rerender-animations .space-y-8 > details {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Grid cards animation on accordion open */
+.grid > div {
+  animation: slideInLeft 0.4s ease-out forwards;
+}
+
+.grid > div:nth-child(1) { animation-delay: 0.05s; }
+.grid > div:nth-child(2) { animation-delay: 0.1s; }
+.grid > div:nth-child(3) { animation-delay: 0.15s; }
+.grid > div:nth-child(4) { animation-delay: 0.2s; }
+.grid > div:nth-child(5) { animation-delay: 0.25s; }
+.grid > div:nth-child(6) { animation-delay: 0.3s; }
+
+body.dashboard-no-rerender-animations .grid > div {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Card hover animation */
+.resource-card {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.resource-card h3 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.resource-card .report-issue-btn {
+  white-space: nowrap;
+}
+
+.resource-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.icon-square {
+  animation: slideInLeft 0.5s ease-out;
+  transition: transform 0.2s ease;
+  overflow: hidden;
+}
+
+.icon-square img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.icon-square:hover {
+  transform: scale(1.05);
+}
+
+/* Header and filter styles */
+.category-tag {
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.category-tag.active {
+  background-color: #f3f4f6;
+  border-color: #6b7280;
+  color: #111827;
+  font-weight: 600;
+}
+
+.category-tag:not(.active) {
+  background-color: #ffffff;
+  border-color: #d1d5db;
+  color: #4b5563;
+}
+
+.category-tag:hover:not(.active) {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.details-hidden {
+  display: none;
+}
+
+.card-hidden {
+  display: none;
+}
+
+.accordion-no-visible-cards {
+  display: none;
+}
+
+#current-issues-accordion {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+#current-issues-accordion > summary {
+  background-color: #fee2e2;
+  color: #7f1d1d;
+}
+
+#current-issues-accordion > summary:hover,
+#current-issues-accordion > summary:focus {
+  background-color: #fecaca;
+}
+
+#current-issues-accordion > div {
+  border-top-color: #dc2626;
+}
+
+#current-issues-count {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-color: #ef4444;
+}
+
+.district-logo-badge {
+  width: 4.5rem;
+  height: 4.5rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: none;
+  background: transparent;
+}
+
+.district-logo-badge img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+}
+
+@media (max-width: 639px) {
+  .district-logo-badge {
+    display: none;
+  }
+}
+
+#mobile-filter-toggle {
+  display: inline-flex;
+}
+
+#announcement-banner {
+  opacity: 1;
+}
+
+.announcement-card {
+  animation: announcementPulse 1.8s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+
+.announcement-card[data-announcement-type="informative"] {
+  border-color: #1e3a8a;
+  background-color: #bfdbfe;
+  box-shadow: 6px 6px 0 0 rgba(30, 58, 138, 0.45);
+}
+
+.announcement-card[data-announcement-type="informative"] .announcement-card-title,
+.announcement-card[data-announcement-type="informative"] .announcement-card-expires {
+  color: #1e3a8a;
+}
+
+.announcement-card[data-announcement-type="informative"] .announcement-card-message {
+  color: #172554;
+}
+
+.announcement-card[data-announcement-type="warning"] {
+  border-color: #78350f;
+  background-color: #fcd34d;
+  box-shadow: 6px 6px 0 0 rgba(120, 53, 15, 0.45);
+}
+
+.announcement-card[data-announcement-type="warning"] .announcement-card-title,
+.announcement-card[data-announcement-type="warning"] .announcement-card-expires {
+  color: #78350f;
+}
+
+.announcement-card[data-announcement-type="warning"] .announcement-card-message {
+  color: #451a03;
+}
+
+.announcement-card[data-announcement-type="danger"] {
+  border-color: #7f1d1d;
+  background-color: #fca5a5;
+  box-shadow: 6px 6px 0 0 rgba(127, 29, 29, 0.45);
+}
+
+.announcement-card[data-announcement-type="danger"] .announcement-card-title,
+.announcement-card[data-announcement-type="danger"] .announcement-card-expires {
+  color: #7f1d1d;
+}
+
+.announcement-card[data-announcement-type="danger"] .announcement-card-message {
+  color: #450a0a;
+}
+
+.announcement-card[data-announcement-type="success"] {
+  border-color: #14532d;
+  background-color: #86efac;
+  box-shadow: 6px 6px 0 0 rgba(20, 83, 45, 0.45);
+}
+
+.announcement-card[data-announcement-type="success"] .announcement-card-title,
+.announcement-card[data-announcement-type="success"] .announcement-card-expires {
+  color: #14532d;
+}
+
+.announcement-card[data-announcement-type="success"] .announcement-card-message {
+  color: #052e16;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-entry-animate,
+  .banner-entry-animate,
+  .no-results-entry-animate,
+  .content-entry-animate,
+  .space-y-8 > details {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .announcement-card {
+    animation: none;
+  }
+}
+
+@media (min-width: 640px) {
+  #mobile-filter-toggle {
+    display: none;
+  }
+}

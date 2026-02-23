@@ -2,45 +2,47 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="../public/css/output.css" rel="stylesheet">
+  <link href="../public/css/animate.css" rel="stylesheet">
   <title>Setup</title>
-  <link rel="icon" href="/branding/<%= config.branding.logo || 'logo.png' %>" type="image/png">
-  <link href="/v2/css/output.css" rel="stylesheet">
-  <link href="/v2/css/animate.css" rel="stylesheet">
 </head>
 <body class="relative min-h-screen overflow-x-hidden overflow-y-auto bg-[#FCFBF4]">
   <div id="wave-container" class="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true"></div>
 
+  <!-- container start -->
   <div class="relative z-10 mx-auto max-w-7xl px-4 py-8 pb-24 sm:py-12 sm:pb-32 lg:py-16 lg:pb-40 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-lg">
+      <!-- form start -->
       <div id="setupCard" class="page-enter delay-1 reactive-layer bg-white mx-auto max-w-7xl border-solid rounded-xl shadow-xl border-1 px-4 py-8 sm:px-6 lg:px-8">
         <div class="page-enter delay-2 md:py-4">
           <h2 class="text-2xl font-bold text-gray-900 sm:text-3xl">Get started</h2>
+  
           <p class="mt-4 text-pretty text-gray-700">
             Setup is quick and easy. Fill out the form to configure your school branding and admin access information.
           </p>
-        </div>
 
+        </div>
         <div class="mt-2 grid grid-cols-1 gap-8">
           <div id="formPanel" class="page-enter delay-3 reactive-layer rounded-lg border-2 border-black bg-blue-50 p-4 shadow-2xl focus:ring-2 focus:ring-blue-300 focus:outline-0 sm:p-6">
-            <form action="/setup" method="POST" enctype="multipart/form-data">
+            <form>
               <div>
-                <label class="block text-sm font-medium text-gray-900" for="schoolName">School Name</label>
-                <input class="mt-1 w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:outline-none" id="schoolName" name="schoolName" type="text" value="<%= config.branding.schoolName %>" required>
+                <label class="block text-sm font-medium text-gray-900" for="school.name">School Name</label>
+                <input class="mt-1 w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:outline-none" id="school.name" type="text" placeholder="City Schools">
+              </div>
+      
+              <div class="mt-3">
+                <label class="block text-sm font-medium text-gray-900" for="admin.username">Admin Username</label>
+                <input class="mt-1 w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:outline-none" id="admin.username" type="text" placeholder="admin">
+              </div>
+  
+              <div class="mt-3">
+                <label class="block text-sm font-medium text-gray-900" for="admin.password">Admin Password</label>
+                <input class="mt-1 w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:outline-none" id="admin.password" type="password" placeholder="*******">
               </div>
 
               <div class="mt-3">
-                <label class="block text-sm font-medium text-gray-900" for="username">Admin Username</label>
-                <input class="mt-1 w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:outline-none" id="username" name="username" type="text" value="<%= config.adminUser.username %>" required>
-              </div>
-
-              <div class="mt-3">
-                <label class="block text-sm font-medium text-gray-900" for="password">Admin Password</label>
-                <input class="mt-1 w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:outline-none" id="password" name="password" type="password" required>
-              </div>
-
-              <div class="mt-3">
-                <label class="block text-sm font-medium text-gray-900" for="file">School Logo</label>
-                <label for="file" class="block rounded border border-gray-300 hover:border-indigo-500 p-4 bg-white text-gray-900 shadow-sm sm:p-6">
+                <label class="block text-sm font-medium text-gray-900" for="school.logo">School Logo</label>
+                <label for="File" class="block rounded border border-gray-300 hover:border-indigo-500 p-4 bg-white text-gray-900 shadow-sm sm:p-6">
                   <div class="flex items-center justify-center gap-4">
                     <span class="font-medium">Upload image</span>
 
@@ -49,10 +51,10 @@
                     </svg>
                   </div>
 
-                  <input type="file" id="file" name="logo" class="sr-only">
+                  <input type="file" id="File" class="sr-only">
                 </label>
               </div>
-
+      
               <div class="mt-3">
                 <button class="live-pulse block w-full rounded-lg border border-green-600 bg-green-600 px-12 py-3 text-sm font-medium text-white transition-colors hover:bg-transparent hover:text-green-600" type="submit">
                   Complete Setup
@@ -62,10 +64,12 @@
           </div>
         </div>
       </div>
+      <!-- form end -->
     </div>
   </div>
+  <!-- container end -->
 
-  <script src="/v2/js/animate.js"></script>
-  <script src="/v2/js/background.js"></script>
+  <script src="../public/js/animate.js"></script>
+  <script src="../public/js/background.js"></script>
 </body>
 </html>

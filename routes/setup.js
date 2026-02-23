@@ -122,12 +122,13 @@ router.post('/users', checkSuperAdmin, async (request, response) => {
     return response.status(400).json({ error: 'username and password are required' });
   }
 
-  if (role !== 'resource_manager') {
-    return response.status(400).json({ error: 'Only resource_manager role can be created' });
+  const normalizedRole = role === 'superadmin' ? 'superadmin' : role === 'resource_manager' ? 'resource_manager' : null;
+  if (!normalizedRole) {
+    return response.status(400).json({ error: 'Role must be superadmin or resource_manager' });
   }
 
   try {
-    await configuration.addResourceManagerUser(username.trim(), password);
+    await configuration.addUser(username.trim(), password, normalizedRole);
     response.json({ status: 200 });
   } catch (error) {
     response.status(400).json({ error: error.message || 'Failed to create user' });
