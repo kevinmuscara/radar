@@ -250,6 +250,7 @@ const modals = {
 let currentDeleteButton = null;
 let currentEditButton = null;
 let currentApiTargetInputId = null;
+let isFilteringApiTree = false;
 let currentSelectedApiField = {
   path: 'page.url',
   type: 'string',
@@ -371,6 +372,11 @@ document.querySelectorAll('[data-open-modal]').forEach(button => {
       if (apiExplorerUrlInput) {
         apiExplorerUrlInput.value = getApiExplorerPrefillUrl(currentApiTargetInputId);
       }
+      const apiSearchInputs = document.querySelectorAll('#modal-api-explorer input[type="search"]');
+      apiSearchInputs.forEach((input) => {
+        input.value = '';
+      });
+      applyApiTreeSearchFilter();
     }
 
     openModal(modalId);
@@ -408,9 +414,179 @@ document.addEventListener('keydown', (e) => {
 });
 
 // API Explorer JSON tree mock accordion
+function getApiTreeSearchTerms() {
+  const apiSearchInputs = document.querySelectorAll('#modal-api-explorer input[type="search"]');
+  const keyTerm = String(apiSearchInputs[0]?.value || '').trim().toLowerCase();
+  const valueTerm = String(apiSearchInputs[1]?.value || '').trim().toLowerCase();
+  return { keyTerm, valueTerm };
+}
+
+function matchesApiTreeTerm(value, term) {
+  if (!term) return true;
+  return String(value || '').toLowerCase().includes(term);
+}
+
+function showAllApiTree(container) {
+  if (!container) return;
+
+  Array.from(container.children).forEach((child) => {
+    child.style.display = '';
+
+    if (child.classList.contains('api-field-row')) {
+      return;
+    }
+
+    if (child.matches('button[data-tree-toggle]')) {
+      const targetId = child.getAttribute('data-tree-toggle');
+      const targetNode = document.getElementById(targetId);
+      if (targetNode) {
+        targetNode.style.display = '';
+        targetNode.classList.remove('hidden');
+        showAllApiTree(targetNode);
+      }
+
+      child.setAttribute('aria-expanded', 'true');
+      const icon = child.querySelector('[data-tree-icon]');
+      if (icon) icon.classList.add('rotate-90');
+      return;
+    }
+
+    if (child.id) {
+      showAllApiTree(child);
+    }
+  });
+}
+
+function isApiTreeLeafMatch(node, keyTerm, valueTerm) {
+  const path = String(node.getAttribute('data-api-field-path') || '');
+  const key = path.split('.').pop() || path;
+  const value = String(node.getAttribute('data-api-field-value') || '');
+  return matchesApiTreeTerm(key, keyTerm) && matchesApiTreeTerm(value, valueTerm);
+}
+
+function containerHasApiTreeMatch(container, keyTerm, valueTerm) {
+  if (!container) return false;
+
+  let hasMatch = false;
+
+  Array.from(container.children).forEach((child) => {
+    if (child.classList.contains('api-field-row')) {
+      hasMatch = hasMatch || isApiTreeLeafMatch(child, keyTerm, valueTerm);
+      return;
+    }
+
+    if (child.matches('button[data-tree-toggle]')) {
+      const keyMatches = matchesApiTreeTerm(child.textContent || '', keyTerm) && !valueTerm;
+      const targetId = child.getAttribute('data-tree-toggle');
+      const targetNode = document.getElementById(targetId);
+      const nestedMatch = targetNode ? containerHasApiTreeMatch(targetNode, keyTerm, valueTerm) : false;
+      hasMatch = hasMatch || keyMatches || nestedMatch;
+      return;
+    }
+
+    const rowText = String(child.textContent || '');
+    hasMatch = hasMatch || (matchesApiTreeTerm(rowText, keyTerm) && matchesApiTreeTerm(rowText, valueTerm));
+  });
+
+  return hasMatch;
+}
+
+function filterApiTreeContainer(container, keyTerm, valueTerm) {
+  if (!container) return false;
+
+  const hasDirectLeafMatch = Array.from(container.children).some((child) => {
+    return child.classList.contains('api-field-row') && isApiTreeLeafMatch(child, keyTerm, valueTerm);
+  });
+
+  if (hasDirectLeafMatch) {
+    showAllApiTree(container);
+    return true;
+  }
+
+  let hasVisibleChild = false;
+
+  Array.from(container.children).forEach((child) => {
+    if (child.classList.contains('api-field-row')) {
+      const isVisible = false;
+      child.style.display = isVisible ? '' : 'none';
+      hasVisibleChild = hasVisibleChild || isVisible;
+      return;
+    }
+
+    if (child.matches('button[data-tree-toggle]')) {
+      const targetId = child.getAttribute('data-tree-toggle');
+      const targetNode = document.getElementById(targetId);
+      const keyMatches = matchesApiTreeTerm(child.textContent || '', keyTerm) && !valueTerm;
+
+      let childBranchVisible = false;
+      if (targetNode) {
+        childBranchVisible = filterApiTreeContainer(targetNode, keyTerm, valueTerm);
+      }
+
+      if (keyMatches && targetNode) {
+        showAllApiTree(targetNode);
+        childBranchVisible = true;
+      }
+
+      const shouldShow = childBranchVisible || keyMatches;
+      child.style.display = shouldShow ? '' : 'none';
+
+      if (targetNode) {
+        targetNode.style.display = shouldShow ? '' : 'none';
+        targetNode.classList.toggle('hidden', !shouldShow);
+      }
+
+      child.setAttribute('aria-expanded', shouldShow ? 'true' : 'false');
+      const icon = child.querySelector('[data-tree-icon]');
+      if (icon) {
+        icon.classList.toggle('rotate-90', shouldShow);
+      }
+
+      hasVisibleChild = hasVisibleChild || shouldShow;
+      return;
+    }
+
+    const rowText = String(child.textContent || '').toLowerCase();
+    const isVisible = matchesApiTreeTerm(rowText, keyTerm) && matchesApiTreeTerm(rowText, valueTerm);
+    child.style.display = isVisible ? '' : 'none';
+    hasVisibleChild = hasVisibleChild || isVisible;
+  });
+
+  if (!hasVisibleChild) {
+    hasVisibleChild = containerHasApiTreeMatch(container, keyTerm, valueTerm);
+  }
+
+  return hasVisibleChild;
+}
+
+function applyApiTreeSearchFilter() {
+  const treeRoot = document.querySelector('#modal-api-explorer [role="tree"]');
+  if (!treeRoot) return;
+
+  const { keyTerm, valueTerm } = getApiTreeSearchTerms();
+  isFilteringApiTree = Boolean(keyTerm || valueTerm);
+
+  if (!isFilteringApiTree) {
+    Array.from(treeRoot.querySelectorAll('*')).forEach((node) => {
+      node.style.display = '';
+    });
+    return;
+  }
+
+  filterApiTreeContainer(treeRoot, keyTerm, valueTerm);
+}
+
+document.querySelectorAll('#modal-api-explorer input[type="search"]').forEach((input) => {
+  input.addEventListener('input', applyApiTreeSearchFilter);
+});
+
 document.addEventListener('click', (e) => {
   const toggleButton = e.target.closest('[data-tree-toggle]');
   if (!toggleButton) return;
+
+  if (isFilteringApiTree) {
+    return;
+  }
 
   const targetId = toggleButton.getAttribute('data-tree-toggle');
   const targetNode = document.getElementById(targetId);

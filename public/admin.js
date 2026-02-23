@@ -11,6 +11,7 @@ const state = {
   deleteLabel: '',
   apiExplorerTarget: null,
   apiSelectedField: null,
+  apiExplorerData: null,
   tableState: {}
 };
 
@@ -837,16 +838,152 @@ function resetApiExplorerState() {
   if (preview) {
     preview.innerHTML = '<p class="rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">No API data loaded yet. Enter a URL and click Analyze.</p>';
   }
+  state.apiExplorerData = null;
   state.apiSelectedField = null;
+  const { keyInput, valueInput } = getApiExplorerSearchInputs();
+  if (keyInput) keyInput.value = '';
+  if (valueInput) valueInput.value = '';
   setApiSelectedFieldPreview();
   setApiUseFieldEnabled(false);
+}
+
+function getApiExplorerSearchInputs() {
+  const modal = qs('#modal-api-explorer');
+  if (!modal) {
+    return { keyInput: null, valueInput: null };
+  }
+
+  const allSearchInputs = qsa('input[type="search"]', modal);
+  const keyInput = qs('#api-explorer-search-key', modal) || allSearchInputs[0] || null;
+  const valueInput = qs('#api-explorer-search-value', modal) || allSearchInputs[1] || null;
+  return { keyInput, valueInput };
+}
+
+function matchesApiSearch(value, term) {
+  if (!term) return true;
+  return String(value ?? '').toLowerCase().includes(term);
+}
+
+function filterApiExplorerData(node, keyTerm, valueTerm, nodeKey = '') {
+  const keyMatches = Boolean(nodeKey) && matchesApiSearch(nodeKey, keyTerm);
+
+  if (node === null || typeof node !== 'object') {
+    const valueMatches = matchesApiSearch(node, valueTerm);
+    const matched = keyMatches && valueMatches;
+    return {
+      matched,
+      includeWholeNode: false,
+      value: matched ? node : undefined
+    };
+  }
+
+  if (Array.isArray(node)) {
+    const keptItems = [];
+
+    node.forEach((item, index) => {
+      const result = filterApiExplorerData(item, keyTerm, valueTerm, String(index));
+      if (!result.matched) return;
+      keptItems.push(result.includeWholeNode ? item : result.value);
+    });
+
+    if (keyMatches && !valueTerm) {
+      return {
+        matched: true,
+        includeWholeNode: true,
+        value: node
+      };
+    }
+
+    return {
+      matched: keptItems.length > 0,
+      includeWholeNode: false,
+      value: keptItems.length > 0 ? keptItems : undefined
+    };
+  }
+
+  let hasAnyMatch = false;
+  let hasImmediatePrimitiveMatch = false;
+  const keptEntries = [];
+
+  Object.entries(node).forEach(([key, value]) => {
+    const result = filterApiExplorerData(value, keyTerm, valueTerm, key);
+    if (!result.matched) return;
+
+    hasAnyMatch = true;
+    if (value === null || typeof value !== 'object') {
+      hasImmediatePrimitiveMatch = true;
+    }
+
+    keptEntries.push([key, result.includeWholeNode ? value : result.value]);
+  });
+
+  if ((keyMatches && !valueTerm) || hasImmediatePrimitiveMatch) {
+    return {
+      matched: keyMatches || hasAnyMatch,
+      includeWholeNode: true,
+      value: node
+    };
+  }
+
+  return {
+    matched: hasAnyMatch,
+    includeWholeNode: false,
+    value: hasAnyMatch ? Object.fromEntries(keptEntries) : undefined
+  };
+}
+
+function hasApiExplorerResults(node) {
+  if (node === undefined) return false;
+  if (node === null || typeof node !== 'object') return true;
+  if (Array.isArray(node)) return node.length > 0;
+  return Object.keys(node).length > 0;
+}
+
+function applyApiExplorerFilters({ preserveSelection = false } = {}) {
+  if (state.apiExplorerData === null || state.apiExplorerData === undefined) {
+    return;
+  }
+
+  const preview = qs('#modal-api-explorer [role="tree"]');
+  if (!preview) return;
+
+  const { keyInput, valueInput } = getApiExplorerSearchInputs();
+  const keyTerm = String(keyInput?.value || '').trim().toLowerCase();
+  const valueTerm = String(valueInput?.value || '').trim().toLowerCase();
+
+  const filteredResult = filterApiExplorerData(state.apiExplorerData, keyTerm, valueTerm);
+  const filteredData = filteredResult.includeWholeNode ? state.apiExplorerData : filteredResult.value;
+  if (!hasApiExplorerResults(filteredData)) {
+    preview.innerHTML = '<p class="rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">No matching fields found.</p>';
+    state.apiSelectedField = null;
+    setApiSelectedFieldPreview();
+    setApiUseFieldEnabled(false);
+    return;
+  }
+
+  renderApiTree(filteredData);
+
+  if (!preserveSelection) {
+    state.apiSelectedField = null;
+    setApiSelectedFieldPreview();
+    setApiUseFieldEnabled(false);
+  }
 }
 
 function initApiExplorer() {
   const analyzeButton = qs('#modal-api-explorer button[type="button"].rounded-lg.border.border-blue-600.bg-blue-600');
   const useFieldButton = qs('#api-explorer-use-field');
+  const { keyInput, valueInput } = getApiExplorerSearchInputs();
 
   resetApiExplorerState();
+
+  keyInput && keyInput.addEventListener('input', () => {
+    applyApiExplorerFilters();
+  });
+
+  valueInput && valueInput.addEventListener('input', () => {
+    applyApiExplorerFilters();
+  });
 
   analyzeButton && analyzeButton.addEventListener('click', async () => {
     const url = qs('#api-explorer-url')?.value?.trim();
@@ -858,7 +995,8 @@ function initApiExplorer() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
       });
-      renderApiTree(data.apiData);
+      state.apiExplorerData = data.apiData;
+      applyApiExplorerFilters({ preserveSelection: true });
       const firstPath = data.paths && data.paths[0];
       if (firstPath) {
         state.apiSelectedField = firstPath;
