@@ -41,21 +41,114 @@ class StatusChecker {
     return score;
   }
 
-  normalizeStatus(statusText) {
+  toCanonicalStatus(statusValue) {
+    const value = String(statusValue || '').trim().toLowerCase();
+    if (!value) return 'Unknown';
+
+    if (['operational', 'ok', 'healthy', 'up'].includes(value)) return 'Operational';
+    if (['degraded', 'partial', 'minor', 'warning'].includes(value)) return 'Degraded';
+    if (['outage', 'down', 'critical', 'major'].includes(value)) return 'Outage';
+    if (['maintenance', 'scheduled maintenance'].includes(value)) return 'Maintenance';
+
+    return this.normalizeStatus(value);
+  }
+
+  getCustomStatusMap(apiConfig) {
+    if (!apiConfig || typeof apiConfig !== 'object') return null;
+
+    if (apiConfig.statusMap && typeof apiConfig.statusMap === 'object' && !Array.isArray(apiConfig.statusMap)) {
+      return Object.entries(apiConfig.statusMap)
+        .filter(([key]) => String(key || '').trim())
+        .map(([key, value]) => ({
+          match: String(key).trim().toLowerCase(),
+          status: this.toCanonicalStatus(value)
+        }))
+        .filter(entry => entry.status !== 'Unknown');
+    }
+
+    if (Array.isArray(apiConfig.statusMappings)) {
+      return apiConfig.statusMappings
+        .map((entry) => {
+          if (!entry || typeof entry !== 'object') return null;
+          const match = String(entry.match || '').trim().toLowerCase();
+          const status = this.toCanonicalStatus(entry.status);
+          if (!match || status === 'Unknown') return null;
+          return { match, status };
+        })
+        .filter(Boolean);
+    }
+
+    return null;
+  }
+
+  normalizeStatus(statusText, apiConfig = null) {
     if (!statusText) return 'Unknown';
-    const lower = statusText.toLowerCase();
-    if (lower.includes('operational') || lower.includes('all systems operational') || lower.includes('no incidents') || lower.includes('up')) {
-      return 'Operational';
+
+    const raw = String(statusText).trim();
+    if (!raw) return 'Unknown';
+
+    const lower = raw.toLowerCase();
+    const customMap = this.getCustomStatusMap(apiConfig);
+    if (Array.isArray(customMap) && customMap.length > 0) {
+      for (const entry of customMap) {
+        if (lower.includes(entry.match)) {
+          return entry.status;
+        }
+      }
     }
-    if (lower.includes('maintenance')) {
-      return 'Maintenance';
+
+    const rules = [
+      {
+        status: 'Outage',
+        patterns: [
+          /\bmajor outage\b/i,
+          /\bcomplete outage\b/i,
+          /\boutage\b/i,
+          /\bcritical\b/i,
+          /\bdown\b/i,
+          /\bunavailable\b/i,
+          /\bsevere\b/i
+        ]
+      },
+      {
+        status: 'Degraded',
+        patterns: [
+          /\bpartial\b/i,
+          /\bdegraded\b/i,
+          /\bminor\b/i,
+          /\bdisruption\b/i,
+          /\bperformance issues?\b/i,
+          /\bintermittent\b/i,
+          /\bslowness\b/i
+        ]
+      },
+      {
+        status: 'Maintenance',
+        patterns: [
+          /\bmaintenance\b/i,
+          /\bscheduled maintenance\b/i,
+          /\bund(er|going) maintenance\b/i
+        ]
+      },
+      {
+        status: 'Operational',
+        patterns: [
+          /\ball systems operational\b/i,
+          /\bno incidents reported\b/i,
+          /\boperational\b/i,
+          /\bhealthy\b/i,
+          /\bavailable\b/i,
+          /\bup\b/i
+        ]
+      }
+    ];
+
+    for (const rule of rules) {
+      if (rule.patterns.some(pattern => pattern.test(lower))) {
+        return rule.status;
+      }
     }
-    if (lower.includes('degraded') || lower.includes('partial') || lower.includes('minor')) {
-      return 'Degraded';
-    }
-    if (lower.includes('outage') || lower.includes('major') || lower.includes('critical') || lower.includes('down')) {
-      return 'Outage';
-    }
+
     return 'Unknown';
   }
 
@@ -162,7 +255,7 @@ class StatusChecker {
 
               if (value !== null && value !== undefined) {
                 return {
-                  status: this.normalizeStatus(String(value)),
+                  status: this.normalizeStatus(String(value), apiConfig),
                   last_checked: new Date().toISOString(),
                   status_url: url
                 };
@@ -174,10 +267,10 @@ class StatusChecker {
 
           // Fallback to common API patterns
           if (data && data.status && data.status.description) {
-            return { status: this.normalizeStatus(data.status.description), last_checked: new Date().toISOString(), status_url: url };
+            return { status: this.normalizeStatus(data.status.description, apiConfig), last_checked: new Date().toISOString(), status_url: url };
           }
           if (data && data.status && typeof data.status === 'string') {
-            return { status: this.normalizeStatus(data.status), last_checked: new Date().toISOString(), status_url: url };
+            return { status: this.normalizeStatus(data.status, apiConfig), last_checked: new Date().toISOString(), status_url: url };
           }
         }
 
