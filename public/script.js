@@ -464,7 +464,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       : (hasSavedAccordionState ? openAccordionKeys.has('current-issues') : hasViewParamInUrl || true);
 
     sections.push(`
-      <details class="group border-2 border-black shadow-[4px_4px_0_0] [&_summary::-webkit-details-marker]:hidden" id="current-issues-accordion" ${currentIssuesOpen ? 'open' : ''}>
+      <details class="group overflow-hidden border-2 border-black rounded-lg shadow-[4px_4px_0_0] [&_summary::-webkit-details-marker]:hidden" id="current-issues-accordion" ${currentIssuesOpen ? 'open' : ''}>
         <summary class="flex cursor-pointer items-center justify-between gap-4 bg-white px-4 py-3 font-medium text-gray-900 hover:bg-yellow-100 focus:bg-yellow-100 focus:outline-0">
           <div class="flex items-center gap-3">
             <span class="font-semibold">${uiText.currentIssues}</span>
@@ -491,7 +491,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         : (hasSavedAccordionState ? openAccordionKeys.has(categoryAccordionKey) : hasViewParamInUrl || currentFilter !== 'all');
 
       sections.push(`
-        <details class="group border-2 border-black shadow-[4px_4px_0_0] [&_summary::-webkit-details-marker]:hidden" data-category="${escapeHtml(slug)}" ${categoryOpen ? 'open' : ''}>
+        <details class="group overflow-hidden border-2 border-black rounded-lg shadow-[4px_4px_0_0] [&_summary::-webkit-details-marker]:hidden" data-category="${escapeHtml(slug)}" ${categoryOpen ? 'open' : ''}>
           <summary class="flex cursor-pointer items-center justify-between gap-4 bg-white px-4 py-3 font-medium text-gray-900 hover:bg-yellow-100 focus:bg-yellow-100 focus:outline-0">
             <div class="flex items-center gap-3">
               <span class="font-semibold">${escapeHtml(name)}</span>
