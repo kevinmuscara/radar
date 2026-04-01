@@ -1,5 +1,28 @@
 # Frequently Asked Questions
 
+## Radar dependencies fail when installing
+
+More than likely, puppeteer is the library that has failed to install. 
+
+First, install all other dependecies by skipping puppeteer:
+
+```shell
+PUPPETEER_SKIP_DOWNLOAD=true npm i
+```
+
+Then, reinstall the chrome browser for puppeteer to fix any corrupted files
+
+```shell
+rm -rf <path_to_your_npm_cache>/.cache/puppeteer # removes corrupted files from cache
+npx puppeteer browsers install chrome # installation of chrome browser
+```
+
+Finally, attempt to install puppeteer manually
+
+```shell
+npm i puppeteer
+```
+
 ## How can I bulk import my resources?
 Create a `template.csv` file with the following header:
 
