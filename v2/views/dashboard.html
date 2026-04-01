@@ -39,14 +39,15 @@
         </button>
       </div>
 
-      <div class="mt-2 sm:mt-0 sm:flex sm:items-center sm:gap-6">
-        <h1 class="hidden sm:flex min-w-0 items-center gap-2 text-xl font-bold text-gray-900 shrink-0">
+      <div class="mt-2 sm:mt-0 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-6">
+        <h1 class="hidden sm:flex min-w-0 items-center gap-2 text-xl font-bold text-gray-900">
           <span class="district-logo-badge shrink-0" aria-hidden="true">
             <img src="/branding/<%= config.branding.logo %>" class="h-7 w-7 object-contain" />
           </span>
           <span class="truncate"><%= config.branding.schoolName %></span>
         </h1>
-        <div class="sm:ml-auto sm:w-[28rem] lg:w-[36rem] xl:w-[42rem]">
+        <div class="hidden sm:block" aria-hidden="true"></div>
+        <div class="mt-2 sm:w-[28rem] lg:w-[34rem] xl:w-[38rem] sm:justify-self-end">
           <input
             type="text"
             id="search-input"
