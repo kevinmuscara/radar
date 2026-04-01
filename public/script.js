@@ -43,6 +43,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   let categorySlugs = [];
   let currentFilter = 'all';
   let currentSearch = '';
+  let hasViewParamInUrl = false;
+  let previousRenderHadSearch = false;
   let openAccordionKeys = new Set(['current-issues']);
   let hasCapturedAccordionState = false;
   let hasRenderedDashboardOnce = false;
@@ -296,6 +298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function initializeFromUrl() {
     const view = new URLSearchParams(window.location.search).get('view');
+    hasViewParamInUrl = Boolean(view);
     if (view) currentFilter = view;
   }
 
@@ -435,7 +438,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.classList.add('dashboard-no-rerender-animations');
     }
 
-    captureOpenAccordions();
+    const hasSearchQuery = Boolean(currentSearch.trim());
+
+    // Capture only in normal browsing mode (not during search, and not on the
+    // first render immediately after clearing search) to preserve pre-search state.
+    if (!hasSearchQuery && !previousRenderHadSearch) {
+      captureOpenAccordions();
+    }
     const hasSavedAccordionState = hasCapturedAccordionState;
 
     const list = filteredResources();
@@ -450,7 +459,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const currentIssues = uniqueResourcesByName(list.filter((resource) => isIssue(resource.resource_name)));
     const sections = [];
-    const currentIssuesOpen = hasSavedAccordionState ? openAccordionKeys.has('current-issues') : true;
+    const currentIssuesOpen = hasSearchQuery
+      ? currentIssues.length > 0
+      : (hasSavedAccordionState ? openAccordionKeys.has('current-issues') : hasViewParamInUrl || true);
 
     sections.push(`
       <details class="group border-2 border-black shadow-[4px_4px_0_0] [&_summary::-webkit-details-marker]:hidden" id="current-issues-accordion" ${currentIssuesOpen ? 'open' : ''}>
@@ -475,9 +486,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const shouldShow = currentFilter === 'all' || currentFilter === slug;
       if (!shouldShow) return;
       const categoryAccordionKey = `category:${slug}`;
-      const categoryOpen = hasSavedAccordionState
-        ? openAccordionKeys.has(categoryAccordionKey)
-        : currentFilter !== 'all';
+      const categoryOpen = hasSearchQuery
+        ? resources.length > 0  // auto-open if category has matching results
+        : (hasSavedAccordionState ? openAccordionKeys.has(categoryAccordionKey) : hasViewParamInUrl || currentFilter !== 'all');
 
       sections.push(`
         <details class="group border-2 border-black shadow-[4px_4px_0_0] [&_summary::-webkit-details-marker]:hidden" data-category="${escapeHtml(slug)}" ${categoryOpen ? 'open' : ''}>
@@ -508,6 +519,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     contentRoot.querySelectorAll('details').forEach((details) => {
       details.addEventListener('toggle', () => {
+        if (currentSearch.trim()) return;
         const key = accordionKeyFromDetails(details);
         if (!key) return;
         hasCapturedAccordionState = true;
@@ -517,6 +529,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     refreshFilterTagState();
+    previousRenderHadSearch = hasSearchQuery;
     hasRenderedDashboardOnce = true;
   }
 

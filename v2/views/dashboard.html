@@ -11,30 +11,24 @@
 <body class="relative min-h-screen overflow-x-hidden overflow-y-auto bg-[#FCFBF4] <%= lotrMode ? 'lotr-mode' : '' %>" data-school-name="<%= config.branding.schoolName %>" data-school-logo="/branding/<%= config.branding.logo %>" data-lotr-mode="<%= lotrMode ? 'true' : 'false' %>" data-primary-color="<%= (config.branding && config.branding.primaryColor) ? config.branding.primaryColor : '#6b7280' %>">
   <div id="wave-container" class="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true"></div>
 
-  <!-- container start -->
-  <div class="relative z-10 mx-auto max-w-7xl px-4 py-8 pb-24 sm:py-12 sm:pb-32 lg:py-16 lg:pb-40 sm:px-6 lg:px-8">
-    <!-- Header -->
-    <div class="header-entry-animate mb-12 border-2 border-black bg-white shadow-[4px_4px_0_0] p-6">
-      <h1 class="mb-2 flex items-center gap-3 text-4xl font-bold text-gray-900">
-        <span class="district-logo-badge" aria-hidden="true">
-          <img src="/branding/<%= config.branding.logo %>" />
-        </span>
-        <span><%= config.branding.schoolName %></span>
-      </h1>
-      <p id="last-updated" class="text-gray-600 mb-6">Last updated: --:--</p>
-      
-      <!-- Search Bar -->
-      <div class="mb-6 flex items-center gap-2">
-        <input 
-          type="text" 
-          id="search-input" 
-          placeholder="<%= lotrMode ? 'Search the realms of Middle-earth...' : 'Search for a resource...' %>" 
-          class="w-full flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black focus:ring-0 text-gray-900"
-        >
+  <!-- Header - full width -->
+  <div class="relative z-10 header-entry-animate w-full border-b-2 border-black bg-white shadow-[0_4px_0_0_rgba(0,0,0,1)]">
+    <!-- hidden last-updated kept for JS compatibility -->
+    <p id="last-updated" class="hidden" aria-hidden="true"></p>
+
+    <!-- Header rows: mobile = title row + full-width search row -->
+    <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-2">
+      <div class="flex items-center justify-between gap-3 sm:hidden">
+        <h1 class="flex min-w-0 items-center gap-2 text-lg font-bold text-gray-900">
+          <span class="district-logo-badge shrink-0" aria-hidden="true">
+            <img src="/branding/<%= config.branding.logo %>" class="h-7 w-7 object-contain" />
+          </span>
+          <span class="truncate text-base"><%= config.branding.schoolName %></span>
+        </h1>
         <button
           id="mobile-filter-toggle"
           type="button"
-          class="inline-flex sm:hidden items-center justify-center rounded-lg border-2 border-gray-300 bg-white p-3 text-gray-700 hover:border-black hover:text-black"
+          class="inline-flex items-center justify-center rounded-lg border-2 border-gray-300 bg-white p-2 text-gray-700 hover:border-black hover:text-black shrink-0"
           aria-label="Toggle filters"
           aria-controls="category-filter-container"
           aria-expanded="false"
@@ -45,24 +39,47 @@
         </button>
       </div>
 
-      <!-- Category Filter -->
-      <div id="category-filter-container" class="hidden sm:block">
-        <div class="flex flex-wrap gap-2">
-          <button class="category-tag active px-4 py-2 border-2 font-medium rounded-lg transition-all" data-category="all">
-            All Resources
-          </button>
-          <button class="category-tag px-4 py-2 border-2 font-medium rounded-lg transition-all" data-category="k-12">
-            K-12
-          </button>
-          <button class="category-tag px-4 py-2 border-2 font-medium rounded-lg transition-all" data-category="higher-ed">
-            Higher Ed
-          </button>
-          <button class="category-tag px-4 py-2 border-2 font-medium rounded-lg transition-all" data-category="communication">
-            Communication
-          </button>
+      <div class="mt-2 sm:mt-0 sm:flex sm:items-center sm:gap-6">
+        <h1 class="hidden sm:flex min-w-0 items-center gap-2 text-xl font-bold text-gray-900 shrink-0">
+          <span class="district-logo-badge shrink-0" aria-hidden="true">
+            <img src="/branding/<%= config.branding.logo %>" class="h-7 w-7 object-contain" />
+          </span>
+          <span class="truncate"><%= config.branding.schoolName %></span>
+        </h1>
+        <div class="sm:ml-auto sm:w-[28rem] lg:w-[36rem] xl:w-[42rem]">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="<%= lotrMode ? 'Search the realms of Middle-earth...' : 'Search for a resource...' %>"
+            class="w-full min-w-0 px-3 py-1.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black focus:ring-0 text-gray-900 text-sm"
+          >
         </div>
       </div>
     </div>
+
+    <!-- Row 2: Category filters - populated server-side from real categories, then re-rendered by script.js -->
+    <!-- On mobile: hidden by default, toggled by button above. On desktop: always visible. -->
+    <!-- Inner div must keep "flex flex-wrap gap-2" so script.js can locate it via querySelector. -->
+    <div id="category-filter-container" class="hidden sm:block border-t border-gray-100">
+      <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto">
+        <div class="flex flex-wrap gap-2 min-w-max sm:min-w-0">
+          <button class="category-tag active px-3 py-1 border-2 font-medium rounded-lg transition-all text-sm whitespace-nowrap shrink-0" data-category="all">
+            All Resources
+          </button>
+          <% Object.keys(resources).forEach(function(category) {
+            var slug = category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          %>
+          <button class="category-tag px-3 py-1 border-2 font-medium rounded-lg transition-all text-sm whitespace-nowrap shrink-0" data-category="<%= slug %>">
+            <%= category %>
+          </button>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- container start -->
+  <div class="relative z-10 mx-auto max-w-7xl px-4 py-8 pb-24 sm:py-12 sm:pb-32 lg:py-16 lg:pb-40 sm:px-6 lg:px-8">
 
     <div id="announcement-banner" class="banner-entry-animate hidden mb-10 w-full">
       <div id="announcement-banner-list" class="space-y-3"></div>
