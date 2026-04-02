@@ -18,25 +18,10 @@ class SetupManager {
     await db.run("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [key, value]);
   }
 
-  async #ensurePrimaryColorSetting() {
-    const existing = await this.#getSetting("branding_primaryColor");
-    const normalized = this.#normalizePrimaryColor(existing);
-    await this.#setSetting("branding_primaryColor", normalized);
-  }
-
-  #normalizePrimaryColor(color) {
-    const value = String(color || '').trim();
-    if (!/^#([0-9a-fA-F]{6})$/.test(value)) {
-      return '#6b7280';
-    }
-    return value.toLowerCase();
-  }
-
   async initDefaults() {
     const db = await this.dbManager.getDb();
     const row = await db.get("SELECT count(*) as count FROM settings");
     if (row.count > 0) {
-      await this.#ensurePrimaryColorSetting();
       await this.#normalizeUsers();
       return;
     }
@@ -44,7 +29,6 @@ class SetupManager {
     // Init default settings
     await this.#setSetting("branding_logo", "logo.png");
     await this.#setSetting("branding_schoolName", "Your School Name");
-    await this.#setSetting("branding_primaryColor", "#6b7280");
     await this.#setSetting("refresh_interval_minutes", "30");
     bcrypt.genSalt(10, (_err, salt) => {
       bcrypt.hash("password", salt, (_err, hash) => {
@@ -53,7 +37,6 @@ class SetupManager {
       });
     });
     await this.#setSetting("setup_complete", "false");
-    await this.#ensurePrimaryColorSetting();
   }
 
   async #normalizeUsers() {
@@ -111,12 +94,6 @@ class SetupManager {
     await this.#setSetting("branding_schoolName", schoolName);
   }
 
-  async updateBrandingPrimaryColor(primaryColor) {
-    await this.ready;
-    const normalized = this.#normalizePrimaryColor(primaryColor);
-    await this.#setSetting("branding_primaryColor", normalized);
-  }
-
   async updateAdminUser(username, password) {
     await this.ready;
     const user = { username, password };
@@ -156,12 +133,6 @@ class SetupManager {
     await this.ready;
     const val = await this.#getSetting("branding_schoolName");
     return val || "Your School Name";
-  }
-
-  async getBrandingPrimaryColor() {
-    await this.ready;
-    const val = await this.#getSetting("branding_primaryColor");
-    return this.#normalizePrimaryColor(val);
   }
 
   async getAdminUser() {
@@ -237,7 +208,6 @@ class SetupManager {
   async getConfig() {
     const logo = await this.getBrandingLogo();
     const schoolName = await this.getBrandingSchoolName();
-    const primaryColor = await this.getBrandingPrimaryColor();
     const adminUser = await this.getAdminUser();
     const setupComplete = await this.isSetupComplete();
     const refreshIntervalMinutes = await this.getRefreshIntervalMinutes();
@@ -245,8 +215,7 @@ class SetupManager {
     return {
       branding: {
         logo,
-        schoolName,
-        primaryColor
+        schoolName
       },
       adminUser,
       setupComplete,

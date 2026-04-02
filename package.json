@@ -4,9 +4,11 @@
   "description": "Radar is a web application for schools (primarily tech teams) to manage the status of their softwares.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "npm run build:css && node index.js",
     "dev": "PORT=3000 HOST=0.0.0.0 node .",
-    "prod": "NODE_ENV=production node index.js"
+    "prod": "NODE_ENV=production node index.js",
+    "build:css": "tailwindcss -i ./public/css/input.css -o ./public/css/output.css --minify",
+    "watch:css": "tailwindcss -i ./public/css/input.css -o ./public/css/output.css --watch"
   },
   "repository": {
     "type": "git",
@@ -31,8 +33,13 @@
     "memorystore": "^1.6.7",
     "multer": "^2.0.2",
     "path": "^0.12.7",
-    "puppeteer": "^24.34.0",
+    "puppeteer": "^24.40.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "@tailwindcss/forms": "^0.5.11",
+    "tailwindcss": "^4.2.2"
   }
 }

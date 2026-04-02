@@ -46,9 +46,6 @@ router.post("/", upload.single('logo'), async (request, response) => {
     }
 
     await configuration.updateBrandingSchoolName(request.body.schoolName);
-    if (request.body.primaryColor) {
-      await configuration.updateBrandingPrimaryColor(request.body.primaryColor);
-    }
 
     // Update admin user in settings (existing async helper will also run)
     await configuration.updateAdminUser(request.body.username, request.body.password);
@@ -93,9 +90,6 @@ router.post("/update", checkSuperAdmin, upload.single('logo'), async (request, r
   }
 
   await configuration.updateBrandingSchoolName(request.body.schoolName);
-  if (request.body.primaryColor) {
-    await configuration.updateBrandingPrimaryColor(request.body.primaryColor);
-  }
   
   // Only update admin credentials if password is provided (not empty)
   if (request.body.password && request.body.password.trim() !== '') {

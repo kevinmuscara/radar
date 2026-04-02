@@ -79,10 +79,23 @@ server.get("/logout", async (request, response) => {
 
 server.get("/", async (request, response) => {
   if (await configuration.isSetupComplete()) {
+    const [configData, resourcesData, statuses, issueReports, announcements] = await Promise.all([
+      configuration.getConfig(),
+      resources.getResources(),
+      dbManager.getAllResourceStatuses(),
+      dbManager.getActiveIssueReports(),
+      dbManager.getActiveAnnouncements()
+    ]);
+
     response.render("dashboard", {
-      config: await configuration.getConfig(),
-      resources: await resources.getResources(),
-      lotrMode: request.query.lotr === 'true'
+      config: configData,
+      resources: resourcesData,
+      statuses: statuses,
+      issueReports: issueReports,
+      announcements: announcements,
+      lotrMode: request.query.lotr === 'true',
+      query: request.query || {},
+      currentUrl: request.originalUrl || '/'
     });
   } else {
     response.render("setup", {

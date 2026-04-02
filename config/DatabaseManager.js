@@ -110,6 +110,9 @@ class DatabaseManager {
             ON announcements(expires_at);
         `);
 
+    // Run migrations
+    await this.runMigrations(db);
+
     // Check for potential migration
     const tableExists = await db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='resources'");
     if (tableExists) {
@@ -266,6 +269,23 @@ class DatabaseManager {
 
   async getDb() {
     return this.dbPromise;
+  }
+
+  async runMigrations(db) {
+    // Migration: Remove deprecated branding_primaryColor setting
+    // This migration ensures existing installations have the primaryColor feature removed
+    try {
+      const primaryColorSetting = await db.get(
+        "SELECT value FROM settings WHERE key = 'branding_primaryColor'"
+      );
+      
+      if (primaryColorSetting) {
+        await db.run("DELETE FROM settings WHERE key = 'branding_primaryColor'");
+        console.log('[Migration] Removed deprecated branding_primaryColor setting');
+      }
+    } catch (err) {
+      console.error('[Migration] Error removing primaryColor setting:', err.message);
+    }
   }
 
   normalizeAnnouncementType(type) {

@@ -251,7 +251,7 @@ router.get('/definition/:resourceName', async (request, response) => {
 });
 
 // get recent check errors (admin)
-router.get('/errors', checkSuperAdmin, async (_request, response) => {
+router.get('/errors', checkResourceManagerAccess, async (_request, response) => {
   const errs = await resources.getCheckErrors ? await resources.getCheckErrors(200) : [];
   response.json({ status: 200, errors: errs });
 });
@@ -536,7 +536,13 @@ router.get('/export', checkResourceManagerAccess, async (_request, response) => 
 router.post('/report-issue/:resourceName', async (request, response) => {
   try {
     const { resourceName } = request.params;
+    const redirectTo = String(request.body?.redirect_to || request.query?.redirect_to || '').trim();
+    const wantsHtmlRedirect = Boolean(redirectTo);
+
     if (!resourceName || !resourceName.trim()) {
+      if (wantsHtmlRedirect) {
+        return response.redirect(redirectTo || '/');
+      }
       return response.status(400).json({ error: 'resourceName is required' });
     }
 
@@ -546,6 +552,9 @@ router.post('/report-issue/:resourceName', async (request, response) => {
 
     const result = await dbManager.reportIssue(resourceName.trim(), reporterKey);
     if (result && result.limited) {
+      if (wantsHtmlRedirect) {
+        return response.redirect(redirectTo || '/');
+      }
       return response.status(429).json({
         error: 'You can only report the same resource once per hour.',
         retry_after_seconds: result.retryAfterSeconds || 0,
@@ -553,9 +562,17 @@ router.post('/report-issue/:resourceName', async (request, response) => {
       });
     }
 
+    if (wantsHtmlRedirect) {
+      return response.redirect(redirectTo || '/');
+    }
+
     response.json({ status: 200, report: result.report });
   } catch (error) {
     console.error('Issue report error:', error);
+    const redirectTo = String(request.body?.redirect_to || request.query?.redirect_to || '').trim();
+    if (redirectTo) {
+      return response.redirect(redirectTo || '/');
+    }
     response.status(500).json({ error: 'Failed to report issue' });
   }
 });

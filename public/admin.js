@@ -634,6 +634,14 @@ function renderErrors() {
   `).join('');
 }
 
+async function fetchAndRenderErrors() {
+  const data = await requestJson('/resources/errors');
+  state.errors = data.errors || [];
+  renderErrors();
+  initEnhancedTables();
+  refreshEmptyStates();
+}
+
 function renderUsers() {
   const tbody = qs('#panel-settings table tbody');
   if (!tbody) return;
@@ -745,7 +753,8 @@ async function loadAllData() {
     state.errors = errorsRes.status === 'fulfilled' ? (errorsRes.value.errors || []) : [];
   } else {
     state.users = [];
-    state.errors = [];
+    const errorsRes = await Promise.allSettled([requestJson('/resources/errors')]);
+    state.errors = errorsRes[0].status === 'fulfilled' ? (errorsRes[0].value.errors || []) : [];
   }
 
   renderAll();
@@ -1248,31 +1257,6 @@ function bindGlobalActions() {
       return;
     }
 
-    const deleteButton = event.target.closest('.delete-btn-animated');
-    if (deleteButton) {
-      const type = deleteButton.getAttribute('data-delete-type');
-      const item = deleteButton.getAttribute('data-delete-item') || 'item';
-      state.deleteAction = async () => handleDelete(type, deleteButton);
-      state.deleteLabel = item;
-      qs('#delete-item-name').textContent = item;
-      showModal('delete-confirm');
-      return;
-    }
-
-    const refreshErrors = event.target.closest('button[aria-label="Manual refresh error log"]');
-    if (refreshErrors && state.isSuperAdmin) {
-      try {
-        const data = await requestJson('/resources/errors');
-        state.errors = data.errors || [];
-        renderErrors();
-        initEnhancedTables();
-        refreshEmptyStates();
-      } catch (error) {
-        alert(error.message || 'Failed to load errors');
-      }
-      return;
-    }
-
     const clearErrors = event.target.closest('button[aria-label="Delete all error logs"]');
     if (clearErrors && state.isSuperAdmin) {
       if (!confirm('Delete all error logs?')) return;
@@ -1284,6 +1268,31 @@ function bindGlobalActions() {
         refreshEmptyStates();
       } catch (error) {
         alert(error.message || 'Failed to clear errors');
+      }
+      return;
+    }
+
+    const deleteButton = event.target.closest('.delete-btn-animated');
+    if (deleteButton) {
+      const type = deleteButton.getAttribute('data-delete-type');
+      const item = deleteButton.getAttribute('data-delete-item') || 'item';
+      state.deleteAction = async () => handleDelete(type, deleteButton);
+      state.deleteLabel = item;
+      qs('#delete-item-name').textContent = item;
+      showModal('delete-confirm');
+      return;
+    }
+
+    const refreshErrors = event.target.closest('button[data-action="refresh-errors"], button[aria-label="Manual refresh error log"]');
+    if (refreshErrors) {
+      const previousDisabled = refreshErrors.disabled;
+      refreshErrors.disabled = true;
+      try {
+        await fetchAndRenderErrors();
+      } catch (error) {
+        alert(error.message || 'Failed to load errors');
+      } finally {
+        refreshErrors.disabled = previousDisabled;
       }
       return;
     }
@@ -1646,12 +1655,10 @@ function bindForms() {
       try {
         const formData = new FormData();
         const schoolName = qs('#school\\.name')?.value?.trim() || document.body.dataset.schoolName || '';
-          const primaryColor = qs('#primary-color')?.value || document.body.dataset.primaryColor || '#6b7280';
         const refreshInterval = qs('#status-check-interval')?.value || document.body.dataset.refreshInterval || '30';
         formData.set('username', username);
         formData.set('password', password || '');
         formData.set('schoolName', schoolName);
-          formData.set('primaryColor', primaryColor);
         formData.set('refreshInterval', refreshInterval);
 
         const response = await fetch('/setup/update', { method: 'POST', body: formData });
@@ -1763,14 +1770,12 @@ function bindForms() {
     event.preventDefault();
     const formData = new FormData();
     const schoolName = qs('#school\\.name')?.value?.trim() || document.body.dataset.schoolName || '';
-    const primaryColor = qs('#primary-color')?.value || document.body.dataset.primaryColor || '#6b7280';
     const username = document.body.dataset.adminUsername || 'admin';
     const logo = qs('#school-logo')?.files?.[0];
 
     formData.set('username', username);
     formData.set('password', '');
     formData.set('schoolName', schoolName);
-    formData.set('primaryColor', primaryColor);
     if (logo) formData.set('logo', logo);
 
     try {
@@ -1843,11 +1848,9 @@ function initDefaultsFromServer() {
   const schoolName = document.body.dataset.schoolName || '';
   const interval = document.body.dataset.refreshInterval || '30';
   const brandingLogo = document.body.dataset.brandingLogo || '';
-    const primaryColor = document.body.dataset.primaryColor || '#6b7280';
   const schoolInput = qs('#school\\.name');
   const intervalInput = qs('#status-check-interval');
   const uploadLabelText = qs('label[for="school-logo"] span.text-sm.font-medium.text-gray-700');
-    const primaryColorInput = qs('#primary-color');
   const announcementExpiry = qs('#announcement-expires');
   const editAnnouncementExpiry = qs('#edit-announcement-expires');
 
@@ -1856,7 +1859,6 @@ function initDefaultsFromServer() {
   if (uploadLabelText && brandingLogo) {
     uploadLabelText.textContent = `Current logo: ${brandingLogo} (click to replace)`;
   }
-  if (primaryColorInput) primaryColorInput.value = primaryColor;
   if (announcementExpiry) announcementExpiry.type = 'datetime-local';
   if (editAnnouncementExpiry) editAnnouncementExpiry.type = 'datetime-local';
 }

@@ -1,11 +1,3 @@
-/* Theme variables (overridden at runtime from branding primary color) */
-:root {
-  --theme-primary: #6b7280;
-  --theme-primary-soft: #f3f4f6;
-  --theme-primary-contrast: #111827;
-  --theme-card-border: #e5e7eb;
-}
-
 /* Page load animations */
 @keyframes fadeInUp {
   from {
@@ -122,13 +114,13 @@
 /* Card hover animation */
 .resource-card {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  border-color: var(--theme-card-border) !important;
+  border-color: #e5e7eb !important;
 }
 
 .resource-card:hover {
   transform: translateY(-4px) scale(1.02);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
-  border-color: var(--theme-primary) !important;
+  border-color: #000000 !important;
 }
 
 .icon-square {
@@ -157,58 +149,27 @@
 }
 
 .category-tag.active {
-  background-color: var(--theme-primary-soft);
-  border-color: var(--theme-primary);
-  color: var(--theme-primary-contrast);
+  background-color: #1f2937;
+  border-color: #1f2937;
+  color: #ffffff;
   font-weight: 600;
 }
 
 .category-tag:not(.active) {
   background-color: #ffffff;
-  border-color: var(--theme-card-border);
-  color: var(--theme-primary);
+  border-color: #d1d5db;
+  color: #374151;
 }
 
 .category-tag:hover:not(.active) {
-  background-color: var(--theme-primary-soft);
-  border-color: var(--theme-primary);
-  color: var(--theme-primary-contrast);
+  background-color: #f9fafb;
+  border-color: #2563eb;
+  color: #2563eb;
 }
 
 .header-entry-animate {
-  border-color: var(--theme-primary) !important;
-  box-shadow: 4px 4px 0 0 var(--theme-primary) !important;
-}
-
-.content-entry-animate > .space-y-8 > details {
-  border-color: var(--theme-primary) !important;
-  box-shadow: 4px 4px 0 0 var(--theme-primary) !important;
-}
-
-.content-entry-animate > .space-y-8 > details > div {
-  border-top-color: var(--theme-primary) !important;
-}
-
-.content-entry-animate > .space-y-8 > details > summary {
-  color: var(--theme-primary-contrast) !important;
-}
-
-.content-entry-animate > .space-y-8 > details > summary:hover,
-.content-entry-animate > .space-y-8 > details > summary:focus {
-  background-color: var(--theme-primary-soft) !important;
-  color: var(--theme-primary-contrast) !important;
-}
-
-.content-entry-animate > .space-y-8 > details[open] > summary {
-  background-color: var(--theme-primary-soft) !important;
-  color: var(--theme-primary-contrast) !important;
-}
-
-.content-entry-animate > .space-y-8 > details[open] > summary span.inline-block,
-.content-entry-animate > .space-y-8 > details > summary span.inline-block {
-  border-color: var(--theme-primary) !important;
-  color: var(--theme-primary) !important;
-  background-color: #ffffff !important;
+  border-color: #000000 !important;
+  box-shadow: 4px 4px 0 0 #000000 !important;
 }
 
 .details-hidden {
@@ -221,31 +182,6 @@
 
 .accordion-no-visible-cards {
   display: none;
-}
-
-#current-issues-accordion {
-  border-color: var(--theme-primary) !important;
-  background-color: var(--theme-primary-soft) !important;
-}
-
-#current-issues-accordion > summary {
-  background-color: var(--theme-primary-soft) !important;
-  color: var(--theme-primary-contrast) !important;
-}
-
-#current-issues-accordion > summary:hover,
-#current-issues-accordion > summary:focus {
-  background-color: var(--theme-primary-soft) !important;
-}
-
-#current-issues-accordion > div {
-  border-top-color: var(--theme-primary) !important;
-}
-
-#current-issues-count {
-  background-color: #ffffff !important;
-  color: var(--theme-primary) !important;
-  border-color: var(--theme-primary) !important;
 }
 
 .district-logo-badge {
@@ -423,26 +359,6 @@ body.lotr-mode .resource-card {
 
 body.lotr-mode .resource-card:hover {
   box-shadow: 0 12px 24px rgba(107, 79, 29, 0.25) !important;
-}
-
-body.lotr-mode #current-issues-accordion {
-  border-color: #7c3b1a;
-  background-color: #fde9c8;
-}
-
-body.lotr-mode #current-issues-accordion > summary {
-  background-color: #f9d9a7;
-  color: #5c2b12;
-}
-
-body.lotr-mode #current-issues-accordion > div {
-  border-top-color: #7c3b1a;
-}
-
-body.lotr-mode #current-issues-count {
-  background-color: #f4c97f;
-  color: #5c2b12;
-  border-color: #b2672d;
 }
 
 body.lotr-mode #mobile-filter-toggle {

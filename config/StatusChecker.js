@@ -426,6 +426,19 @@ class StatusChecker {
             console.error(`[StatusChecker] Failed to update Unknown status for ${resource.resource_name}: ${cacheError.message}`);
           }
 
+          // Log the error to the error table for first-time failures
+          try {
+            await DatabaseManager.logStatusCheckError(
+              resource.id || null,
+              resource.resource_name,
+              resource.status_page,
+              resource.check_type || 'api',
+              error.message || 'Unknown error'
+            );
+          } catch (logError) {
+            console.error(`[StatusChecker] Failed to log error for ${resource.resource_name}: ${logError.message}`);
+          }
+
           // Track failed resource for retry
           failedResources.push({
             resource,
@@ -481,14 +494,7 @@ class StatusChecker {
               console.error(`[StatusChecker] Failed to update Unknown status after retry for ${resource.resource_name}: ${cacheError.message}`);
             }
             
-            // Log to error table after retry failure
-            await DatabaseManager.logStatusCheckError(
-              resource.id || null,
-              resource.resource_name,
-              resource.status_page,
-              resource.check_type || 'api',
-              retryError.message || 'Unknown error'
-            );
+            // Error was already logged on first failure, so we don't log again here
           }
 
           // Small delay between retries

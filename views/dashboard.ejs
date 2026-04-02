@@ -1,1 +1,353 @@
-<%- include('../v2/views/dashboard.html') %>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/branding/<%= config.branding.logo %>" type="image/png">
+  <link href="/css/output.css?v=<%= Date.now() %>" rel="stylesheet">
+  <link href="/css/animate.css?v=<%= Date.now() %>" rel="stylesheet">
+  <link href="/css/dashboard.css?v=<%= Date.now() %>" rel="stylesheet">
+  <title><%= config.branding.schoolName %> <%= lotrMode ? 'Middle-earth Status Board' : 'Dashboard' %></title>
+</head>
+<body class="relative min-h-screen overflow-x-hidden overflow-y-auto bg-[#FCFBF4] <%= lotrMode ? 'lotr-mode' : '' %>" data-school-name="<%= config.branding.schoolName %>" data-school-logo="/branding/<%= config.branding.logo %>" data-lotr-mode="<%= lotrMode ? 'true' : 'false' %>">
+  <div id="wave-container" class="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true"></div>
+
+  <%
+    const dashboardQuery = query || {};
+
+    function slugify(text) {
+      return String(text || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+    }
+
+    function getStatus(resourceName) {
+      const status = statuses.find((s) => s.resource_name === resourceName);
+      return status ? status.status : 'Unknown';
+    }
+
+    function getIssueCount(resourceName) {
+      const report = issueReports.find((r) => r.resource_name === resourceName);
+      return report ? Math.max(parseInt(report.report_count, 10) || 1, 1) : 0;
+    }
+
+    function isIssue(resourceName) {
+      const count = getIssueCount(resourceName);
+      if (count > 0) return true;
+      const status = getStatus(resourceName).toLowerCase();
+      return status === 'degraded' || status === 'maintenance' || status === 'outage' || status === 'down';
+    }
+
+    function getStatusBadge(status) {
+      const s = String(status || '').toLowerCase();
+      if (s === 'operational') return 'bg-green-100 text-green-800';
+      if (s === 'degraded') return 'bg-amber-100 text-amber-800';
+      if (s === 'maintenance') return 'bg-blue-100 text-blue-800';
+      if (s === 'outage' || s === 'down') return 'bg-red-100 text-red-800';
+      if (s === 'user') return 'bg-amber-100 text-amber-800';
+      return 'bg-slate-100 text-slate-700';
+    }
+
+    function getFaviconUrl(resource) {
+      if (resource.favicon_url && resource.favicon_url.trim()) {
+        return resource.favicon_url.trim();
+      }
+
+      function tryHost(input) {
+        if (!input) return '';
+        try {
+          return new URL(input).hostname;
+        } catch (_error) {
+          try {
+            return new URL('https://' + input).hostname;
+          } catch (_error2) {
+            return '';
+          }
+        }
+      }
+
+      const host = tryHost(resource.status_page) || tryHost(resource.resource_name);
+      if (!host) return '/branding/' + config.branding.logo;
+      return `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(host)}`;
+    }
+
+    const categoryEntries = Object.keys(resources).map((name) => ({ name, slug: slugify(name) }));
+    const validViewSlugs = new Set(['all'].concat(categoryEntries.map((entry) => entry.slug)));
+
+    const rawView = String(dashboardQuery.view || 'all').trim().toLowerCase();
+    const selectedView = validViewSlugs.has(rawView) ? rawView : 'all';
+
+    const searchQuery = String(dashboardQuery.search || '').trim();
+    const normalizedSearchQuery = searchQuery.toLowerCase();
+
+    function resourceMatchesSearch(resource, categoryName) {
+      if (!normalizedSearchQuery) return true;
+      const haystack = [
+        String(resource.resource_name || ''),
+        String(resource.status_page || ''),
+        String(categoryName || '')
+      ].join(' ').toLowerCase();
+      return haystack.includes(normalizedSearchQuery);
+    }
+
+    function buildDashboardUrl(nextView, nextSearch) {
+      const params = [];
+      if (nextView && nextView !== 'all') {
+        params.push(`view=${encodeURIComponent(nextView)}`);
+      }
+      if (nextSearch && String(nextSearch).trim()) {
+        params.push(`search=${encodeURIComponent(String(nextSearch).trim())}`);
+      }
+      if (lotrMode) {
+        params.push('lotr=true');
+      }
+      return params.length ? `/?${params.join('&')}` : '/';
+    }
+
+    function reportIssueAction(resourceName) {
+      return `/resources/report-issue/${encodeURIComponent(resourceName)}`;
+    }
+
+    const allCategories = categoryEntries.map((entry) => ({
+      name: entry.name,
+      slug: entry.slug,
+      resources: resources[entry.name] || []
+    }));
+
+    const currentIssueResources = [];
+    const seenIssues = new Set();
+    Object.keys(resources).forEach((categoryName) => {
+      (resources[categoryName] || []).forEach((resource) => {
+        const resourceName = String(resource.resource_name || '');
+        if (!resourceName || seenIssues.has(resourceName)) {
+          return;
+        }
+        if (isIssue(resourceName)) {
+          seenIssues.add(resourceName);
+          currentIssueResources.push(resource);
+        }
+      });
+    });
+
+    const now = Date.now();
+    const activeAnnouncements = announcements
+      .filter((ann) => {
+        if (!ann.expires_at) return true;
+        const expiryTime = new Date(String(ann.expires_at).replace(' ', 'T')).getTime();
+        return !isNaN(expiryTime) && expiryTime > now;
+      })
+      .slice(0, 3);
+
+    function getAnnouncementType(type) {
+      const normalized = String(type || '').trim().toLowerCase();
+      if (normalized === 'warning' || normalized === 'danger' || normalized === 'success') {
+        return normalized;
+      }
+      return 'informative';
+    }
+  %>
+
+  <div class="relative z-10 header-entry-animate w-full border-b-1 border-black bg-white shadow-[0_4px_0_0_rgba(0,0,0,1)]">
+    <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-2">
+      <div class="flex items-center justify-between gap-3 sm:hidden">
+        <h1 class="flex min-w-0 items-center gap-2 text-lg font-bold text-gray-900">
+          <span class="district-logo-badge shrink-0" aria-hidden="true">
+            <img src="/branding/<%= config.branding.logo %>" class="h-7 w-7 object-contain" />
+          </span>
+          <span class="truncate text-base"><%= config.branding.schoolName %></span>
+        </h1>
+      </div>
+
+      <div class="mt-2 sm:mt-0 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-6">
+        <h1 class="hidden sm:flex min-w-0 items-center gap-2 text-xl font-bold text-gray-900">
+          <span class="district-logo-badge shrink-0" aria-hidden="true">
+            <img src="/branding/<%= config.branding.logo %>" class="h-7 w-7 object-contain" />
+          </span>
+          <span class="truncate"><%= config.branding.schoolName %></span>
+        </h1>
+        <div class="hidden sm:block" aria-hidden="true"></div>
+        <form id="dashboard-search-form" class="mt-2 sm:w-[28rem] lg:w-[34rem] xl:w-[38rem] sm:justify-self-end" method="GET" action="/">
+          <% if (selectedView !== 'all') { %>
+            <input type="hidden" name="view" value="<%= selectedView %>">
+          <% } %>
+          <% if (lotrMode) { %>
+            <input type="hidden" name="lotr" value="true">
+          <% } %>
+          <div class="flex gap-2">
+            <input
+              type="search"
+              name="search"
+              id="search-input"
+              value="<%= searchQuery %>"
+              placeholder="<%= lotrMode ? 'Search the realms of Middle-earth...' : 'Search for a resource...' %>"
+              class="w-full min-w-0 px-3 py-1.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black focus:ring-0 text-gray-900 text-sm"
+            >
+            <button type="submit" class="px-3 py-1.5 border-2 border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:border-black hover:text-black bg-white whitespace-nowrap">
+              Search
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <details class="sm:hidden border-t border-gray-100">
+      <summary class="list-none cursor-pointer px-4 py-2 text-sm font-medium text-gray-700 border-b border-gray-100">
+        Filters
+      </summary>
+      <div id="category-filter-container" class="mx-auto w-full max-w-7xl px-4 py-2 overflow-x-auto">
+        <div class="flex flex-wrap gap-2 min-w-max">
+          <a href="<%= buildDashboardUrl('all', searchQuery) %>" data-view="all" class="category-tag <%= selectedView === 'all' ? 'active' : '' %> px-3 py-1 border-2 font-medium rounded-lg transition-all text-sm whitespace-nowrap shrink-0">All Resources</a>
+          <% categoryEntries.forEach((entry) => { %>
+            <a href="<%= buildDashboardUrl(entry.slug, searchQuery) %>" data-view="<%= entry.slug %>" class="category-tag <%= selectedView === entry.slug ? 'active' : '' %> px-3 py-1 border-2 font-medium rounded-lg transition-all text-sm whitespace-nowrap shrink-0"><%= entry.name %></a>
+          <% }); %>
+        </div>
+      </div>
+    </details>
+
+    <div class="hidden sm:block border-t border-gray-100">
+      <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto">
+        <div class="flex flex-wrap gap-2 min-w-max sm:min-w-0">
+          <a href="<%= buildDashboardUrl('all', searchQuery) %>" data-view="all" class="category-tag <%= selectedView === 'all' ? 'active' : '' %> px-3 py-1 border-2 font-medium rounded-lg transition-all text-sm whitespace-nowrap shrink-0">All Resources</a>
+          <% categoryEntries.forEach((entry) => { %>
+            <a href="<%= buildDashboardUrl(entry.slug, searchQuery) %>" data-view="<%= entry.slug %>" class="category-tag <%= selectedView === entry.slug ? 'active' : '' %> px-3 py-1 border-2 font-medium rounded-lg transition-all text-sm whitespace-nowrap shrink-0"><%= entry.name %></a>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="relative z-10 mx-auto max-w-7xl px-4 py-8 pb-24 sm:py-12 sm:pb-32 lg:py-16 lg:pb-40 sm:px-6 lg:px-8">
+    <div id="announcement-banner" class="banner-entry-animate <%= activeAnnouncements.length > 0 ? '' : 'hidden' %> mb-10 w-full">
+      <div id="announcement-banner-list" class="space-y-3">
+        <% activeAnnouncements.forEach((announcement) => {
+          const type = getAnnouncementType(announcement.type);
+          const expiryTime = announcement.expires_at ? new Date(String(announcement.expires_at).replace(' ', 'T')).getTime() : null;
+        %>
+        <article class="announcement-card w-full rounded border-2 px-4 py-3" data-announcement-type="<%= type %>" data-expires-at="<%= expiryTime && !isNaN(expiryTime) ? expiryTime : '' %>">
+          <p class="announcement-card-title text-sm font-bold uppercase tracking-wide">Announcement</p>
+          <p class="announcement-card-message mt-1 text-sm font-medium break-words sm:text-base"><%= announcement.message || '' %></p>
+          <p class="announcement-card-expires mt-2 text-xs font-semibold sm:text-sm">
+            <%= expiryTime && !isNaN(expiryTime)
+              ? 'Valid until: ' + new Date(expiryTime).toLocaleString()
+              : 'Valid until: No expiration' %>
+          </p>
+        </article>
+        <% }); %>
+      </div>
+    </div>
+
+    <div id="no-results" class="no-results-entry-animate hidden text-center py-12">
+      <p class="text-xl text-gray-600"><%= lotrMode ? 'No realms match your search.' : 'No resources found matching your search.' %></p>
+    </div>
+
+    <div class="content-entry-animate w-full">
+      <div class="space-y-8">
+
+        <details class="group overflow-hidden border-2 border-red-600 rounded-lg shadow-[4px_4px_0_0] [&_summary::-webkit-details-marker]:hidden" id="current-issues-accordion" open>
+          <summary class="flex cursor-pointer items-center justify-between gap-4 bg-red-100 px-4 py-3 font-medium text-gray-900 hover:bg-red-300 focus:bg-red-100 focus:outline-0">
+            <div class="flex items-center gap-3">
+              <span class="font-semibold text-black">Current Issues</span>
+              <span id="current-issues-count" data-total-count="<%= currentIssueResources.length %>" class="inline-block px-2.5 py-1 text-sm font-bold bg-red-100 text-red-800 border border-red-400 rounded-full"><%= currentIssueResources.length %></span>
+            </div>
+            <svg class="size-5 shrink-0 text-red-700 group-open:-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </summary>
+
+          <div class="border-t-2 border-red-600 p-4 bg-gray-50">
+            <div id="current-issues-grid" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <% currentIssueResources.forEach((resource) => {
+                const status = getStatus(resource.resource_name);
+                const issueCount = getIssueCount(resource.resource_name);
+                const reportLabel = issueCount > 0
+                  ? `Report issue (${issueCount} existing report${issueCount === 1 ? '' : 's'})`
+                  : 'Report issue';
+              %>
+              <div class="resource-card flex flex-col rounded-lg border-2 border-gray-200 bg-white shadow-sm hover:shadow-lg" data-resource-name="<%= resource.resource_name %>" data-search-text="<%= [String(resource.resource_name || ''), String(resource.status_page || ''), String(status || ''), 'current issues'].join(' ').toLowerCase() %>">
+                <div class="flex gap-4 p-4">
+                  <div class="icon-square flex-shrink-0 w-20 h-20 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-4xl transform -rotate-3 border-2 border-blue-200">
+                    <img src="<%= getFaviconUrl(resource) %>" alt="" />
+                  </div>
+                  <div class="flex min-w-0 flex-col flex-1">
+                    <div class="mb-2 flex min-w-0 items-start justify-between gap-2">
+                      <h3 class="min-w-0 break-words font-semibold leading-snug text-gray-900"><%= resource.resource_name %></h3>
+                      <form method="POST" action="<%= reportIssueAction(resource.resource_name) %>">
+                        <input type="hidden" name="redirect_to" value="<%= currentUrl || '/' %>">
+                        <button type="submit" title="<%= reportLabel %>" aria-label="<%= reportLabel %>" class="report-issue-btn inline-flex shrink-0 items-center gap-1 text-gray-400 hover:text-amber-500 transition-colors" data-resource-name="<%= resource.resource_name %>">
+                          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3h2v18H4V3zm4 2h10l-2.2 4L18 13H8V5z"/></svg>
+                        </button>
+                      </form>
+                    </div>
+                    <% if (issueCount > 0) { %>
+                      <span class="inline-block w-fit px-3 py-1 text-sm font-medium rounded-full <%= getStatusBadge('user') %>">User Reported</span>
+                    <% } else { %>
+                      <span class="inline-block w-fit px-3 py-1 text-sm font-medium rounded-full <%= getStatusBadge(status) %>"><%= status %></span>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+              <% }); %>
+            </div>
+            <p id="current-issues-empty" class="<%= currentIssueResources.length > 0 ? 'hidden' : '' %> text-sm text-gray-600">No current issues.</p>
+          </div>
+        </details>
+
+        <% allCategories.forEach((category) => { %>
+        <details class="group overflow-hidden border-2 border-black rounded-lg shadow-[4px_4px_0_0] [&_summary::-webkit-details-marker]:hidden" data-category-section data-category="<%= category.slug %>" open>
+          <summary class="flex cursor-pointer items-center justify-between gap-4 bg-white px-4 py-3 font-medium text-gray-900 hover:bg-gray-50 focus:bg-gray-50 focus:outline-0">
+            <div class="flex items-center gap-3">
+              <span class="font-semibold"><%= category.name %></span>
+              <span data-category-count data-total-count="<%= category.resources.length %>" class="inline-block px-2.5 py-1 text-sm font-bold bg-blue-100 text-blue-800 border border-blue-300 rounded-full"><%= category.resources.length %></span>
+            </div>
+
+            <svg class="size-5 shrink-0 group-open:-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </summary>
+
+          <div class="border-t-2 border-black p-4 bg-gray-50">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <% category.resources.forEach((resource) => {
+                const status = getStatus(resource.resource_name);
+                const issueCount = getIssueCount(resource.resource_name);
+                const reportLabel = issueCount > 0
+                  ? `Report issue (${issueCount} existing report${issueCount === 1 ? '' : 's'})`
+                  : 'Report issue';
+              %>
+              <div class="resource-card flex flex-col rounded-lg border-2 border-gray-200 bg-white shadow-sm hover:shadow-lg" data-resource-name="<%= resource.resource_name %>" data-category="<%= category.slug %>" data-search-text="<%= [String(resource.resource_name || ''), String(resource.status_page || ''), String(status || ''), String(category.name || '')].join(' ').toLowerCase() %>">
+                <div class="flex gap-4 p-4">
+                  <div class="icon-square flex-shrink-0 w-20 h-20 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-4xl transform -rotate-3 border-2 border-blue-200">
+                    <img src="<%= getFaviconUrl(resource) %>" alt="" />
+                  </div>
+                  <div class="flex min-w-0 flex-col flex-1">
+                    <div class="mb-2 flex min-w-0 items-start justify-between gap-2">
+                      <h3 class="min-w-0 break-words font-semibold leading-snug text-gray-900"><%= resource.resource_name %></h3>
+                      <form method="POST" action="<%= reportIssueAction(resource.resource_name) %>">
+                        <input type="hidden" name="redirect_to" value="<%= currentUrl || '/' %>">
+                        <button type="submit" title="<%= reportLabel %>" aria-label="<%= reportLabel %>" class="report-issue-btn inline-flex shrink-0 items-center gap-1 text-gray-400 hover:text-amber-500 transition-colors" data-resource-name="<%= resource.resource_name %>">
+                          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3h2v18H4V3zm4 2h10l-2.2 4L18 13H8V5z"/></svg>
+                        </button>
+                      </form>
+                    </div>
+                    <% if (issueCount > 0) { %>
+                      <span class="inline-block w-fit px-3 py-1 text-sm font-medium rounded-full <%= getStatusBadge('user') %>">User Reported</span>
+                    <% } else { %>
+                      <span class="inline-block w-fit px-3 py-1 text-sm font-medium rounded-full <%= getStatusBadge(status) %>"><%= status %></span>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+              <% }); %>
+            </div>
+          </div>
+        </details>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/animate.js"></script>
+  <script src="/js/background.js"></script>
+  <script src="/js/dashboard-query.js"></script>
+</body>
+</html>
