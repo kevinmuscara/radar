@@ -1,36 +1,89 @@
 # Contributing to Radar
 
-Thank you for your interest in contributing to Radar! Contributing to this project should be easy and as transparent as possible.
+Thanks for your interest in contributing.
 
-## Code of Conduct
-The code of conduct is described in [here](./CODE_OF_CONDUCT.md)
+## Ground Rules
 
-## Pull Requests
-We actively welcome your pull requests.
+- Be respectful and constructive.
+- Keep pull requests focused and small when possible.
+- Document behavior changes in README updates when relevant.
+- Follow the Code of Conduct in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-1. Fork the repo and create your branch from `master`.
-2. If you've added code that should be tested, add tests
-3. If you've changed APIs, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints.
+## Development Setup
 
-## Bugs
+1. Fork and clone the repository.
+2. Install dependencies:
 
-### Where to Find Known Issues
-Radar will be using GitHub Issues for public bugs. Before filing a new task, try to make sure your problem doesn't already exist.
+```bash
+npm install
+```
 
-### Reporting New Issues
+3. Build CSS:
 
-The best way to get your bug fixed is to provide a reduced test case.
+```bash
+npm run build:css
+```
 
-### Code convetions
+4. Run the app locally:
 
-* Use semicolons `;`
-* Commas last `,`
-* 2 spaces for indentation (no tabs)
-* Prefer `'` over `"`
-* Write "attractive" code
+```bash
+node index.js
+```
 
-## License
+Optional style watcher:
 
-By contributing to Radar, you agree that your contributions will be licensed under its MIT license.
+```bash
+npm run watch:css
+```
+
+## Branch and Commit Guidelines
+
+- Create feature branches from `main`.
+- Use descriptive branch names, for example:
+  - `feature/add-rss-filtering`
+  - `fix/import-validation`
+- Write clear commit messages in imperative mood.
+
+## Pull Request Checklist
+
+- Code is formatted and readable.
+- New/changed behavior is documented.
+- Manual verification steps are included in PR description.
+- No secrets or sensitive data are committed.
+- UI changes include screenshots when relevant.
+
+## Suggested PR Template
+
+Include:
+- What changed
+- Why it changed
+- How it was tested
+- Any migration or compatibility notes
+
+## Reporting Bugs
+
+When opening a bug report, include:
+- Environment (OS, Node.js version)
+- Steps to reproduce
+- Expected behavior
+- Actual behavior
+- Logs or screenshots (if applicable)
+
+## Feature Requests
+
+For feature requests, include:
+- Problem statement
+- Proposed solution
+- Alternative approaches considered
+- School/team workflow impact
+
+## Code Style
+
+- JavaScript style follows existing project conventions.
+- Keep functions cohesive and avoid unrelated refactors in the same PR.
+- Use meaningful names for routes, settings, and database fields.
+
+## Security Issues
+
+Do not open public issues for sensitive vulnerabilities.
+Follow [SECURITY.md](SECURITY.md) for responsible disclosure.

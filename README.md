@@ -1,71 +1,224 @@
-<p align="center">
-  <a href="#">
-    <img alt="Radar Logo" height="128" src="./public/branding/logo.png">
-    <h1 align="center">Radar</h1>
-  </a>
-</p>
+# Radar
 
-<p align="center">
-  <a aria-label="radar documentation" href="https://kevinmuscara.github.io/radar">Documentation</a> | 
-  <a aria-label="radar documentation" href="#-screenshots">Screenshots</a> | 
-  <a aria-label="radar documentation" href="#-key-capabilities">Features</a>
-</p>
+Radar is a school-focused status dashboard for tracking the health of software and infrastructure resources in one place.
 
-## Introduction
-Radar is an open-source application designed for educational institutions. It provides a unified interface to track the operational status of software services and digital resources including LMS, communication tools, authentication services, and other vital digital infrastructure.
+It provides:
+- A live dashboard for service status visibility
+- Role-based administration for super admins and resource managers
+- Multiple status check methods (API, scrape, heartbeat, ICMP)
+- CSV import/export for bulk management
+- Issue reporting and announcement workflows
+- RSS feed output for integrations
 
-Built with a **server-side status checking architecture** for optimal performance and scalability. Radar checks all resources at configurable intervals (30 minutes default) and serves cached results to unlimited users instantly.
+## Features
 
-This repository includes the full Radar application, documentation, and various other supporting tools.
+- Multi-role access control
+  - `superadmin`: full access, user management, settings updates
+  - `resource_manager`: resource/category management and operations access
+- Setup flow with branding
+  - School name and logo upload
+  - Admin account creation
+  - Refresh interval configuration
+- Resource management
+  - Categories and multi-category resource mapping
+  - Add/edit/remove resources and categories
+  - Support for favicon URL and API field mapping (`api_config`)
+- Flexible status checks
+  - `api`: JSON endpoint parsing with optional field path mapping
+  - `scrape`: keyword-based web scraping with Puppeteer fallback behavior
+  - `heartbeat`: HTTP 200 availability check
+  - `icmp`: host reachability check using system ping
+- Operations and observability
+  - Cached statuses for fast reads
+  - Background status refresh worker with manual force-refresh endpoint
+  - Status check error logging and cleanup
+  - Active issue reports with rate-limited submissions
+  - Time-bound announcements with typed severity
+- Interoperability
+  - CSV template download and bulk import/export
+  - RSS feed of current resource states
 
-### ⚡ Key Capabilities
+## Tech Stack
 
-- **Server-Side Status Monitoring**: Efficient server-side checking eliminates client-side overhead
-- **Instant Dashboard Loads**: Pre-computed cached data serves all users in milliseconds
-- **Multiple Check Methods**: Supports API-based checks, web scraping, heartbeat monitoring, and ICMP echo (ping) checks for server/infrastructure resources
-- **Configurable Intervals**: Set check frequency from 1-60 minutes (30 min default)
-- **Smart Retry Logic**: Automatic retry for failed checks before logging errors
-- **Responsive Dashboard**: Clean, intuitive interface that works on desktop and mobile devices
-- **Category Organization**: Group related services into logical categories for better organization
-- **Status Indicators**: Color-coded status badges showing operational, degraded, maintenance, and outage states
-- **Current Issues Section**: Highlighted section showing all services that are not fully operational
-- **Search & Filter**: Quickly find services with built-in search functionality and category filters
-- **Progress Tracking**: Real-time progress bar during status checks (admin dashboard)
-- **Error Logging**: Database-backed error logs for persistent failures
-- **RSS Feed**: Automated status feed for integration with other systems
-- **Admin Panel**: Manage resources, categories, and monitoring settings with live progress indicators
-- **User Authentication**: Secure login system to protect administrative functions
-- **Unlimited Scalability**: 1 user or 10,000 users = same server load
+- Node.js (CommonJS)
+- Express + EJS
+- SQLite (`sqlite3` + `sqlite`)
+- Session auth (`express-session` + `memorystore`)
+- Tailwind CSS build pipeline
+- Axios, Cheerio, Puppeteer for status checks
 
-### 🚀 Performance Features
+## Prerequisites
 
-- **Zero Client-Side Checks**: All status checks performed server-side only
-- **Database Caching**: Fast SQLite-backed status cache with indexed lookups
-- **Auto-Updates**: Dashboard refreshes every 5 minutes with latest cached data
-- **Rate Limiting**: Built-in protection against abuse (60s cooldown on manual refresh)
-- **Efficient Architecture**: 99.98% reduction in external API requests vs client-side checking
+- Node.js 18+ (Node.js 20+ recommended)
+- npm 9+
+- Network access to resources you monitor
+- OS-level `ping` utility available if you use `icmp` checks
 
-## Table of Contents
-- [📚 Documentation](#-documentation)
-- [👏 Contributing](#-contributing)
-- [❓ FAQ](#-faq)
-- [🏛️ License](#license)
-- [📷 Screenshots](#screenshots)
+## Installation
 
-## 📚 Documentation
-<p>Learn more about deploying Radar for your team <a aria-label="expo documentation" href="https://kevinmuscara.github.io/radar">in the official docs.</a></p>
+1. Clone the repository:
 
-## 👏 Contributing
-If you like Radar and want to help make it better then check out the [Contributing Guide](./CONTRIBUTING.md)!
+```bash
+git clone https://github.com/kevinmuscara/radar.git
+cd radar
+```
 
-## ❓ FAQ
-If you have any questions about Radar and want answers, then check out the [Frequently Asked Questions](/docs/faq.md)!
+2. Install dependencies:
 
-## 🏛️ License
-The Radar source code is made available under the [MIT License](./LICENSE). Some of the dependencies used by Radar are licensed differently.
+```bash
+npm install
+```
 
-## 📷 Screenshots
+3. (Optional) Configure environment variables in a `.env` file:
 
-![Radar](./docs/images/example_home.png)
-![Radar](./docs/images/example_admin.png)
-![Radar](./docs/images/example_resource.png)
+```dotenv
+PORT=80
+HOST=0.0.0.0
+DB_PATH=./database.sqlite
+NODE_ENV=production
+```
+
+4. Build CSS assets:
+
+```bash
+npm run build:css
+```
+
+5. Start the app:
+
+```bash
+npm start
+```
+
+The app runs on `http://HOST:PORT` (defaults to `http://0.0.0.0:80`).
+
+## Development
+
+Build and watch styles:
+
+```bash
+npm run watch:css
+```
+
+Run the app in development mode:
+
+```bash
+npm run dev
+```
+
+Note: the `dev` script uses POSIX-style environment variable syntax. On Windows CMD/PowerShell, use one of these alternatives:
+
+```bash
+npm run build:css
+node index.js
+```
+
+or
+
+```powershell
+$env:PORT=3000; $env:HOST="0.0.0.0"; node .
+```
+
+## Linux Deployment (systemd)
+
+This project includes a systemd unit file at `radarboard.service` for Linux server installs.
+
+### 1. Prepare the app on the server
+
+```bash
+cd /opt
+git clone https://github.com/kevinmuscara/radar.git
+cd radar
+npm install
+npm run build:css
+```
+
+If you use a custom database location, set `DB_PATH` in a `.env` file in the project root.
+
+### 2. Create a service user (recommended)
+
+```bash
+sudo useradd --system --create-home --shell /usr/sbin/nologin radar
+sudo chown -R radar:radar /opt/radar
+```
+
+### 3. Install and edit `radarboard.service`
+
+Copy the unit file:
+
+```bash
+sudo cp radarboard.service /etc/systemd/system/radarboard.service
+```
+
+Edit the unit file so these fields match your server:
+- `User` and `Group` (for example `radar`)
+- `WorkingDirectory` (for example `/opt/radar`)
+- `ExecStart` (Node path + app path, for example `/usr/bin/node /opt/radar/index.js`)
+
+You can edit it directly:
+
+```bash
+sudo nano /etc/systemd/system/radarboard.service
+```
+
+### 4. Enable and start the service
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable radarboard.service
+sudo systemctl start radarboard.service
+```
+
+### 5. Verify service health
+
+```bash
+sudo systemctl status radarboard.service
+sudo journalctl -u radarboard.service -f
+```
+
+### 6. Update workflow
+
+When deploying updates:
+
+```bash
+cd /opt/radar
+git pull
+npm install
+npm run build:css
+sudo systemctl restart radarboard.service
+```
+
+### Optional: run behind Nginx
+
+Set `PORT=3000` in your `.env`, bind Radar to localhost, and reverse proxy through Nginx with TLS (recommended for internet-facing deployments).
+
+## CSV Format
+
+Template header:
+
+```csv
+category,resource_name,status_page,favicon_url,check_type,scrape_keywords,api_config
+```
+
+Example:
+
+```csv
+K-12|Middle School,Google Workspace for Education,https://www.google.com/appsstatus/dashboard/,,scrape,No incidents,
+"K-12,High School",GitHub Status,https://www.githubstatus.com/api/v2/status.json,https://www.github.com/favicon.ico,api,,status.indicator
+Infrastructure,Core Router,10.0.0.1,,icmp,,
+```
+
+## Security Notes
+
+- Change default credentials during setup (or immediately after migration).
+- Configure secure session settings and HTTPS before internet exposure.
+- Restrict access to admin routes behind your organization network when possible.
+- Review [SECURITY.md](SECURITY.md) before deploying publicly.
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before opening issues or pull requests.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
