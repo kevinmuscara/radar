@@ -1,51 +1,14 @@
 # Radar
 
-Radar is a school-focused status dashboard for tracking the health of software and infrastructure resources in one place.
+Radar is a teacher friendly focused status dashboard for tracking the health of digital resources and infrastructure in one place.
 
 It provides:
 - A live dashboard for service status visibility
-- Role-based administration for super admins and resource managers
+- Role based administration for super admins and resource managers
 - Multiple status check methods (API, scrape, heartbeat, ICMP)
 - CSV import/export for bulk management
 - Issue reporting and announcement workflows
 - RSS feed output for integrations
-
-## Features
-
-- Multi-role access control
-  - `superadmin`: full access, user management, settings updates
-  - `resource_manager`: resource/category management and operations access
-- Setup flow with branding
-  - School name and logo upload
-  - Admin account creation
-  - Refresh interval configuration
-- Resource management
-  - Categories and multi-category resource mapping
-  - Add/edit/remove resources and categories
-  - Support for favicon URL and API field mapping (`api_config`)
-- Flexible status checks
-  - `api`: JSON endpoint parsing with optional field path mapping
-  - `scrape`: keyword-based web scraping with Puppeteer fallback behavior
-  - `heartbeat`: HTTP 200 availability check
-  - `icmp`: host reachability check using system ping
-- Operations and observability
-  - Cached statuses for fast reads
-  - Background status refresh worker with manual force-refresh endpoint
-  - Status check error logging and cleanup
-  - Active issue reports with rate-limited submissions
-  - Time-bound announcements with typed severity
-- Interoperability
-  - CSV template download and bulk import/export
-  - RSS feed of current resource states
-
-## Tech Stack
-
-- Node.js (CommonJS)
-- Express + EJS
-- SQLite (`sqlite3` + `sqlite`)
-- Session auth (`express-session` + `memorystore`)
-- Tailwind CSS build pipeline
-- Axios, Cheerio, Puppeteer for status checks
 
 ## Prerequisites
 
@@ -78,13 +41,7 @@ DB_PATH=./database.sqlite
 NODE_ENV=production
 ```
 
-4. Build CSS assets:
-
-```bash
-npm run build:css
-```
-
-5. Start the app:
+4. Start the app:
 
 ```bash
 npm start

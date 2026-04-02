@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "version": "1.0.0",
-  "description": "Radar is a web application for schools (primarily tech teams) to manage the status of their softwares.",
+  "description": "Teacher friendly focused status dashboard for tracking the health of digital resources and infrastructure in one place.",
   "main": "index.js",
   "scripts": {
     "start": "npm run build:css && node index.js",
