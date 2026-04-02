@@ -8,6 +8,8 @@ lerna-debug.log*
 *.DS_Store
 site/
 
+public/css/output.css
+
 package-lock.json
 database.sqlite
 public/branding/*

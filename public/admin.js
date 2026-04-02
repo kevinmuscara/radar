@@ -95,14 +95,37 @@ function toUiCheckType(apiType) {
 
 function toUiRole(role) {
   if (role === 'superadmin') return 'Admin';
-  if (role === 'resource_manager') return 'Role Manager';
-  return role || 'Role Manager';
+  if (role === 'resource_manager') return 'Resource Manager';
+  return role || 'Resource Manager';
 }
 
 function toApiRole(uiRole) {
   if (uiRole === 'Admin' || uiRole === 'Super Admin') return 'superadmin';
-  if (uiRole === 'Role Manager' || uiRole === 'Operations') return 'resource_manager';
+  if (uiRole === 'Resource Manager' || uiRole === 'Role Manager' || uiRole === 'Operations') return 'resource_manager';
   return null;
+}
+
+function formatErrorTimestamp(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+
+  const normalized = text.replace(' ', 'T');
+  const sqliteLike = normalized.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (sqliteLike) {
+    const [, year, month, day, hours, minutes, seconds] = sqliteLike;
+    const date = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hours),
+      Number(minutes),
+      Number(seconds || 0)
+    );
+    return Number.isNaN(date.getTime()) ? text : date.toLocaleString();
+  }
+
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? text : date.toLocaleString();
 }
 
 function toAnnouncementType(value) {
@@ -515,7 +538,7 @@ function initializeCredentialRoleOptions() {
   const options = [
     { value: '', label: 'Select role' },
     { value: 'Admin', label: 'Admin' },
-    { value: 'Role Manager', label: 'Role Manager' }
+    { value: 'Resource Manager', label: 'Resource Manager' }
   ];
 
   const createSelect = qs('#user-role');
@@ -619,16 +642,18 @@ function renderErrors() {
 
   tbody.innerHTML = state.errors.map((error) => `
     <tr class="*:text-gray-900 *:first:font-medium">
-      <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(new Date(error.created_at).toLocaleString())}</td>
+      <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(formatErrorTimestamp(error.created_at))}</td>
       <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(error.resource_name || '')}</td>
       <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(error.check_type || '')}</td>
       <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(error.error_message || '')}</td>
       <td class="px-3 py-2 whitespace-nowrap">
-        <div class="flex items-center gap-2">
-          <button type="button" aria-label="Delete error" class="delete-btn-animated rounded border border-gray-300 p-1.5 text-gray-700 hover:bg-gray-100" data-delete-type="error" data-delete-item="error log" data-error-id="${error.id}">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21.75H8.084a2.25 2.25 0 0 1-2.245-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
-          </button>
-        </div>
+        ${state.isSuperAdmin ? `
+          <div class="flex items-center gap-2">
+            <button type="button" aria-label="Delete error" class="delete-btn-animated rounded border border-gray-300 p-1.5 text-gray-700 hover:bg-gray-100" data-delete-type="error" data-delete-item="error log" data-error-id="${error.id}">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21.75H8.084a2.25 2.25 0 0 1-2.245-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+            </button>
+          </div>
+        ` : '<span class="text-sm text-gray-500">-</span>'}
       </td>
     </tr>
   `).join('');
@@ -706,7 +731,7 @@ function renderAll() {
   renderResources();
   renderAnnouncements();
   state.isSuperAdmin && renderUsers();
-  state.isSuperAdmin && renderErrors();
+  renderErrors();
   renderCategoryFilterOptions();
   renderResourceCategoryOptions();
   initEnhancedTables();
@@ -1225,7 +1250,7 @@ function bindGlobalActions() {
       }
 
       if (editType === 'credential') {
-        const selectedRole = editButton.getAttribute('data-edit-role') || 'Role Manager';
+        const selectedRole = editButton.getAttribute('data-edit-role') || 'Resource Manager';
         qs('#edit-user-username').value = editButton.getAttribute('data-edit-username') || '';
         qs('#edit-user-password').value = '';
         qs('#edit-user-role').value = selectedRole;
@@ -1818,11 +1843,10 @@ function applyRoleVisibility() {
   tabSettings && (tabSettings.style.display = 'none');
   panelSettings && (panelSettings.style.display = 'none');
 
-  const errorCard = qsa('#panel-operations .rounded.border.border-gray-300.bg-white').find((card) => {
-    const title = qs('h3', card);
-    return title && title.textContent.trim() === 'Error Log';
-  });
-  errorCard && (errorCard.style.display = 'none');
+  const clearErrorsButton = qs('button[aria-label="Delete all error logs"]');
+  if (clearErrorsButton) {
+    clearErrorsButton.style.display = 'none';
+  }
 }
 
 function bindManualCheck() {

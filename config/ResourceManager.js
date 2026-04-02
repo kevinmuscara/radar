@@ -245,7 +245,19 @@ class ResourceManager {
   async getCheckErrors(limit = 200) {
     await this.ready;
     const db = await this.dbManager.getDb();
-    const rows = await db.all(`SELECT id, resource_id, resource_name, status_page, check_type, error_message, created_at FROM status_check_errors ORDER BY created_at DESC LIMIT ?`, [limit]);
+    const rows = await db.all(`
+      SELECT
+        id,
+        resource_id,
+        resource_name,
+        status_page,
+        check_type,
+        error_message,
+        datetime(created_at, 'localtime') as created_at
+      FROM status_check_errors
+      ORDER BY datetime(created_at) DESC
+      LIMIT ?
+    `, [limit]);
     return rows;
   }
 
