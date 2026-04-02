@@ -1,10 +1,10 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 const puppeteer = require("puppeteer");
-const { execFile } = require('child_process');
-const { promisify } = require('util');
-const DatabaseManager = require('./DatabaseManager');
-const ResourceManager = require('./ResourceManager');
+const { execFile } = require("child_process");
+const { promisify } = require("util");
+const DatabaseManager = require("./DatabaseManager");
+const ResourceManager = require("./ResourceManager");
 
 const execFileAsync = promisify(execFile);
 
@@ -17,16 +17,19 @@ class StatusChecker {
     this.cancelCurrentCheck = false;
     this.currentProgress = 0;
     this.totalResources = 0;
-    this.currentResourceName = '';
+    this.currentResourceName = "";
   }
 
   hasMappedApiField(resource) {
     if (!resource || !resource.api_config) return false;
     try {
-      const parsed = typeof resource.api_config === 'string'
-        ? JSON.parse(resource.api_config)
-        : resource.api_config;
-      return Boolean(parsed && parsed.fieldPath && String(parsed.fieldPath).trim());
+      const parsed =
+        typeof resource.api_config === "string"
+          ? JSON.parse(resource.api_config)
+          : resource.api_config;
+      return Boolean(
+        parsed && parsed.fieldPath && String(parsed.fieldPath).trim(),
+      );
     } catch (_error) {
       return false;
     }
@@ -36,43 +39,55 @@ class StatusChecker {
     if (!resource) return 0;
     let score = 0;
     if (resource.status_page) score += 1;
-    if ((resource.check_type || 'api').toLowerCase() === 'api') score += 1;
+    if ((resource.check_type || "api").toLowerCase() === "api") score += 1;
     if (this.hasMappedApiField(resource)) score += 2;
     return score;
   }
 
   toCanonicalStatus(statusValue) {
-    const value = String(statusValue || '').trim().toLowerCase();
-    if (!value) return 'Unknown';
+    const value = String(statusValue || "")
+      .trim()
+      .toLowerCase();
+    if (!value) return "Unknown";
 
-    if (['operational', 'ok', 'healthy', 'up'].includes(value)) return 'Operational';
-    if (['degraded', 'partial', 'minor', 'warning'].includes(value)) return 'Degraded';
-    if (['outage', 'down', 'critical', 'major'].includes(value)) return 'Outage';
-    if (['maintenance', 'scheduled maintenance'].includes(value)) return 'Maintenance';
+    if (["operational", "ok", "healthy", "up"].includes(value))
+      return "Operational";
+    if (["degraded", "partial", "minor", "warning"].includes(value))
+      return "Degraded";
+    if (["outage", "down", "critical", "major"].includes(value))
+      return "Outage";
+    if (["maintenance", "scheduled maintenance"].includes(value))
+      return "Maintenance";
 
     return this.normalizeStatus(value);
   }
 
   getCustomStatusMap(apiConfig) {
-    if (!apiConfig || typeof apiConfig !== 'object') return null;
+    if (!apiConfig || typeof apiConfig !== "object") return null;
 
-    if (apiConfig.statusMap && typeof apiConfig.statusMap === 'object' && !Array.isArray(apiConfig.statusMap)) {
+    if (
+      apiConfig.statusMap &&
+      typeof apiConfig.statusMap === "object" &&
+      !Array.isArray(apiConfig.statusMap)
+    ) {
       return Object.entries(apiConfig.statusMap)
-        .filter(([key]) => String(key || '').trim())
+        .filter(([key]) => String(key || "").trim())
         .map(([key, value]) => ({
           match: String(key).trim().toLowerCase(),
-          status: this.toCanonicalStatus(value)
+          status: this.toCanonicalStatus(value),
         }))
-        .filter(entry => entry.status !== 'Unknown');
+        .filter((entry) => entry.status !== "Unknown");
     }
 
     if (Array.isArray(apiConfig.statusMappings)) {
       return apiConfig.statusMappings
         .map((entry) => {
-          if (!entry || typeof entry !== 'object') return null;
-          const match = String(entry.match || '').trim().toLowerCase();
+          if (!entry || typeof entry !== "object") return null;
+          const match = String(entry.match || "")
+            .trim()
+            .toLowerCase();
           const status = this.toCanonicalStatus(entry.status);
-          if (!match || status === 'Unknown') return null;
+          if (!match || status === "Unknown") return null;
           return { match, status };
         })
         .filter(Boolean);
@@ -82,10 +97,10 @@ class StatusChecker {
   }
 
   normalizeStatus(statusText, apiConfig = null) {
-    if (!statusText) return 'Unknown';
+    if (!statusText) return "Unknown";
 
     const raw = String(statusText).trim();
-    if (!raw) return 'Unknown';
+    if (!raw) return "Unknown";
 
     const lower = raw.toLowerCase();
     const customMap = this.getCustomStatusMap(apiConfig);
@@ -99,7 +114,7 @@ class StatusChecker {
 
     const rules = [
       {
-        status: 'Outage',
+        status: "Outage",
         patterns: [
           /\bmajor outage\b/i,
           /\bcomplete outage\b/i,
@@ -107,11 +122,11 @@ class StatusChecker {
           /\bcritical\b/i,
           /\bdown\b/i,
           /\bunavailable\b/i,
-          /\bsevere\b/i
-        ]
+          /\bsevere\b/i,
+        ],
       },
       {
-        status: 'Degraded',
+        status: "Degraded",
         patterns: [
           /\bpartial\b/i,
           /\bdegraded\b/i,
@@ -119,42 +134,42 @@ class StatusChecker {
           /\bdisruption\b/i,
           /\bperformance issues?\b/i,
           /\bintermittent\b/i,
-          /\bslowness\b/i
-        ]
+          /\bslowness\b/i,
+        ],
       },
       {
-        status: 'Maintenance',
+        status: "Maintenance",
         patterns: [
           /\bmaintenance\b/i,
           /\bscheduled maintenance\b/i,
-          /\bund(er|going) maintenance\b/i
-        ]
+          /\bund(er|going) maintenance\b/i,
+        ],
       },
       {
-        status: 'Operational',
+        status: "Operational",
         patterns: [
           /\ball systems operational\b/i,
           /\bno incidents reported\b/i,
           /\boperational\b/i,
           /\bhealthy\b/i,
           /\bavailable\b/i,
-          /\bup\b/i
-        ]
-      }
+          /\bup\b/i,
+        ],
+      },
     ];
 
     for (const rule of rules) {
-      if (rule.patterns.some(pattern => pattern.test(lower))) {
+      if (rule.patterns.some((pattern) => pattern.test(lower))) {
         return rule.status;
       }
     }
 
-    return 'Unknown';
+    return "Unknown";
   }
 
   extractIcmpTarget(input) {
-    const raw = String(input || '').trim();
-    if (!raw) return '';
+    const raw = String(input || "").trim();
+    if (!raw) return "";
 
     try {
       if (/^[a-z]+:\/\//i.test(raw)) {
@@ -165,82 +180,103 @@ class StatusChecker {
       if (parsed.hostname) {
         return parsed.hostname;
       }
-    } catch (_error) {
-    }
+    } catch (_error) {}
 
-    return raw.replace(/^\[|\]$/g, '');
+    return raw.replace(/^\[|\]$/g, "");
   }
 
   async performIcmpCheck(resource) {
     const target = this.extractIcmpTarget(resource.status_page);
 
     if (!target) {
-      return { status: 'Unknown', last_checked: new Date().toISOString() };
+      return { status: "Unknown", last_checked: new Date().toISOString() };
     }
 
     const argsByPlatform = {
-      win32: ['-n', '1', '-w', '3000', target],
-      darwin: ['-c', '1', '-W', '3000', target],
-      linux: ['-c', '1', '-W', '3', target]
+      win32: ["-n", "1", "-w", "3000", target],
+      darwin: ["-c", "1", "-W", "3000", target],
+      linux: ["-c", "1", "-W", "3", target],
     };
 
-    const args = argsByPlatform[process.platform] || ['-c', '1', target];
+    const args = argsByPlatform[process.platform] || ["-c", "1", target];
 
     try {
-      await execFileAsync('ping', args, { timeout: 5000, windowsHide: true });
-      return { status: 'Operational', last_checked: new Date().toISOString(), status_url: target };
+      await execFileAsync("ping", args, { timeout: 5000, windowsHide: true });
+      return {
+        status: "Operational",
+        last_checked: new Date().toISOString(),
+        status_url: target,
+      };
     } catch (error) {
-      if (error && error.code === 'ENOENT') {
-        throw new Error('ICMP check failed: ping command is not available on this host');
+      if (error && error.code === "ENOENT") {
+        throw new Error(
+          "ICMP check failed: ping command is not available on this host",
+        );
       }
 
-      return { status: 'Outage', last_checked: new Date().toISOString(), status_url: target };
+      return {
+        status: "Outage",
+        last_checked: new Date().toISOString(),
+        status_url: target,
+      };
     }
   }
 
   async checkResourceStatus(resource) {
     let url = resource.status_page;
-    const method = (resource.check_type || 'api').toLowerCase();
-    const keywords = resource.scrape_keywords ? resource.scrape_keywords.split(',').map(k => k.trim()).filter(Boolean) : [];
+    const method = (resource.check_type || "api").toLowerCase();
+    const keywords = resource.scrape_keywords
+      ? resource.scrape_keywords
+          .split(",")
+          .map((k) => k.trim())
+          .filter(Boolean)
+      : [];
     let apiConfig = null;
 
-    // Parse API config if exists
     if (resource.api_config) {
       try {
-        apiConfig = typeof resource.api_config === 'string' ? JSON.parse(resource.api_config) : resource.api_config;
+        apiConfig =
+          typeof resource.api_config === "string"
+            ? JSON.parse(resource.api_config)
+            : resource.api_config;
       } catch (e) {
-        console.error('Failed to parse api_config:', e);
+        console.error("Failed to parse api_config:", e);
       }
     }
 
     if (!url || url.trim() === "") {
-      return { status: 'Unknown', last_checked: new Date().toISOString() };
+      return { status: "Unknown", last_checked: new Date().toISOString() };
     }
 
-    if (method === 'icmp') {
+    if (method === "icmp") {
       return this.performIcmpCheck(resource);
     }
 
-    if (!url.startsWith('http')) {
-      url = 'http://' + url;
+    if (!url.startsWith("http")) {
+      url = "http://" + url;
     }
 
     try {
       const response = await axios.get(url, {
         timeout: 10000,
-        headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36' }
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+        },
       });
 
-      // Handle based on selected method
-      if (method === 'api') {
-        // Try to parse JSON API responses (e.g., statuspage.io summary.json)
-        if (response.headers['content-type'] && response.headers['content-type'].includes('application/json')) {
+      if (method === "api") {
+        if (
+          response.headers["content-type"] &&
+          response.headers["content-type"].includes("application/json")
+        ) {
           const data = response.data;
 
-          // If user configured specific API field, use it
           if (apiConfig && apiConfig.fieldPath) {
             try {
-              const pathParts = apiConfig.fieldPath.split(/\.|\[|\]/).filter(Boolean);
+              const pathParts = apiConfig.fieldPath
+                .split(/\.|\[|\]/)
+                .filter(Boolean);
               let value = data;
 
               for (const part of pathParts) {
@@ -257,86 +293,149 @@ class StatusChecker {
                 return {
                   status: this.normalizeStatus(String(value), apiConfig),
                   last_checked: new Date().toISOString(),
-                  status_url: url
+                  status_url: url,
                 };
               }
             } catch (e) {
-              console.error('Failed to extract configured API field:', e);
+              console.error("Failed to extract configured API field:", e);
             }
           }
 
-          // Fallback to common API patterns
           if (data && data.status && data.status.description) {
-            return { status: this.normalizeStatus(data.status.description, apiConfig), last_checked: new Date().toISOString(), status_url: url };
+            return {
+              status: this.normalizeStatus(data.status.description, apiConfig),
+              last_checked: new Date().toISOString(),
+              status_url: url,
+            };
           }
-          if (data && data.status && typeof data.status === 'string') {
-            return { status: this.normalizeStatus(data.status, apiConfig), last_checked: new Date().toISOString(), status_url: url };
+          if (data && data.status && typeof data.status === "string") {
+            return {
+              status: this.normalizeStatus(data.status, apiConfig),
+              last_checked: new Date().toISOString(),
+              status_url: url,
+            };
           }
         }
 
-        // Fallback for api: inspect body text
         const $api = cheerio.load(response.data);
-        const pageTextApi = $api('body').text();
+        const pageTextApi = $api("body").text();
         if (pageTextApi) {
-          for (const kw of ['All Systems Operational', 'No incidents reported', 'Operational', 'Services are healthy']) {
-            if (pageTextApi.includes(kw)) return { status: 'Operational', last_checked: new Date().toISOString(), status_url: url };
+          for (const kw of [
+            "All Systems Operational",
+            "No incidents reported",
+            "Operational",
+            "Services are healthy",
+          ]) {
+            if (pageTextApi.includes(kw))
+              return {
+                status: "Operational",
+                last_checked: new Date().toISOString(),
+                status_url: url,
+              };
           }
         }
-        return { status: 'Unknown', last_checked: new Date().toISOString(), status_url: url };
+        return {
+          status: "Unknown",
+          last_checked: new Date().toISOString(),
+          status_url: url,
+        };
       }
 
-      if (method === 'scrape') {
+      if (method === "scrape") {
         let pageText;
 
         try {
-          const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+          const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox"],
+          });
           const page = await browser.newPage();
           page.setDefaultTimeout(8000);
           page.setDefaultNavigationTimeout(8000);
 
-          await page.goto(url, { waitUntil: 'domcontentloaded' });
+          await page.goto(url, { waitUntil: "domcontentloaded" });
           pageText = await page.content();
           await browser.close();
 
           const $ = cheerio.load(pageText);
-          pageText = $('body').text();
+          pageText = $("body").text();
         } catch (puppeteerError) {
-          console.warn(`Puppeteer failed for ${url}, falling back to axios: ${puppeteerError.message}`);
+          console.warn(
+            `Puppeteer failed for ${url}, falling back to axios: ${puppeteerError.message}`,
+          );
           const response = await axios.get(url, {
             timeout: 5000,
-            headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36' }
+            headers: {
+              "User-Agent":
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+            },
           });
           const $ = cheerio.load(response.data);
-          pageText = $('body').text();
+          pageText = $("body").text();
         }
 
         if (keywords.length > 0) {
           for (const kw of keywords) {
             if (pageText.toLowerCase().includes(kw.toLowerCase())) {
-              return { status: this.normalizeStatus(kw), last_checked: new Date().toISOString(), status_url: url };
+              return {
+                status: this.normalizeStatus(kw),
+                last_checked: new Date().toISOString(),
+                status_url: url,
+              };
             } else {
-              return { status: 'Outage', last_checked: new Date().toISOString(), status_url: url };
+              return {
+                status: "Outage",
+                last_checked: new Date().toISOString(),
+                status_url: url,
+              };
             }
           }
         }
 
-        for (const kw of ['All Systems Operational', 'No incidents reported', 'Operational', 'Services are healthy']) {
-          if (pageText.includes(kw)) return { status: 'Operational', last_checked: new Date().toISOString(), status_url: url };
+        for (const kw of [
+          "All Systems Operational",
+          "No incidents reported",
+          "Operational",
+          "Services are healthy",
+        ]) {
+          if (pageText.includes(kw))
+            return {
+              status: "Operational",
+              last_checked: new Date().toISOString(),
+              status_url: url,
+            };
         }
-        return { status: 'Unknown', last_checked: new Date().toISOString(), status_url: url };
+        return {
+          status: "Unknown",
+          last_checked: new Date().toISOString(),
+          status_url: url,
+        };
       }
 
-      // heartbeat (simple HTTP 200 check)
-      if (method === 'heartbeat') {
-        if (response.status === 200) return { status: 'Operational', last_checked: new Date().toISOString(), status_url: url };
-        return { status: 'Outage', last_checked: new Date().toISOString(), status_url: url };
+      if (method === "heartbeat") {
+        if (response.status === 200)
+          return {
+            status: "Operational",
+            last_checked: new Date().toISOString(),
+            status_url: url,
+          };
+        return {
+          status: "Outage",
+          last_checked: new Date().toISOString(),
+          status_url: url,
+        };
       }
 
-      return { status: 'Unknown', last_checked: new Date().toISOString(), status_url: url };
-
+      return {
+        status: "Unknown",
+        last_checked: new Date().toISOString(),
+        status_url: url,
+      };
     } catch (error) {
-      console.error(`Error checking status for ${resource.resource_name}:`, error.message);
-      // Throw the error so it can be caught and retried
+      console.error(
+        `Error checking status for ${resource.resource_name}:`,
+        error.message,
+      );
       throw new Error(`Failed to check status: ${error.message}`);
     }
   }
@@ -349,14 +448,13 @@ class StatusChecker {
     this.isChecking = true;
     this.cancelCurrentCheck = false;
     this.currentProgress = 0;
-    this.currentResourceName = '';
-    console.log('[StatusChecker] Starting status check...');
-    
+    this.currentResourceName = "";
+    console.log("[StatusChecker] Starting status check...");
+
     try {
       const resources = await ResourceManager.getResources();
       const allResources = [];
 
-      // Flatten resources by category
       for (const category in resources) {
         if (Array.isArray(resources[category])) {
           allResources.push(...resources[category]);
@@ -365,7 +463,11 @@ class StatusChecker {
 
       const dedupedByName = new Map();
       for (const resource of allResources) {
-        const key = String(resource && resource.resource_name ? resource.resource_name : '').trim().toLowerCase();
+        const key = String(
+          resource && resource.resource_name ? resource.resource_name : "",
+        )
+          .trim()
+          .toLowerCase();
         if (!key) continue;
 
         if (!dedupedByName.has(key)) {
@@ -374,7 +476,10 @@ class StatusChecker {
         }
 
         const current = dedupedByName.get(key);
-        if (this.scoreResourceDefinition(resource) >= this.scoreResourceDefinition(current)) {
+        if (
+          this.scoreResourceDefinition(resource) >=
+          this.scoreResourceDefinition(current)
+        ) {
           dedupedByName.set(key, resource);
         }
       }
@@ -384,13 +489,11 @@ class StatusChecker {
       const failedResources = [];
       console.log(`[StatusChecker] Checking ${this.totalResources} resources`);
 
-      // Check resources sequentially to avoid overloading
       for (let i = 0; i < uniqueResources.length; i++) {
         const resource = uniqueResources[i];
-        
-        // Check if cancellation was requested
+
         if (this.cancelCurrentCheck) {
-          console.log('[StatusChecker] Check cancelled');
+          console.log("[StatusChecker] Check cancelled");
           break;
         }
 
@@ -403,61 +506,61 @@ class StatusChecker {
           this.currentResourceName = resource.resource_name;
 
           const statusData = await this.checkResourceStatus(resource);
-          
-          // Store in database
+
           await DatabaseManager.updateResourceStatus(
             resource.id || null,
             resource.resource_name,
             statusData.status,
             statusData.status_url,
-            statusData.last_checked
+            statusData.last_checked,
           );
         } catch (error) {
-          // Immediately mark failed checks as Unknown to avoid stale statuses
           try {
             await DatabaseManager.updateResourceStatus(
               resource.id || null,
               resource.resource_name,
-              'Unknown',
+              "Unknown",
               resource.status_page || null,
-              new Date().toISOString()
+              new Date().toISOString(),
             );
           } catch (cacheError) {
-            console.error(`[StatusChecker] Failed to update Unknown status for ${resource.resource_name}: ${cacheError.message}`);
+            console.error(
+              `[StatusChecker] Failed to update Unknown status for ${resource.resource_name}: ${cacheError.message}`,
+            );
           }
 
-          // Log the error to the error table for first-time failures
           try {
             await DatabaseManager.logStatusCheckError(
               resource.id || null,
               resource.resource_name,
               resource.status_page,
-              resource.check_type || 'api',
-              error.message || 'Unknown error'
+              resource.check_type || "api",
+              error.message || "Unknown error",
             );
           } catch (logError) {
-            console.error(`[StatusChecker] Failed to log error for ${resource.resource_name}: ${logError.message}`);
+            console.error(
+              `[StatusChecker] Failed to log error for ${resource.resource_name}: ${logError.message}`,
+            );
           }
 
-          // Track failed resource for retry
           failedResources.push({
             resource,
-            error: error.message || 'Unknown error'
+            error: error.message || "Unknown error",
           });
         }
 
-        // Small delay between checks to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
-      // Retry failed resources once
       if (failedResources.length > 0 && !this.cancelCurrentCheck) {
-        console.log(`[StatusChecker] Retrying ${failedResources.length} failed resources`);
+        console.log(
+          `[StatusChecker] Retrying ${failedResources.length} failed resources`,
+        );
         this.totalResources = uniqueResources.length + failedResources.length; // Update total for progress
-        
+
         for (let i = 0; i < failedResources.length; i++) {
           const { resource, error: firstError } = failedResources[i];
-          
+
           if (this.cancelCurrentCheck) {
             break;
           }
@@ -467,59 +570,59 @@ class StatusChecker {
 
           try {
             const statusData = await this.checkResourceStatus(resource);
-            
-            // Store in database
+
             await DatabaseManager.updateResourceStatus(
               resource.id || null,
               resource.resource_name,
               statusData.status,
               statusData.status_url,
-              statusData.last_checked
+              statusData.last_checked,
             );
 
-            console.log(`[StatusChecker] Retry successful: ${resource.resource_name}`);
+            console.log(
+              `[StatusChecker] Retry successful: ${resource.resource_name}`,
+            );
           } catch (retryError) {
-            console.error(`[StatusChecker] Failed: ${resource.resource_name} - ${retryError.message}`);
+            console.error(
+              `[StatusChecker] Failed: ${resource.resource_name} - ${retryError.message}`,
+            );
 
-            // Keep cache in Unknown state on retry failure
             try {
               await DatabaseManager.updateResourceStatus(
                 resource.id || null,
                 resource.resource_name,
-                'Unknown',
+                "Unknown",
                 resource.status_page || null,
-                new Date().toISOString()
+                new Date().toISOString(),
               );
             } catch (cacheError) {
-              console.error(`[StatusChecker] Failed to update Unknown status after retry for ${resource.resource_name}: ${cacheError.message}`);
+              console.error(
+                `[StatusChecker] Failed to update Unknown status after retry for ${resource.resource_name}: ${cacheError.message}`,
+              );
             }
-            
-            // Error was already logged on first failure, so we don't log again here
           }
 
-          // Small delay between retries
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
 
       if (!this.cancelCurrentCheck) {
-        console.log('[StatusChecker] Check complete');
+        console.log("[StatusChecker] Check complete");
       }
     } catch (error) {
-      console.error('[StatusChecker] Error:', error);
+      console.error("[StatusChecker] Error:", error);
     } finally {
       this.isChecking = false;
       this.cancelCurrentCheck = false;
       this.currentProgress = 0;
       this.totalResources = 0;
-      this.currentResourceName = '';
+      this.currentResourceName = "";
     }
   }
 
   start(intervalMs = null) {
     const newInterval = intervalMs || this.CHECK_INTERVAL_MS;
-    
-    // If already running and interval changed, restart
+
     if (this.isRunning && newInterval !== this.CHECK_INTERVAL_MS) {
       this.stop();
     }
@@ -530,12 +633,12 @@ class StatusChecker {
 
     this.CHECK_INTERVAL_MS = newInterval;
     this.isRunning = true;
-    console.log(`[StatusChecker] Started (${this.CHECK_INTERVAL_MS / 60000} min interval)`);
+    console.log(
+      `[StatusChecker] Started (${this.CHECK_INTERVAL_MS / 60000} min interval)`,
+    );
 
-    // Check immediately on start
     this.checkAllResources();
 
-    // Then check at intervals
     this.checkInterval = setInterval(() => {
       this.checkAllResources();
     }, this.CHECK_INTERVAL_MS);
@@ -554,19 +657,16 @@ class StatusChecker {
   }
 
   async forceCheck() {
-    // Cancel any in-progress check
     if (this.isChecking) {
       this.cancelCurrentCheck = true;
-      
-      // Wait for current check to stop (max 5 seconds)
+
       const maxWait = 5000;
       const startTime = Date.now();
-      while (this.isChecking && (Date.now() - startTime) < maxWait) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+      while (this.isChecking && Date.now() - startTime < maxWait) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
-    
-    // Start new check
+
     await this.checkAllResources();
   }
 
@@ -584,11 +684,13 @@ class StatusChecker {
       currentProgress: this.currentProgress,
       totalResources: this.totalResources,
       currentResourceName: this.currentResourceName,
-      percentage: this.totalResources > 0 ? Math.round((this.currentProgress / this.totalResources) * 100) : 0
+      percentage:
+        this.totalResources > 0
+          ? Math.round((this.currentProgress / this.totalResources) * 100)
+          : 0,
     };
   }
 }
 
-// Singleton instance
 const instance = new StatusChecker();
 module.exports = instance;

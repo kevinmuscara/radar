@@ -9,13 +9,18 @@ class SetupManager {
 
   async #getSetting(key) {
     const db = await this.dbManager.getDb();
-    const result = await db.get("SELECT value FROM settings WHERE key = ?", [key]);
+    const result = await db.get("SELECT value FROM settings WHERE key = ?", [
+      key,
+    ]);
     return result ? result.value : null;
   }
 
   async #setSetting(key, value) {
     const db = await this.dbManager.getDb();
-    await db.run("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [key, value]);
+    await db.run("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [
+      key,
+      value,
+    ]);
   }
 
   async initDefaults() {
@@ -26,14 +31,21 @@ class SetupManager {
       return;
     }
 
-    // Init default settings
     await this.#setSetting("branding_logo", "logo.png");
     await this.#setSetting("branding_schoolName", "Your School Name");
     await this.#setSetting("refresh_interval_minutes", "30");
     bcrypt.genSalt(10, (_err, salt) => {
       bcrypt.hash("password", salt, (_err, hash) => {
-        this.#setSetting("admin_user", JSON.stringify({ username: "admin", password: hash }));
-        this.#setSetting("users", JSON.stringify([{ username: "admin", password: hash, role: "superadmin" }]));
+        this.#setSetting(
+          "admin_user",
+          JSON.stringify({ username: "admin", password: hash }),
+        );
+        this.#setSetting(
+          "users",
+          JSON.stringify([
+            { username: "admin", password: hash, role: "superadmin" },
+          ]),
+        );
       });
     });
     await this.#setSetting("setup_complete", "false");
@@ -47,11 +59,14 @@ class SetupManager {
         const parsed = JSON.parse(usersRaw);
         if (Array.isArray(parsed) && parsed.length > 0) {
           const normalized = parsed
-            .filter(user => user && user.username && user.password)
-            .map(user => ({
+            .filter((user) => user && user.username && user.password)
+            .map((user) => ({
               username: user.username,
               password: user.password,
-              role: user.role === 'resource_manager' ? 'resource_manager' : 'superadmin'
+              role:
+                user.role === "resource_manager"
+                  ? "resource_manager"
+                  : "superadmin",
             }));
 
           if (normalized.length > 0) {
@@ -59,17 +74,22 @@ class SetupManager {
             return normalized;
           }
         }
-      } catch (_err) {
-      }
+      } catch (_err) {}
     }
 
     const adminRaw = await this.#getSetting("admin_user");
     const parsedAdmin = adminRaw ? JSON.parse(adminRaw) : null;
-    const fallback = [{
-      username: parsedAdmin && parsedAdmin.username ? parsedAdmin.username : 'admin',
-      password: parsedAdmin && parsedAdmin.password ? parsedAdmin.password : 'password',
-      role: 'superadmin'
-    }];
+    const fallback = [
+      {
+        username:
+          parsedAdmin && parsedAdmin.username ? parsedAdmin.username : "admin",
+        password:
+          parsedAdmin && parsedAdmin.password
+            ? parsedAdmin.password
+            : "password",
+        role: "superadmin",
+      },
+    ];
     await this.#setSetting("users", JSON.stringify(fallback));
     return fallback;
   }
@@ -102,7 +122,10 @@ class SetupManager {
       bcrypt.hash(password, salt, (_err, hash) => {
         user.password = hash;
         this.#setSetting("admin_user", JSON.stringify(user));
-        this.#setSetting("users", JSON.stringify([{ username, password: hash, role: 'superadmin' }]));
+        this.#setSetting(
+          "users",
+          JSON.stringify([{ username, password: hash, role: "superadmin" }]),
+        );
       });
     });
   }
@@ -114,8 +137,8 @@ class SetupManager {
     await this.#setSetting("admin_user", JSON.stringify(user));
 
     const users = await this.#normalizeUsers();
-    const updatedUsers = users.map(existing => {
-      if (existing.role === 'superadmin') {
+    const updatedUsers = users.map((existing) => {
+      if (existing.role === "superadmin") {
         return { ...existing, username };
       }
       return existing;
@@ -161,47 +184,52 @@ class SetupManager {
 
   async getSafeUsers() {
     const users = await this.getUsers();
-    return users.map(user => ({ username: user.username, role: user.role }));
+    return users.map((user) => ({ username: user.username, role: user.role }));
   }
 
   async findUser(username) {
     const users = await this.getUsers();
-    return users.find(user => user.username === username) || null;
+    return users.find((user) => user.username === username) || null;
   }
 
   async addResourceManagerUser(username, password) {
-    return this.addUser(username, password, 'resource_manager');
+    return this.addUser(username, password, "resource_manager");
   }
 
-  async addUser(username, password, role = 'resource_manager') {
+  async addUser(username, password, role = "resource_manager") {
     await this.ready;
     const users = await this.getUsers();
-    const trimmedUsername = String(username || '').trim();
-    const normalizedRole = role === 'superadmin' ? 'superadmin' : 'resource_manager';
+    const trimmedUsername = String(username || "").trim();
+    const normalizedRole =
+      role === "superadmin" ? "superadmin" : "resource_manager";
 
     if (!trimmedUsername) {
-      throw new Error('Username is required');
+      throw new Error("Username is required");
     }
 
-    if (users.some(user => user.username === trimmedUsername)) {
-      throw new Error('User already exists');
+    if (users.some((user) => user.username === trimmedUsername)) {
+      throw new Error("User already exists");
     }
 
     const hash = await bcrypt.hash(password, 10);
-    users.push({ username: trimmedUsername, password: hash, role: normalizedRole });
+    users.push({
+      username: trimmedUsername,
+      password: hash,
+      role: normalizedRole,
+    });
     await this.#setSetting("users", JSON.stringify(users));
   }
 
   async removeUser(username) {
     await this.ready;
     const users = await this.getUsers();
-    const target = users.find(user => user.username === username);
+    const target = users.find((user) => user.username === username);
     if (!target) return;
-    if (target.role === 'superadmin') {
-      throw new Error('Cannot remove superadmin user');
+    if (target.role === "superadmin") {
+      throw new Error("Cannot remove superadmin user");
     }
 
-    const filtered = users.filter(user => user.username !== username);
+    const filtered = users.filter((user) => user.username !== username);
     await this.#setSetting("users", JSON.stringify(filtered));
   }
 
@@ -215,11 +243,11 @@ class SetupManager {
     return {
       branding: {
         logo,
-        schoolName
+        schoolName,
       },
       adminUser,
       setupComplete,
-      refreshIntervalMinutes
+      refreshIntervalMinutes,
     };
   }
 

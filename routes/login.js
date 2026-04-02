@@ -7,7 +7,7 @@ const bcrypt = require("bcrypt");
 router.get("/", async (request, response) => {
   if (!request.session.user) {
     response.render("login", {
-      config: await configuration.getConfig()
+      config: await configuration.getConfig(),
     });
   } else {
     response.redirect("/admin");
@@ -17,7 +17,7 @@ router.get("/", async (request, response) => {
 router.post("/", async (request, response) => {
   const { username, password } = request.body;
   const users = await configuration.getUsers();
-  const matchedUser = users.find(user => user.username === username);
+  const matchedUser = users.find((user) => user.username === username);
 
   if (!matchedUser) {
     response.json({ status: 401, message: "inv_user" });
@@ -35,7 +35,7 @@ router.post("/", async (request, response) => {
 
         request.session.user = {
           username: matchedUser.username,
-          role: matchedUser.role || 'superadmin'
+          role: matchedUser.role || "superadmin",
         };
 
         request.session.save((saveErr) => {

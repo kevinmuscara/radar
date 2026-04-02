@@ -1,6 +1,6 @@
 const DatabaseManager = require("./DatabaseManager");
-const fs = require('fs').promises;
-const path = require('path');
+const fs = require("fs").promises;
+const path = require("path");
 
 class ResourceManager {
   constructor() {
@@ -13,54 +13,69 @@ class ResourceManager {
     const rows = await db.all("SELECT * FROM categories");
 
     if (rows.length <= 0) {
-      // Try to load initial resources from example_import.csv (project root)
       try {
-        const csvPath = path.join(__dirname, '..', 'default_import.csv');
-        const contents = await fs.readFile(csvPath, 'utf8');
-        const lines = contents.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        const csvPath = path.join(__dirname, "..", "default_import.csv");
+        const contents = await fs.readFile(csvPath, "utf8");
+        const lines = contents
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter(Boolean);
         if (lines.length > 0) {
-          const header = lines[0].split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(h => h.trim());
-          const idx = {}; header.forEach((h,i) => idx[h] = i);
+          const header = lines[0]
+            .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
+            .map((h) => h.trim());
+          const idx = {};
+          header.forEach((h, i) => (idx[h] = i));
 
           for (let i = 1; i < lines.length; i++) {
-            const parts = lines[i].split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(p => p.trim().replace(/^"|"$/g, ''));
-            const categoryName = parts[idx['category']] || 'Uncategorized';
-            const resource_name = parts[idx['resource_name']] || '';
-            const status_page = parts[idx['status_page']] || '';
-            const check_type = (parts[idx['check_type']] || 'api').toLowerCase();
-            const scrape_keywords = parts[idx['scrape_keywords']] || '';
-            const favicon_url = parts[idx['favicon_url']] || '';
+            const parts = lines[i]
+              .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
+              .map((p) => p.trim().replace(/^"|"$/g, ""));
+            const categoryName = parts[idx["category"]] || "Uncategorized";
+            const resource_name = parts[idx["resource_name"]] || "";
+            const status_page = parts[idx["status_page"]] || "";
+            const check_type = (
+              parts[idx["check_type"]] || "api"
+            ).toLowerCase();
+            const scrape_keywords = parts[idx["scrape_keywords"]] || "";
+            const favicon_url = parts[idx["favicon_url"]] || "";
 
             if (!resource_name) continue;
 
-            await db.run("INSERT OR IGNORE INTO categories (name) VALUES (?)", [categoryName]);
-            const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [categoryName]);
+            await db.run("INSERT OR IGNORE INTO categories (name) VALUES (?)", [
+              categoryName,
+            ]);
+            const catRow = await db.get(
+              "SELECT id FROM categories WHERE name = ?",
+              [categoryName],
+            );
 
-            await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, favicon_url, check_type, scrape_keywords, api_config) VALUES (?, ?, ?, ?, ?, ?)", [resource_name, status_page, favicon_url || null, check_type, scrape_keywords, null]);
-            const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource_name, status_page]);
+            await db.run(
+              "INSERT OR IGNORE INTO resource_definitions (name, status_page, favicon_url, check_type, scrape_keywords, api_config) VALUES (?, ?, ?, ?, ?, ?)",
+              [
+                resource_name,
+                status_page,
+                favicon_url || null,
+                check_type,
+                scrape_keywords,
+                null,
+              ],
+            );
+            const resRow = await db.get(
+              "SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?",
+              [resource_name, status_page],
+            );
 
             if (catRow && resRow) {
-              await db.run("INSERT OR IGNORE INTO resource_category_mapping (resource_id, category_id) VALUES (?, ?)", [resRow.id, catRow.id]);
+              await db.run(
+                "INSERT OR IGNORE INTO resource_category_mapping (resource_id, category_id) VALUES (?, ?)",
+                [resRow.id, catRow.id],
+              );
             }
           }
         }
       } catch (e) {
         console.error("Error initializing defaults:", e);
-        // Fallback to a small default set if CSV not available
-        // const defaults = {"K-12": [{ resource_name: "Clever", status_page: "https://status.clever.com/api/v2/summary.json", check_type: 'api' }]};
-        // for (const [categoryName, resources] of Object.entries(defaults)) {
-        //   await db.run("INSERT OR IGNORE INTO categories (name) VALUES (?)", [categoryName]);
-        //   const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [categoryName]);
-
-        //   for (const resource of resources) {
-        //     await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, check_type, scrape_keywords) VALUES (?, ?, ?, ?)", [resource.resource_name, resource.status_page, resource.check_type || 'api', resource.scrape_keywords || '']);
-        //     const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
-
-        //     if (catRow && resRow) {
-        //       await db.run("INSERT OR IGNORE INTO resource_category_mapping (resource_id, category_id) VALUES (?, ?)", [resRow.id, catRow.id]);
-        //     }
-        //   }
-        // }
       }
     }
   }
@@ -68,10 +83,8 @@ class ResourceManager {
   async getResources() {
     await this.ready;
     const db = await this.dbManager.getDb();
-    // Get all categories first to ensure even empty ones are returned
     const categories = await db.all("SELECT * FROM categories");
 
-    // Get all resources mapped to categories
     const rows = await db.all(`
       SELECT c.name as category, r.id, r.name as resource_name, r.status_page, r.favicon_url, r.check_type, r.scrape_keywords, r.api_config 
         FROM resource_category_mapping m
@@ -80,20 +93,20 @@ class ResourceManager {
     `);
 
     const resources = {};
-    // Initialize all categories
-    categories.forEach(c => { resources[c.name] = []; });
+    categories.forEach((c) => {
+      resources[c.name] = [];
+    });
 
-    rows.forEach(row => {
-      // Logic for grade_level: equal to category name per new request
+    rows.forEach((row) => {
       resources[row.category].push({
         id: row.id,
         resource_name: row.resource_name,
         status_page: row.status_page,
-        favicon_url: row.favicon_url || '',
-        check_type: row.check_type || 'api',
-        scrape_keywords: row.scrape_keywords || '',
+        favicon_url: row.favicon_url || "",
+        check_type: row.check_type || "api",
+        scrape_keywords: row.scrape_keywords || "",
         api_config: row.api_config || null,
-        grade_level: row.category
+        grade_level: row.category,
       });
     });
     return resources;
@@ -111,51 +124,69 @@ class ResourceManager {
 
     const db = await this.dbManager.getDb();
 
-    // 1. Ensure/Get Category ID
-    const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [category]);
+    const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [
+      category,
+    ]);
     if (!catRow) return; // Should not happen if category exists
 
-    // 2. Ensure/Get Resource Definition ID
-    await db.run("INSERT OR IGNORE INTO resource_definitions (name, status_page, favicon_url, check_type, scrape_keywords, api_config) VALUES (?, ?, ?, ?, ?, ?)", [resource.resource_name, resource.status_page, resource.favicon_url || null, resource.check_type || 'api', resource.scrape_keywords || '', resource.api_config || null]);
+    await db.run(
+      "INSERT OR IGNORE INTO resource_definitions (name, status_page, favicon_url, check_type, scrape_keywords, api_config) VALUES (?, ?, ?, ?, ?, ?)",
+      [
+        resource.resource_name,
+        resource.status_page,
+        resource.favicon_url || null,
+        resource.check_type || "api",
+        resource.scrape_keywords || "",
+        resource.api_config || null,
+      ],
+    );
 
     await db.run(
       "UPDATE resource_definitions SET favicon_url = COALESCE(?, favicon_url), check_type = COALESCE(?, check_type), scrape_keywords = COALESCE(?, scrape_keywords), api_config = ? WHERE name = ? AND status_page = ?",
       [
         resource.favicon_url || null,
-        resource.check_type || 'api',
-        resource.scrape_keywords !== undefined ? resource.scrape_keywords : '',
+        resource.check_type || "api",
+        resource.scrape_keywords !== undefined ? resource.scrape_keywords : "",
         resource.api_config !== undefined ? resource.api_config : null,
         resource.resource_name,
-        resource.status_page
-      ]
+        resource.status_page,
+      ],
     );
-    const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
+    const resRow = await db.get(
+      "SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?",
+      [resource.resource_name, resource.status_page],
+    );
 
-    // 3. Create Mapping
-    await db.run("INSERT OR IGNORE INTO resource_category_mapping (resource_id, category_id) VALUES (?, ?)", [resRow.id, catRow.id]);
+    await db.run(
+      "INSERT OR IGNORE INTO resource_category_mapping (resource_id, category_id) VALUES (?, ?)",
+      [resRow.id, catRow.id],
+    );
   }
 
   async getResource(category, resourceName) {
     await this.ready;
     const db = await this.dbManager.getDb();
-    const row = await db.get(`
+    const row = await db.get(
+      `
       SELECT c.name as category, r.name as resource_name, r.status_page, r.favicon_url, r.check_type, r.scrape_keywords, r.api_config 
         FROM resource_category_mapping m
         JOIN categories c ON m.category_id = c.id
         JOIN resource_definitions r ON m.resource_id = r.id
         WHERE c.name = ? AND r.name = ?
-    `, [category, resourceName]);
+    `,
+      [category, resourceName],
+    );
 
     if (row) {
       return {
         category: row.category,
         resource_name: row.resource_name,
         status_page: row.status_page,
-        favicon_url: row.favicon_url || '',
-        check_type: row.check_type || 'api',
-        scrape_keywords: row.scrape_keywords || '',
+        favicon_url: row.favicon_url || "",
+        check_type: row.check_type || "api",
+        scrape_keywords: row.scrape_keywords || "",
         api_config: row.api_config || null,
-        grade_level: row.category
+        grade_level: row.category,
       };
     }
     return null;
@@ -165,57 +196,66 @@ class ResourceManager {
     await this.ready;
     const db = await this.dbManager.getDb();
     const rows = await db.all("SELECT name FROM categories");
-    return rows.map(row => row.name);
+    return rows.map((row) => row.name);
   }
 
   async getCategory(category) {
     await this.ready;
     const db = await this.dbManager.getDb();
-    const rows = await db.all(`
+    const rows = await db.all(
+      `
       SELECT r.name as resource_name, r.status_page, r.favicon_url, r.check_type, r.scrape_keywords, r.api_config 
         FROM resource_category_mapping m
         JOIN categories c ON m.category_id = c.id
         JOIN resource_definitions r ON m.resource_id = r.id
         WHERE c.name = ?
-    `, [category]);
+    `,
+      [category],
+    );
 
-    return rows.map(row => ({
+    return rows.map((row) => ({
       resource_name: row.resource_name,
       status_page: row.status_page,
-      favicon_url: row.favicon_url || '',
-      check_type: row.check_type || 'api',
-      scrape_keywords: row.scrape_keywords || '',
+      favicon_url: row.favicon_url || "",
+      check_type: row.check_type || "api",
+      scrape_keywords: row.scrape_keywords || "",
       api_config: row.api_config || null,
-      grade_level: category
+      grade_level: category,
     }));
   }
 
   async getResourceCategories(resourceName) {
     await this.ready;
     const db = await this.dbManager.getDb();
-    const rows = await db.all(`
+    const rows = await db.all(
+      `
         SELECT c.name 
         FROM resource_category_mapping m
         JOIN categories c ON m.category_id = c.id
         JOIN resource_definitions r ON m.resource_id = r.id
         WHERE r.name = ?
-    `, [resourceName]);
-    return rows.map(r => r.name);
+    `,
+      [resourceName],
+    );
+    return rows.map((r) => r.name);
   }
 
   async getDefinition(resourceName) {
     await this.ready;
     const db = await this.dbManager.getDb();
-    const row = await db.get("SELECT id, name as resource_name, status_page, favicon_url, check_type, scrape_keywords, api_config FROM resource_definitions WHERE name = ?", [resourceName]);
+    const row = await db.get(
+      "SELECT id, name as resource_name, status_page, favicon_url, check_type, scrape_keywords, api_config FROM resource_definitions WHERE name = ?",
+      [resourceName],
+    );
     if (!row) return null;
     return {
       id: row.id,
       resource_name: row.resource_name,
       status_page: row.status_page,
-      favicon_url: row.favicon_url || '',
-      check_type: row.check_type || 'api',
-      scrape_keywords: row.scrape_keywords || '',
-      api_config: row.api_config || null
+      favicon_url: row.favicon_url || "",
+      check_type: row.check_type || "api",
+      scrape_keywords: row.scrape_keywords || "",
+      api_config: row.api_config || null,
     };
   }
 
@@ -223,29 +263,33 @@ class ResourceManager {
     await this.ready;
     const db = await this.dbManager.getDb();
 
-    // Try to find resource definition id
     let resRow = null;
     try {
-      resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?", [resource.resource_name, resource.status_page]);
-    } catch (e) {
-      // ignore
-    }
+      resRow = await db.get(
+        "SELECT id FROM resource_definitions WHERE name = ? AND status_page = ?",
+        [resource.resource_name, resource.status_page],
+      );
+    } catch (e) {}
 
     const resourceId = resRow ? resRow.id : null;
 
-    await db.run(`INSERT INTO status_check_errors (resource_id, resource_name, status_page, check_type, error_message) VALUES (?, ?, ?, ?, ?)`, [
-      resourceId,
-      resource.resource_name || null,
-      resource.status_page || null,
-      resource.check_type || null,
-      errorMessage || ''
-    ]);
+    await db.run(
+      `INSERT INTO status_check_errors (resource_id, resource_name, status_page, check_type, error_message) VALUES (?, ?, ?, ?, ?)`,
+      [
+        resourceId,
+        resource.resource_name || null,
+        resource.status_page || null,
+        resource.check_type || null,
+        errorMessage || "",
+      ],
+    );
   }
 
   async getCheckErrors(limit = 200) {
     await this.ready;
     const db = await this.dbManager.getDb();
-    const rows = await db.all(`
+    const rows = await db.all(
+      `
       SELECT
         id,
         resource_id,
@@ -255,9 +299,11 @@ class ResourceManager {
         error_message,
         datetime(created_at, 'localtime') as created_at
       FROM status_check_errors
-      ORDER BY datetime(created_at) DESC
+      ORDER BY id DESC
       LIMIT ?
-    `, [limit]);
+    `,
+      [limit],
+    );
     return rows;
   }
 
@@ -277,27 +323,34 @@ class ResourceManager {
     await this.ready;
     const db = await this.dbManager.getDb();
 
-    const affectedResources = await db.all(`
+    const affectedResources = await db.all(
+      `
       SELECT DISTINCT r.name as resource_name
       FROM resource_category_mapping m
       JOIN categories c ON m.category_id = c.id
       JOIN resource_definitions r ON m.resource_id = r.id
       WHERE c.name = ?
-    `, [category]);
+    `,
+      [category],
+    );
 
     await db.run("DELETE FROM categories WHERE name = ?", [category]);
-    // Cascade delete handles mappings
 
     for (const entry of affectedResources) {
-      const remaining = await db.get(`
+      const remaining = await db.get(
+        `
         SELECT COUNT(*) as count
         FROM resource_category_mapping m
         JOIN resource_definitions r ON m.resource_id = r.id
         WHERE r.name = ?
-      `, [entry.resource_name]);
+      `,
+        [entry.resource_name],
+      );
 
       if (!remaining || remaining.count === 0) {
-        await this.dbManager.deleteIssueReportsByResourceName(entry.resource_name);
+        await this.dbManager.deleteIssueReportsByResourceName(
+          entry.resource_name,
+        );
       }
     }
   }
@@ -306,42 +359,74 @@ class ResourceManager {
     await this.ready;
     const db = await this.dbManager.getDb();
 
-    // Only remove the MAPPING for this specific category
-    const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [category]);
-    const resRow = await db.get("SELECT id FROM resource_definitions WHERE name = ?", [resourceName]);
+    const catRow = await db.get("SELECT id FROM categories WHERE name = ?", [
+      category,
+    ]);
+    const resRow = await db.get(
+      "SELECT id FROM resource_definitions WHERE name = ?",
+      [resourceName],
+    );
 
     if (catRow && resRow) {
-      await db.run("DELETE FROM resource_category_mapping WHERE resource_id = ? AND category_id = ?", [resRow.id, catRow.id]);
+      await db.run(
+        "DELETE FROM resource_category_mapping WHERE resource_id = ? AND category_id = ?",
+        [resRow.id, catRow.id],
+      );
 
-      const remainingMappings = await db.get("SELECT COUNT(*) as count FROM resource_category_mapping WHERE resource_id = ?", [resRow.id]);
+      const remainingMappings = await db.get(
+        "SELECT COUNT(*) as count FROM resource_category_mapping WHERE resource_id = ?",
+        [resRow.id],
+      );
       if (!remainingMappings || remainingMappings.count === 0) {
         await this.dbManager.deleteIssueReportsByResourceName(resourceName);
       }
     }
-
-    // Optional: Clean up orphaned resource definitions?
-    // For now, keep them to allow easy re-adding or if they exist in other categories (which we don't check yet here)
   }
 
-  async updateResource(category, oldResourceName, { resource_name, status_page, favicon_url, check_type, scrape_keywords, api_config }) {
+  async updateResource(
+    category,
+    oldResourceName,
+    {
+      resource_name,
+      status_page,
+      favicon_url,
+      check_type,
+      scrape_keywords,
+      api_config,
+    },
+  ) {
     await this.ready;
     const db = await this.dbManager.getDb();
 
-    // 1. Get the definition of the OLD resource
-    const oldResRow = await db.get("SELECT id, favicon_url, check_type, scrape_keywords, api_config FROM resource_definitions WHERE name = ?", [oldResourceName]);
+    const oldResRow = await db.get(
+      "SELECT id, favicon_url, check_type, scrape_keywords, api_config FROM resource_definitions WHERE name = ?",
+      [oldResourceName],
+    );
     if (!oldResRow) return;
 
-    // 2. Update the definition itself directly?
-    // Updating the definition affects ALL categories this resource is in. This matches the "Tag" philosophy.
-    // If the user changes the URL for "Google" in one category, it should update everywhere using "Google".
-    const nextFaviconUrl = favicon_url !== undefined ? (favicon_url || null) : oldResRow.favicon_url;
-    await db.run("UPDATE resource_definitions SET name = ?, status_page = ?, favicon_url = ?, check_type = ?, scrape_keywords = ?, api_config = ? WHERE id = ?", [resource_name, status_page, nextFaviconUrl, check_type || oldResRow.check_type, scrape_keywords || oldResRow.scrape_keywords, api_config !== undefined ? api_config : oldResRow.api_config, oldResRow.id]);
+    const nextFaviconUrl =
+      favicon_url !== undefined ? favicon_url || null : oldResRow.favicon_url;
+    await db.run(
+      "UPDATE resource_definitions SET name = ?, status_page = ?, favicon_url = ?, check_type = ?, scrape_keywords = ?, api_config = ? WHERE id = ?",
+      [
+        resource_name,
+        status_page,
+        nextFaviconUrl,
+        check_type || oldResRow.check_type,
+        scrape_keywords || oldResRow.scrape_keywords,
+        api_config !== undefined ? api_config : oldResRow.api_config,
+        oldResRow.id,
+      ],
+    );
   }
 
   async updateCategory(oldCategory, newCategory) {
     await this.ready;
     const db = await this.dbManager.getDb();
-    await db.run("UPDATE categories SET name = ? WHERE name = ?", [newCategory, oldCategory]);
+    await db.run("UPDATE categories SET name = ? WHERE name = ?", [
+      newCategory,
+      oldCategory,
+    ]);
   }
 }
 

@@ -1,4 +1,3 @@
-/* Page load animations */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -44,7 +43,8 @@
 }
 
 @keyframes cardHoverPulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -53,7 +53,8 @@
 }
 
 @keyframes announcementPulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(120, 53, 15, 0.45);
   }
@@ -63,7 +64,6 @@
   }
 }
 
-/* Apply animations to page load */
 .header-entry-animate {
   animation: slideInDown 0.55s ease-out both;
 }
@@ -93,25 +93,45 @@
   animation-name: slideInRight;
 }
 
-.space-y-8 > details:nth-child(1) { animation-delay: 0.1s; }
-.space-y-8 > details:nth-child(2) { animation-delay: 0.18s; }
-.space-y-8 > details:nth-child(3) { animation-delay: 0.26s; }
-.space-y-8 > details:nth-child(4) { animation-delay: 0.34s; }
-.space-y-8 > details:nth-child(5) { animation-delay: 0.42s; }
+.space-y-8 > details:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.space-y-8 > details:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.space-y-8 > details:nth-child(3) {
+  animation-delay: 0.26s;
+}
+.space-y-8 > details:nth-child(4) {
+  animation-delay: 0.34s;
+}
+.space-y-8 > details:nth-child(5) {
+  animation-delay: 0.42s;
+}
 
-/* Grid cards animation on accordion open */
 .grid > div {
   animation: slideInLeft 0.4s ease-out forwards;
 }
 
-.grid > div:nth-child(1) { animation-delay: 0.05s; }
-.grid > div:nth-child(2) { animation-delay: 0.1s; }
-.grid > div:nth-child(3) { animation-delay: 0.15s; }
-.grid > div:nth-child(4) { animation-delay: 0.2s; }
-.grid > div:nth-child(5) { animation-delay: 0.25s; }
-.grid > div:nth-child(6) { animation-delay: 0.3s; }
+.grid > div:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.grid > div:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.grid > div:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.grid > div:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.grid > div:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.grid > div:nth-child(6) {
+  animation-delay: 0.3s;
+}
 
-/* Card hover animation */
 .resource-card {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   border-color: #e5e7eb !important;
@@ -141,7 +161,6 @@
   transform: scale(1.05);
 }
 
-/* Header and filter styles */
 .category-tag {
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -230,12 +249,15 @@
   box-shadow: 6px 6px 0 0 rgba(30, 58, 138, 0.45);
 }
 
-.announcement-card[data-announcement-type="informative"] .announcement-card-title,
-.announcement-card[data-announcement-type="informative"] .announcement-card-expires {
+.announcement-card[data-announcement-type="informative"]
+  .announcement-card-title,
+.announcement-card[data-announcement-type="informative"]
+  .announcement-card-expires {
   color: #1e3a8a;
 }
 
-.announcement-card[data-announcement-type="informative"] .announcement-card-message {
+.announcement-card[data-announcement-type="informative"]
+  .announcement-card-message {
   color: #172554;
 }
 
@@ -246,11 +268,13 @@
 }
 
 .announcement-card[data-announcement-type="warning"] .announcement-card-title,
-.announcement-card[data-announcement-type="warning"] .announcement-card-expires {
+.announcement-card[data-announcement-type="warning"]
+  .announcement-card-expires {
   color: #78350f;
 }
 
-.announcement-card[data-announcement-type="warning"] .announcement-card-message {
+.announcement-card[data-announcement-type="warning"]
+  .announcement-card-message {
   color: #451a03;
 }
 
@@ -276,11 +300,13 @@
 }
 
 .announcement-card[data-announcement-type="success"] .announcement-card-title,
-.announcement-card[data-announcement-type="success"] .announcement-card-expires {
+.announcement-card[data-announcement-type="success"]
+  .announcement-card-expires {
   color: #14532d;
 }
 
-.announcement-card[data-announcement-type="success"] .announcement-card-message {
+.announcement-card[data-announcement-type="success"]
+  .announcement-card-message {
   color: #052e16;
 }
 

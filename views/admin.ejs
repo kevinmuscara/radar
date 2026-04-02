@@ -9,19 +9,14 @@
 </head>
 <body class="admin-page relative min-h-screen overflow-x-hidden bg-[#FCFBF4]" data-role="<%= (currentUser && currentUser.role) ? currentUser.role : 'superadmin' %>" data-is-superadmin="<%= isSuperAdmin ? 'true' : 'false' %>" data-school-name="<%= config.branding.schoolName %>" data-refresh-interval="<%= config.refreshIntervalMinutes %>" data-admin-username="<%= (config.adminUser && config.adminUser.username) ? config.adminUser.username : 'admin' %>" data-branding-logo="<%= config.branding.logo %>">
   <div id="wave-container" class="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true"></div>
-  <!-- container start -->
   <div class="relative z-10 mx-auto max-w-7xl px-4 pt-10 pb-96 sm:pb-64 lg:pb-32 sm:px-6 lg:px-8">
-    <!-- grid start -->
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-8">
-      <!-- left start -->
       <div class="rounded-lg">
         <div id="setupCard" class="page-enter delay-1 reactive-layer bg-white mx-auto max-w-7xl border-solid rounded-lg shadow-xl border-1 px-4 py-8 sm:px-6 lg:px-8">
           <div class="page-enter delay-2 md:py-4">
             <h2 class="text-2xl font-bold text-gray-900 sm:text-3xl"><%= config.branding.schoolName %></h2>
             
-            <!-- Dashboard Stats -->
             <div class="mt-6 grid grid-cols-2 gap-4">
-              <!-- Total Resources -->
               <div class="rounded-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div class="flex flex-col items-center text-center gap-3">
                   <div class="rounded-full bg-blue-100 p-3 animate-pulse">
@@ -36,7 +31,6 @@
                 </div>
               </div>
 
-              <!-- Total Categories -->
               <div class="rounded-lg border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white p-6 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div class="flex flex-col items-center text-center gap-3">
                   <div class="rounded-full bg-purple-100 p-3 animate-pulse">
@@ -51,7 +45,6 @@
                 </div>
               </div>
 
-              <!-- Total Users -->
               <div class="rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-white p-6 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div class="flex flex-col items-center text-center gap-3">
                   <div class="rounded-full bg-green-100 p-3 animate-pulse">
@@ -66,7 +59,6 @@
                 </div>
               </div>
 
-              <!-- Announcements -->
               <div class="rounded-lg border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-white p-6 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div class="flex flex-col items-center text-center gap-3">
                   <div class="rounded-full bg-yellow-100 p-3 animate-pulse">
@@ -85,13 +77,10 @@
           </div>
         </div>
       </div>
-      <!-- left end -->
 
-      <!-- right start -->
       <div class="rounded-lg lg:col-span-2">
 
         <div id="setupCard" class="page-enter delay-1 reactive-layer bg-white mx-auto max-w-7xl border-solid rounded-lg shadow-xl border-1 px-4 py-8 sm:px-6 lg:px-8">
-          <!-- tab navigation start -->
           <div class="border-b-2 border-black px-2">
             <div role="tablist" class="-mb-0.5 grid grid-cols-3 gap-1 sm:flex sm:gap-0">
               <button id="tab-resources" role="tab" data-tab="resources" aria-controls="panel-resources" aria-selected="false" class="w-full border-2 border-transparent px-2 py-2 text-center text-sm font-semibold sm:px-6 sm:text-base hover:bg-black hover:text-white focus:ring-2 focus:ring-blue-200 focus:outline-0 rounded-t-lg">
@@ -107,9 +96,7 @@
               </button>
             </div>
           </div>
-          <!-- tab navigation end -->
 
-          <!-- resources panel -->
           <div id="panel-resources" role="tabpanel" aria-labelledby="tab-resources" class="mt-6" style="display: flex; flex-direction: column; gap: 24px;">
             <div class="rounded-lg border border-gray-300 bg-white p-4 shadow-sm sm:p-5" style="padding: 20px; border-width: 1px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); position: relative;">
               <button type="button" class="add-btn" data-open-modal="categories" aria-label="Add new category" style="position: absolute; top: 1.25rem; right: 1.25rem;">
@@ -202,7 +189,6 @@
                 </table>
               </div>
 
-              <!-- Empty state for Categories -->
               <div data-empty-state="categories" class="empty-state" style="display: none;">
                 <div class="text-center py-12">
                   <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -323,7 +309,6 @@
                 </table>
               </div>
 
-              <!-- Empty state for Resources -->
               <div data-empty-state="resources" class="empty-state" style="display: none;">
                 <div class="text-center py-12">
                   <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -362,7 +347,6 @@
             </div>
           </div>
 
-          <!-- operations panel -->
           <div id="panel-operations" role="tabpanel" aria-labelledby="tab-operations" hidden class="mt-6" style="display: flex; flex-direction: column; gap: 24px;">
             <div class="rounded-lg border border-gray-300 bg-white p-4 shadow-sm sm:p-5" style="padding: 20px; border-width: 1px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); position: relative;">
               <button type="button" class="add-btn" data-open-modal="announcements" aria-label="Add new announcement" style="position: absolute; top: 1.25rem; right: 1.25rem;">
@@ -441,7 +425,6 @@
                 </table>
               </div>
 
-              <!-- Empty state for Announcements -->
               <div data-empty-state="announcements" class="empty-state" style="display: none;">
                 <div class="text-center py-12">
                   <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -545,9 +528,7 @@
             </div>
           </div>
 
-          <!-- settings panel -->
           <div id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden class="mt-6" style="display: flex; flex-direction: column; gap: 24px;">
-            <!-- Status Check Rate and Manual Check Grid -->
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div class="rounded-lg border border-gray-300 bg-white p-4 shadow-sm sm:p-5" style="padding: 16px; border-width: 1px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);">
                 <h3 class="text-base font-semibold text-gray-900">Status Check Rate</h3>
@@ -581,7 +562,6 @@
               </div>
             </div>
 
-            <!-- School Branding Section -->
             <div class="rounded-lg border border-gray-300 bg-white p-4 shadow-sm sm:p-5" style="padding: 20px; border-width: 1px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);">
               <h3 class="text-lg font-semibold text-gray-900">School Branding</h3>
               <p class="mt-1 text-sm text-gray-600">Reconfigure your dashboard's branding and appearance.</p>
@@ -684,7 +664,6 @@
                 </table>
               </div>
 
-              <!-- Empty state for User Credentials -->
               <div data-empty-state="credentials" class="empty-state" style="display: none;">
                 <div class="text-center py-12">
                   <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -701,14 +680,9 @@
         </div>
 
       </div>
-      <!-- right end -->
     </div>
-    <!-- grid end -->
   </div>
-  <!-- container end -->
 
-  <!-- Modals -->
-  <!-- Categories Modal -->
   <div id="modal-categories" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-categories-title">
     <div class="modal-content">
       <div class="modal-header">
@@ -736,7 +710,6 @@
     </div>
   </div>
 
-  <!-- Resources Modal -->
   <div id="modal-resources" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-resources-title">
     <div class="modal-content">
       <div class="modal-header">
@@ -756,7 +729,11 @@
             </div>
             <div>
               <label for="resource-url" class="block text-sm font-medium text-gray-900 mb-1">Status URL</label>
-              <input type="url" id="resource-url" name="resource-url" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" placeholder="https://status.example.org/resource">
+              <input type="text" id="resource-url" name="resource-url" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" placeholder="https://status.example.org/resource">
+            </div>
+            <div>
+              <label for="resource-favicon-url" class="block text-sm font-medium text-gray-900 mb-1">Favicon URL</label>
+              <input type="url" id="resource-favicon-url" name="resource-favicon-url" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" placeholder="https://status.example.org/favicon.ico">
             </div>
             <div>
               <label for="resource-category" class="block text-sm font-medium text-gray-900 mb-1">Categories</label>
@@ -797,7 +774,6 @@
     </div>
   </div>
 
-  <!-- API Explorer Modal -->
   <div id="modal-api-explorer" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-api-explorer-title">
     <div class="modal-content" style="max-width: 72rem;">
       <div class="modal-header">
@@ -869,7 +845,6 @@
     </div>
   </div>
 
-  <!-- Announcements Modal -->
   <div id="modal-announcements" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-announcements-title">
     <div class="modal-content">
       <div class="modal-header">
@@ -910,7 +885,6 @@
     </div>
   </div>
 
-  <!-- User Credentials Modal -->
   <div id="modal-credentials" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-credentials-title">
     <div class="modal-content">
       <div class="modal-header">
@@ -951,7 +925,6 @@
     </div>
   </div>
 
-  <!-- Edit Categories Modal -->
   <div id="modal-edit-categories" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-edit-categories-title">
     <div class="modal-content">
       <div class="modal-header">
@@ -979,7 +952,6 @@
     </div>
   </div>
 
-  <!-- Edit Resources Modal -->
   <div id="modal-edit-resources" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-edit-resources-title">
     <div class="modal-content">
       <div class="modal-header">
@@ -999,7 +971,11 @@
             </div>
             <div>
               <label for="edit-resource-url" class="block text-sm font-medium text-gray-900 mb-1">Status URL</label>
-              <input type="url" id="edit-resource-url" name="resource-url" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" placeholder="https://status.example.org/resource">
+              <input type="text" id="edit-resource-url" name="resource-url" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" placeholder="https://status.example.org/resource">
+            </div>
+            <div>
+              <label for="edit-resource-favicon-url" class="block text-sm font-medium text-gray-900 mb-1">Favicon URL</label>
+              <input type="url" id="edit-resource-favicon-url" name="edit-resource-favicon-url" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" placeholder="https://status.example.org/favicon.ico">
             </div>
             <div>
               <label for="edit-resource-category" class="block text-sm font-medium text-gray-900 mb-1">Categories</label>
@@ -1040,7 +1016,6 @@
     </div>
   </div>
 
-  <!-- Edit Announcements Modal -->
   <div id="modal-edit-announcements" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-edit-announcements-title">
     <div class="modal-content">
       <div class="modal-header">
@@ -1081,7 +1056,6 @@
     </div>
   </div>
 
-  <!-- Edit User Credentials Modal -->
   <div id="modal-edit-credentials" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-edit-credentials-title">
     <div class="modal-content">
       <div class="modal-header">
@@ -1123,7 +1097,6 @@
     </div>
   </div>
 
-  <!-- Bulk Import Modal -->
   <div id="modal-bulkimport" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-bulkimport-title">
     <div class="modal-content">
       <div class="modal-header">
@@ -1181,7 +1154,6 @@
     </div>
   </div>
 
-  <!-- Delete Confirmation Modal -->
   <div id="modal-delete-confirm" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-delete-title">
     <div class="modal-content" style="max-width: 28rem;">
       <div class="modal-header">
@@ -1213,6 +1185,7 @@
 
   <script src="/js/animate.js"></script>
   <script src="/js/background.js"></script>
-  <script src="/admin.js"></script>
+  <script src="/js/admin.js"></script>
 </body>
 </html>
+

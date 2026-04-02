@@ -1,19 +1,17 @@
-// Grid paper background pattern with animation
-(function() {
-  'use strict';
+(function () {
+  "use strict";
 
-  // Wait for DOM to be ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initBackground);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initBackground);
   } else {
     initBackground();
   }
 
   function initBackground() {
-    const container = document.getElementById('wave-container');
+    const container = document.getElementById("wave-container");
     if (!container) return;
 
-    const isLotrMode = document.body?.dataset?.lotrMode === 'true';
+    const isLotrMode = document.body?.dataset?.lotrMode === "true";
 
     if (isLotrMode) {
       container.style.backgroundImage = `
@@ -25,9 +23,10 @@
         linear-gradient(165deg, transparent 61%, rgba(58, 75, 59, 0.5) 62%),
         linear-gradient(10deg, transparent 63%, rgba(41, 59, 44, 0.48) 64%)
       `;
-      container.style.backgroundSize = '100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%';
-      container.style.backgroundRepeat = 'no-repeat';
-      container.style.opacity = '0.95';
+      container.style.backgroundSize =
+        "100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%";
+      container.style.backgroundRepeat = "no-repeat";
+      container.style.opacity = "0.95";
 
       let drift = 0;
       function animateLotrBackground() {
@@ -51,38 +50,35 @@
       return;
     }
 
-    // Add grid paper background pattern
     container.style.backgroundImage = `
       linear-gradient(rgba(100, 149, 237, 0.08) 1px, transparent 1px),
       linear-gradient(90deg, rgba(100, 149, 237, 0.08) 1px, transparent 1px),
       linear-gradient(rgba(100, 149, 237, 0.15) 1px, transparent 1px),
       linear-gradient(90deg, rgba(100, 149, 237, 0.15) 1px, transparent 1px)
     `;
-    container.style.backgroundSize = '20px 20px, 20px 20px, 100px 100px, 100px 100px';
-    
-    // Animate the background position
+    container.style.backgroundSize =
+      "20px 20px, 20px 20px, 100px 100px, 100px 100px";
+
     let offsetX = 0;
     let offsetY = 0;
-    
+
     function animateBackground() {
-      // Slow diagonal movement
       offsetX += 0.35;
       offsetY += 0.22;
-      
-      // Keep values reasonable to avoid floating point issues
+
       if (offsetX > 100) offsetX -= 100;
       if (offsetY > 100) offsetY -= 100;
-      
+
       container.style.backgroundPosition = `
         ${offsetX}px ${offsetY}px,
         ${offsetX}px ${offsetY}px,
         ${offsetX}px ${offsetY}px,
         ${offsetX}px ${offsetY}px
       `;
-      
+
       requestAnimationFrame(animateBackground);
     }
-    
+
     animateBackground();
   }
 })();

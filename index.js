@@ -1,5 +1,5 @@
-require('dotenv').config();
-const express = require('express');
+require("dotenv").config();
+const express = require("express");
 const server = express();
 const session = require("express-session");
 const MemoryStore = require("memorystore")(session);
@@ -9,68 +9,35 @@ const resources = require("./config/ResourceManager");
 const statusChecker = require("./config/StatusChecker");
 const dbManager = require("./config/DatabaseManager");
 
-// Import routes
 const setupRoute = require("./routes/setup");
 const resourcesRoute = require("./routes/resources");
 const adminRoute = require("./routes/admin");
 const loginRoute = require("./routes/login");
 const apiRoute = require("./routes/api");
 
-// Server setup
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
-server.set('view engine', 'ejs');
-server.use(express.static('public'));
-server.set('trust proxy', 1);
-server.use(session({
-  secret: "radar",
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false },
-  store: new MemoryStore({
-    checkPeriod: 86400000
-  })
-}));
+server.set("view engine", "ejs");
+server.use(express.static("public"));
+server.set("trust proxy", 1);
+server.use(
+  session({
+    secret: "radar",
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false },
+    store: new MemoryStore({
+      checkPeriod: 86400000,
+    }),
+  }),
+);
 server.disable("x-powered-by");
 
-// Routing
 server.use("/setup", setupRoute);
 server.use("/resources", resourcesRoute);
 server.use("/admin", adminRoute);
 server.use("/login", loginRoute);
 server.use("/api", apiRoute);
-
-server.get("/fake-summary.json", (_request, response) => {
-  response.json({
-    status: {
-      indicator: "major",
-      description: "Service Outage",
-    },
-    scheduled_maintenance: [],
-    incidents: [],
-    components: [
-      {
-        id: "1",
-        name: "Fake Data",
-        status: "outage",
-        "created_at": "2025-12-22T15:36:22.503-07:00",
-        "updated_at": "2025-12-29T15:39:49.276-07:00",
-        "position": 1,
-        "description": "Fake Data API for testing",
-        "showcase": false,
-        "start_date": null,
-        "group_id": "tq9rr6n61grw",
-        "page_id": "mrrn21wjyltb",
-        "group": false,
-        "only_show_if_degraded": false
-      }
-    ],
-    page: {
-      id: "mrrn21wjyltb",
-      name: "Fake Data"
-    }
-  })
-})
 
 server.get("/logout", async (request, response) => {
   request.session.destroy();
@@ -79,13 +46,14 @@ server.get("/logout", async (request, response) => {
 
 server.get("/", async (request, response) => {
   if (await configuration.isSetupComplete()) {
-    const [configData, resourcesData, statuses, issueReports, announcements] = await Promise.all([
-      configuration.getConfig(),
-      resources.getResources(),
-      dbManager.getAllResourceStatuses(),
-      dbManager.getActiveIssueReports(),
-      dbManager.getActiveAnnouncements()
-    ]);
+    const [configData, resourcesData, statuses, issueReports, announcements] =
+      await Promise.all([
+        configuration.getConfig(),
+        resources.getResources(),
+        dbManager.getAllResourceStatuses(),
+        dbManager.getActiveIssueReports(),
+        dbManager.getActiveAnnouncements(),
+      ]);
 
     response.render("dashboard", {
       config: configData,
@@ -93,13 +61,13 @@ server.get("/", async (request, response) => {
       statuses: statuses,
       issueReports: issueReports,
       announcements: announcements,
-      lotrMode: request.query.lotr === 'true',
+      lotrMode: request.query.lotr === "true",
       query: request.query || {},
-      currentUrl: request.originalUrl || '/'
+      currentUrl: request.originalUrl || "/",
     });
   } else {
     response.render("setup", {
-      config: await configuration.getConfig()
+      config: await configuration.getConfig(),
     });
   }
 });
@@ -113,22 +81,32 @@ server.listen(PORT, HOST, async () => {
   try {
     await dbManager.clearExpiredAnnouncements();
   } catch (cleanupError) {
-    console.error('[Server] Failed initial announcement cleanup:', cleanupError.message);
+    console.error(
+      "[Server] Failed initial announcement cleanup:",
+      cleanupError.message,
+    );
   }
 
-  setInterval(async () => {
-    try {
-      await dbManager.clearExpiredAnnouncements();
-    } catch (cleanupError) {
-      console.error('[Server] Failed to clear expired announcements:', cleanupError.message);
-    }
-  }, 5 * 60 * 1000);
-  
-  // Start the status checker if setup is complete
+  setInterval(
+    async () => {
+      try {
+        await dbManager.clearExpiredAnnouncements();
+      } catch (cleanupError) {
+        console.error(
+          "[Server] Failed to clear expired announcements:",
+          cleanupError.message,
+        );
+      }
+    },
+    5 * 60 * 1000,
+  );
+
   if (await configuration.isSetupComplete()) {
     const config = await configuration.getConfig();
     const intervalMs = config.refreshIntervalMinutes * 60 * 1000;
-    console.log(`[Server] Starting status checker with ${config.refreshIntervalMinutes} minute interval...`);
+    console.log(
+      `[Server] Starting status checker with ${config.refreshIntervalMinutes} minute interval...`,
+    );
     statusChecker.start(intervalMs);
   }
 });
