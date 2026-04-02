@@ -1,6 +1,6 @@
 # Radar
 
-![Radar cover](docs/cover.png)
+![Radar cover](cover.png)
 
 Radar is a teacher friendly focused status dashboard for tracking the health of digital resources and infrastructure in one place.
 
