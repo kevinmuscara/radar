@@ -1,5 +1,7 @@
 # Radar
 
+![Radar cover](docs/cover.png)
+
 Radar is a teacher friendly focused status dashboard for tracking the health of digital resources and infrastructure in one place.
 
 It provides:
@@ -8,7 +10,7 @@ It provides:
 - Multiple status check methods (API, scrape, heartbeat, ICMP)
 - CSV import/export for bulk management
 - Issue reporting and announcement workflows
-- RSS feed output for integrations
+- RSS feed output for integrations 
 
 ## Prerequisites
 
