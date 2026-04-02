@@ -10,6 +10,12 @@
 </head>
 <body class="relative min-h-screen overflow-x-hidden overflow-y-auto bg-[#FCFBF4] <%= lotrMode ? 'lotr-mode' : '' %>" data-school-name="<%= config.branding.schoolName %>" data-school-logo="/branding/<%= config.branding.logo %>" data-lotr-mode="<%= lotrMode ? 'true' : 'false' %>">
   <div id="wave-container" class="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true"></div>
+  <% if (lotrMode) { %>
+  <div class="lotr-easter-eggs" aria-hidden="true">
+    <div class="lotr-ring-runner"></div>
+    <div class="lotr-shadow-stalker"></div>
+  </div>
+  <% } %>
 
   <%
     const dashboardQuery = query || {};

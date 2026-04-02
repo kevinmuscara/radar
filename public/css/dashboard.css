@@ -333,76 +333,339 @@
 }
 
 body.lotr-mode {
-  background: linear-gradient(180deg, #f3ead2 0%, #e4d6b2 48%, #cfbe95 100%);
+  color: #2b2115;
+  background-color: #8f7b5f;
+  background-image:
+    linear-gradient(180deg, rgba(48, 33, 21, 0.34) 0%, rgba(34, 23, 15, 0.42) 100%),
+    url("/branding/me.jpg");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, Garamond, serif;
+}
+
+body.lotr-mode::before,
+body.lotr-mode::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+body.lotr-mode::before {
+  opacity: 0.28;
+  background-image:
+    repeating-linear-gradient(18deg, rgba(62, 47, 29, 0.25) 0 1px, transparent 1px 11px),
+    repeating-linear-gradient(-14deg, rgba(109, 85, 49, 0.22) 0 1px, transparent 1px 13px);
+}
+
+@keyframes lotrFirelight {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate3d(0, -1%, 0) scale(1.02);
+  }
+}
+
+body.lotr-mode::after {
+  opacity: 0.32;
+  background-image:
+    radial-gradient(circle at 50% -8%, rgba(164, 120, 63, 0.56) 0%, rgba(164, 120, 63, 0) 52%),
+    radial-gradient(circle at 50% 112%, rgba(58, 39, 22, 0.34) 0%, rgba(58, 39, 22, 0) 42%);
+  animation: lotrFirelight 9s ease-in-out infinite;
+}
+
+body.lotr-mode #wave-container,
+body.lotr-mode .header-entry-animate,
+body.lotr-mode .relative.z-10 {
+  position: relative;
+  z-index: 2;
+}
+
+body.lotr-mode .lotr-easter-eggs {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+  filter: contrast(1.05) brightness(1.03);
+}
+
+@keyframes lotrRingRoute {
+  0% {
+    transform: translate3d(8vw, 90vh, 0) rotate(0deg) scale(0.95);
+  }
+  20% {
+    transform: translate3d(30vw, 88vh, 0) rotate(70deg) scale(1.02);
+  }
+  40% {
+    transform: translate3d(58vw, 91vh, 0) rotate(145deg) scale(0.96);
+  }
+  60% {
+    transform: translate3d(80vw, 87vh, 0) rotate(215deg) scale(1.03);
+  }
+  80% {
+    transform: translate3d(46vw, 84vh, 0) rotate(290deg) scale(0.97);
+  }
+  100% {
+    transform: translate3d(8vw, 90vh, 0) rotate(360deg) scale(0.95);
+  }
+}
+
+body.lotr-mode .lotr-ring-runner {
+  position: absolute;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  border: 0.32rem solid #bc8040;
+  box-shadow:
+    0 0 0 1px rgba(62, 39, 18, 0.65) inset,
+    0 0 20px rgba(201, 132, 64, 0.35),
+    0 6px 10px rgba(43, 27, 14, 0.25);
+  background: radial-gradient(circle at 35% 35%, rgba(233, 169, 104, 0.42) 0%, rgba(233, 169, 104, 0) 62%);
+  animation: lotrRingRoute 17s linear infinite;
+}
+
+@keyframes lotrStalkerRoute {
+  0% {
+    transform: translate3d(2vw, 92vh, 0) scale(0.92) rotate(-4deg);
+  }
+  20% {
+    transform: translate3d(24vw, 90vh, 0) scale(1) rotate(3deg);
+  }
+  40% {
+    transform: translate3d(52vw, 93vh, 0) scale(0.94) rotate(-5deg);
+  }
+  60% {
+    transform: translate3d(75vw, 89vh, 0) scale(1.02) rotate(4deg);
+  }
+  80% {
+    transform: translate3d(39vw, 86vh, 0) scale(0.95) rotate(-3deg);
+  }
+  100% {
+    transform: translate3d(2vw, 92vh, 0) scale(0.92) rotate(-4deg);
+  }
+}
+
+body.lotr-mode .lotr-shadow-stalker {
+  position: absolute;
+  width: 4.8rem;
+  height: 6.4rem;
+  background-image: url("/branding/gollum.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  filter: drop-shadow(0 6px 7px rgba(10, 6, 3, 0.58));
+  animation: lotrStalkerRoute 17s linear infinite;
+  animation-delay: 1.4s;
 }
 
 body.lotr-mode .header-entry-animate {
-  border-color: #6b4f1d;
-  color: #3f2f14;
-  background: linear-gradient(180deg, #fff8e6 0%, #f3e3b5 100%);
-  box-shadow: 4px 4px 0 0 #6b4f1d;
+  border-color: #4d371d !important;
+  color: #2f2418;
+  background: linear-gradient(180deg, #bea07a 0%, #99744f 100%);
+  box-shadow: 0 6px 0 0 #4d371d !important;
 }
 
 body.lotr-mode .header-entry-animate h1,
 body.lotr-mode .header-entry-animate p {
-  color: #3f2f14;
+  color: #2f2418;
+  letter-spacing: 0.02em;
+}
+
+body.lotr-mode .district-logo-badge {
+  border: 1px solid rgba(77, 55, 29, 0.45);
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #d2b18a 0%, #8a6541 100%);
+  box-shadow: inset 0 0 0 1px rgba(217, 182, 133, 0.45);
+}
+
+body.lotr-mode #search-input {
+  border-color: #7b5a2a;
+  color: #2a1f14;
+  background: linear-gradient(180deg, #d7bf9b 0%, #b08d67 100%);
+}
+
+body.lotr-mode #search-input::placeholder {
+  color: #5c4429;
+  font-style: italic;
+}
+
+body.lotr-mode #search-input:focus {
+  border-color: #4d371d;
+  box-shadow: 0 0 0 2px rgba(123, 90, 42, 0.22);
+}
+
+body.lotr-mode .category-tag {
+  border-radius: 999px;
+}
+
+body.lotr-mode .category-tag.active {
+  background: linear-gradient(180deg, #5e4227 0%, #3f2b18 100%);
+  border-color: #2f2012;
+  color: #f2e1c5;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+body.lotr-mode .category-tag:not(.active) {
+  background: linear-gradient(180deg, #c8ad87 0%, #a78662 100%);
+  border-color: #7e5f3b;
+  color: #342518;
+}
+
+body.lotr-mode .category-tag:hover:not(.active) {
+  background: linear-gradient(180deg, #d2b792 0%, #b28f68 100%);
+  border-color: #5e4427;
+  color: #2f2418;
 }
 
 body.lotr-mode details {
-  border-color: #6b4f1d;
-  box-shadow: 4px 4px 0 0 #6b4f1d;
+  border-color: #5a4022;
+  box-shadow: 0 6px 0 0 #5a4022;
+  background: linear-gradient(180deg, #b69973 0%, #91704e 100%);
 }
 
 body.lotr-mode details > summary {
-  background-color: #fff4d6;
+  background: linear-gradient(180deg, #c4a27b 0%, #9e7b55 100%);
+  color: #2f2418;
 }
 
 body.lotr-mode details > summary:hover,
 body.lotr-mode details > summary:focus {
-  background-color: #f7e5b4;
+  background: linear-gradient(180deg, #ceb08a 0%, #ab855e 100%);
 }
 
 body.lotr-mode details > div {
-  background-color: #fff9e8;
+  background: linear-gradient(180deg, #cfb08b 0%, #b08d67 100%);
 }
 
-body.lotr-mode .category-tag.active {
-  background-color: #f5d98f;
-  border-color: #6b4f1d;
-  color: #3a2a0f;
+body.lotr-mode details > summary span {
+  letter-spacing: 0.03em;
 }
 
-body.lotr-mode .category-tag:not(.active) {
-  background-color: #fff8e8;
-  border-color: #b09054;
-  color: #5a4420;
+body.lotr-mode #current-issues-accordion {
+  border-color: #7b291f;
+  box-shadow: 0 6px 0 0 #7b291f;
+}
+
+body.lotr-mode #current-issues-accordion > summary {
+  background: linear-gradient(180deg, #c89b81 0%, #ad765d 100%);
+}
+
+body.lotr-mode #current-issues-accordion > div {
+  border-top-color: #7b291f;
+  background: linear-gradient(180deg, #d3ad98 0%, #b6846e 100%);
+}
+
+body.lotr-mode [data-category-count],
+body.lotr-mode #current-issues-count {
+  border-width: 2px;
+}
+
+body.lotr-mode [data-category-count] {
+  background: #b89a73;
+  border-color: #6f5130;
+  color: #281b0f;
 }
 
 body.lotr-mode .resource-card {
-  border-color: #b48a38;
-  background: #fffaf0;
+  border-color: #8d6a35 !important;
+  background: linear-gradient(180deg, #d8bd99 0%, #b79169 100%);
+  box-shadow: inset 0 1px 0 rgba(224, 191, 148, 0.7), 0 2px 0 rgba(95, 67, 31, 0.35);
+}
+
+body.lotr-mode .resource-card h3 {
+  color: #2f2418;
 }
 
 body.lotr-mode .resource-card:hover {
-  box-shadow: 0 12px 24px rgba(107, 79, 29, 0.25) !important;
+  border-color: #5f431f !important;
+  box-shadow: 0 14px 24px rgba(73, 52, 24, 0.34), inset 0 1px 0 rgba(214, 174, 126, 0.78) !important;
+}
+
+body.lotr-mode .icon-square {
+  border-color: #8a6934;
+  background: linear-gradient(160deg, #d6b385 0%, #9d7348 100%);
+  border-radius: 0.875rem;
+}
+
+body.lotr-mode .report-issue-btn {
+  color: #6e5533;
+}
+
+body.lotr-mode .report-issue-btn:hover {
+  color: #7b291f;
+}
+
+body.lotr-mode .announcement-card[data-announcement-type="informative"] {
+  border-color: #5a4227;
+  background: linear-gradient(180deg, #c7ab87 0%, #a4825d 100%);
+  box-shadow: 6px 6px 0 0 rgba(90, 66, 39, 0.35);
+}
+
+body.lotr-mode .announcement-card[data-announcement-type="warning"] {
+  border-color: #7b4b1f;
+  background: linear-gradient(180deg, #c99f6f 0%, #a2764b 100%);
+  box-shadow: 6px 6px 0 0 rgba(123, 75, 31, 0.35);
+}
+
+body.lotr-mode .announcement-card[data-announcement-type="danger"] {
+  border-color: #7b291f;
+  background: linear-gradient(180deg, #c48c76 0%, #9f5f4a 100%);
+  box-shadow: 6px 6px 0 0 rgba(123, 41, 31, 0.35);
+}
+
+body.lotr-mode .announcement-card[data-announcement-type="success"] {
+  border-color: #61482b;
+  background: linear-gradient(180deg, #bea183 0%, #987356 100%);
+  box-shadow: 6px 6px 0 0 rgba(97, 72, 43, 0.35);
 }
 
 body.lotr-mode #mobile-filter-toggle {
-  background-color: #fff6df;
-  border-color: #b09054;
-  color: #5a4420;
-}
-
-body.lotr-mode #search-input {
-  background-color: #fffdf6;
-  border-color: #b09054;
-  color: #3f2f14;
-}
-
-body.lotr-mode #search-input::placeholder {
-  color: #8a6f3d;
+  background: linear-gradient(180deg, #c9ad86 0%, #a3805a 100%);
+  border-color: #6f5130;
+  color: #2c1f12;
 }
 
 body.lotr-mode #no-results p {
-  color: #5a4420;
+  color: #4d3a22;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.lotr-mode::after {
+    animation: none;
+  }
+
+  body.lotr-mode .lotr-ring-runner,
+  body.lotr-mode .lotr-shadow-stalker {
+    animation: none;
+  }
+
+  body.lotr-mode .lotr-ring-runner {
+    transform: translate3d(8vw, 90vh, 0);
+  }
+
+  body.lotr-mode .lotr-shadow-stalker {
+    transform: translate3d(2vw, 92vh, 0);
+  }
+}
+
+@media (max-width: 768px) {
+  body.lotr-mode .lotr-ring-runner {
+    width: 2rem;
+    height: 2rem;
+    border-width: 0.27rem;
+  }
+
+  body.lotr-mode .lotr-shadow-stalker {
+    width: 3.8rem;
+    height: 5.2rem;
+  }
 }
