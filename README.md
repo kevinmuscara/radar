@@ -51,6 +51,61 @@ npm start
 
 The app runs on `http://HOST:PORT` (defaults to `http://0.0.0.0:80`).
 
+## Docker Installation (Persistent SQLite)
+
+This repository includes a Docker setup that keeps SQLite data persistent across container restarts and recreations.
+
+### Start with Docker Compose
+
+```bash
+docker compose up -d --build
+```
+
+Radar will be available at `http://localhost:8080`.
+
+### Why SQLite data persists
+
+The compose file mounts a named Docker volume:
+
+- `radar-data:/app/data`
+
+And the app uses:
+
+- `DB_PATH=/app/data/database.sqlite`
+
+Because the database file lives in the volume, data survives:
+
+- `docker compose restart`
+- container crashes/restarts
+- `docker compose up -d` after rebuilds
+
+Data is only removed if you explicitly delete the volume (for example, `docker compose down -v`).
+
+### Optional: use a host bind mount instead of a named volume
+
+If you prefer seeing the SQLite file directly on disk, replace the volume mapping in `docker-compose.yml` with:
+
+```yaml
+volumes:
+	- ./data:/app/data
+```
+
+Then your database will be stored at `./data/database.sqlite` on the host.
+
+### Stop and start without data loss
+
+```bash
+docker compose stop
+docker compose start
+```
+
+or
+
+```bash
+docker compose down
+docker compose up -d
+```
+
 ## Development
 
 Build and watch styles:
