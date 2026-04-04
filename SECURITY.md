@@ -9,7 +9,7 @@ At this time, security updates are provided for the latest version on the `main`
 Please do not report security vulnerabilities in public GitHub issues.
 
 Instead, report privately to:
-- open-source@your-school-domain.example
+- kevin@muscara.net
 
 Include:
 - A clear description of the issue
