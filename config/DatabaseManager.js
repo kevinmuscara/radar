@@ -392,11 +392,14 @@ class DatabaseManager {
     lastChecked,
   ) {
     const db = await this.getDb();
-    await db.run("DELETE FROM resource_status_cache WHERE resource_name = ?", [
-      resourceName,
-    ]);
     await db.run(
-      "INSERT INTO resource_status_cache (resource_id, resource_name, status, status_url, last_checked) VALUES (?, ?, ?, ?, ?)",
+      `INSERT INTO resource_status_cache (resource_id, resource_name, status, status_url, last_checked)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(resource_name) DO UPDATE SET
+         resource_id = COALESCE(excluded.resource_id, resource_status_cache.resource_id),
+         status = excluded.status,
+         status_url = excluded.status_url,
+         last_checked = excluded.last_checked`,
       [resourceId || null, resourceName, status, statusUrl, lastChecked],
     );
   }
@@ -436,6 +439,7 @@ class DatabaseManager {
   }
 
   async reportIssue(resourceName, reporterKey) {
+    const startedAt = Date.now();
     const db = await this.getDb();
     await this.clearExpiredIssueReports();
     await this.clearExpiredIssueReportSubmissions();
@@ -446,68 +450,65 @@ class DatabaseManager {
     }
 
     const recentSubmission = await db.get(
-      "SELECT reported_at FROM resource_issue_report_submissions WHERE resource_name = ? AND reporter_key = ? AND reported_at > datetime('now', '-1 hour')",
+      `SELECT
+          CAST((julianday(s.reported_at, '+1 hour') - julianday('now')) * 86400 AS INTEGER) AS retry_after_seconds,
+          r.resource_name AS report_resource_name,
+          r.report_count,
+          r.first_reported_at,
+          r.expires_at
+        FROM resource_issue_report_submissions s
+        LEFT JOIN resource_issue_reports r
+          ON r.resource_name = s.resource_name
+        WHERE s.resource_name = ?
+          AND s.reporter_key = ?
+          AND s.reported_at > datetime('now', '-1 hour')`,
       [resourceName, normalizedReporterKey],
     );
 
     if (recentSubmission) {
-      const existingReport = await db.get(
-        "SELECT resource_name, report_count, first_reported_at, expires_at FROM resource_issue_reports WHERE resource_name = ?",
-        [resourceName],
+      console.log(
+        `[DatabaseManager] reportIssue limited for ${resourceName} in ${Date.now() - startedAt}ms`,
       );
-
-      const retryAfterSecondsRow = await db.get(
-        "SELECT CAST((julianday(reported_at, '+1 hour') - julianday('now')) * 86400 AS INTEGER) AS retry_after_seconds FROM resource_issue_report_submissions WHERE resource_name = ? AND reporter_key = ?",
-        [resourceName, normalizedReporterKey],
-      );
-
       return {
         limited: true,
-        report: existingReport || null,
+        report: recentSubmission.report_resource_name
+          ? {
+              resource_name: recentSubmission.report_resource_name,
+              report_count: recentSubmission.report_count,
+              first_reported_at: recentSubmission.first_reported_at,
+              expires_at: recentSubmission.expires_at,
+            }
+          : null,
         retryAfterSeconds: Math.max(
-          (retryAfterSecondsRow && retryAfterSecondsRow.retry_after_seconds) ||
-            0,
+          Number(recentSubmission.retry_after_seconds) || 0,
           0,
         ),
       };
     }
 
-    const updateSubmission = await db.run(
-      "UPDATE resource_issue_report_submissions SET reported_at = datetime('now') WHERE resource_name = ? AND reporter_key = ?",
+    await db.run(
+      `INSERT INTO resource_issue_report_submissions (resource_name, reporter_key, reported_at)
+       VALUES (?, ?, datetime('now'))
+       ON CONFLICT(resource_name, reporter_key)
+       DO UPDATE SET reported_at = datetime('now')`,
       [resourceName, normalizedReporterKey],
     );
 
-    if (!updateSubmission || !updateSubmission.changes) {
-      await db.run(
-        "INSERT INTO resource_issue_report_submissions (resource_name, reporter_key, reported_at) VALUES (?, ?, datetime('now'))",
-        [resourceName, normalizedReporterKey],
-      );
-    }
-
-    const existing = await db.get(
-      "SELECT resource_name, report_count, first_reported_at, expires_at FROM resource_issue_reports WHERE resource_name = ?",
-      [resourceName],
-    );
-
-    if (existing) {
-      await db.run(
-        "UPDATE resource_issue_reports SET report_count = report_count + 1 WHERE resource_name = ?",
-        [resourceName],
-      );
-      return db.get(
-        "SELECT resource_name, report_count, first_reported_at, expires_at FROM resource_issue_reports WHERE resource_name = ?",
-        [resourceName],
-      );
-    }
-
     await db.run(
-      "INSERT INTO resource_issue_reports (resource_name, report_count, first_reported_at, expires_at) VALUES (?, 1, datetime('now'), datetime('now', '+1 hour'))",
+      `INSERT INTO resource_issue_reports (resource_name, report_count, first_reported_at, expires_at)
+       VALUES (?, 1, datetime('now'), datetime('now', '+1 hour'))
+       ON CONFLICT(resource_name)
+       DO UPDATE SET report_count = report_count + 1`,
       [resourceName],
     );
 
     const report = await db.get(
       "SELECT resource_name, report_count, first_reported_at, expires_at FROM resource_issue_reports WHERE resource_name = ?",
       [resourceName],
+    );
+
+    console.log(
+      `[DatabaseManager] reportIssue recorded for ${resourceName} in ${Date.now() - startedAt}ms`,
     );
 
     return {

@@ -15,6 +15,11 @@ const adminRoute = require("./routes/admin");
 const loginRoute = require("./routes/login");
 const apiRoute = require("./routes/api");
 
+const sessionStore = new MemoryStore({
+  checkPeriod: 10 * 60 * 1000,
+  ttl: 24 * 60 * 60 * 1000,
+});
+
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
 server.set("view engine", "ejs");
@@ -24,11 +29,13 @@ server.use(
   session({
     secret: "radar",
     resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false },
-    store: new MemoryStore({
-      checkPeriod: 86400000,
-    }),
+    saveUninitialized: false,
+    cookie: {
+      secure: false,
+      maxAge: 12 * 60 * 60 * 1000,
+      sameSite: "lax",
+    },
+    store: sessionStore,
   }),
 );
 server.disable("x-powered-by");
@@ -74,6 +81,22 @@ server.get("/", async (request, response) => {
 
 const PORT = process.env.PORT || 80;
 const HOST = process.env.HOST || "0.0.0.0";
+
+const sessionStoreStatsInterval = setInterval(() => {
+  if (typeof sessionStore.length !== "function") return;
+
+  sessionStore.length((error, count) => {
+    if (error) {
+      console.error("[Server] Failed to read session store size:", error.message);
+      return;
+    }
+    console.log(`[Server] Active sessions in memory store: ${count}`);
+  });
+}, 15 * 60 * 1000);
+
+if (typeof sessionStoreStatsInterval.unref === "function") {
+  sessionStoreStatsInterval.unref();
+}
 
 server.listen(PORT, HOST, async () => {
   console.log(`Radar live on ${HOST}:${PORT}`);

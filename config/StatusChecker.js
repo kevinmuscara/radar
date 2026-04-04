@@ -13,11 +13,59 @@ class StatusChecker {
     this.isRunning = false;
     this.checkInterval = null;
     this.CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes by default
+    const configuredConcurrency = Number(process.env.STATUS_CHECK_CONCURRENCY);
+    this.maxConcurrentChecks =
+      Number.isFinite(configuredConcurrency) && configuredConcurrency > 0
+        ? Math.min(Math.floor(configuredConcurrency), 20)
+        : 4;
     this.isChecking = false;
     this.cancelCurrentCheck = false;
     this.currentProgress = 0;
     this.totalResources = 0;
     this.currentResourceName = "";
+  }
+
+  async fetchPageBodyText(url) {
+    let browser = null;
+
+    try {
+      browser = await puppeteer.launch({
+        headless: "new",
+        args: ["--no-sandbox"],
+      });
+      const page = await browser.newPage();
+      page.setDefaultTimeout(8000);
+      page.setDefaultNavigationTimeout(8000);
+
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+      const html = await page.content();
+      const $ = cheerio.load(html);
+      return $("body").text();
+    } catch (puppeteerError) {
+      console.warn(
+        `[StatusChecker] Puppeteer failed for ${url}, falling back to axios: ${puppeteerError.message}`,
+      );
+
+      const response = await axios.get(url, {
+        timeout: 5000,
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+        },
+      });
+      const $ = cheerio.load(response.data);
+      return $("body").text();
+    } finally {
+      if (browser) {
+        try {
+          await browser.close();
+        } catch (closeError) {
+          console.warn(
+            `[StatusChecker] Failed to close browser for ${url}: ${closeError.message}`,
+          );
+        }
+      }
+    }
   }
 
   hasMappedApiField(resource) {
@@ -348,37 +396,7 @@ class StatusChecker {
       }
 
       if (method === "scrape") {
-        let pageText;
-
-        try {
-          const browser = await puppeteer.launch({
-            headless: "new",
-            args: ["--no-sandbox"],
-          });
-          const page = await browser.newPage();
-          page.setDefaultTimeout(8000);
-          page.setDefaultNavigationTimeout(8000);
-
-          await page.goto(url, { waitUntil: "domcontentloaded" });
-          pageText = await page.content();
-          await browser.close();
-
-          const $ = cheerio.load(pageText);
-          pageText = $("body").text();
-        } catch (puppeteerError) {
-          console.warn(
-            `Puppeteer failed for ${url}, falling back to axios: ${puppeteerError.message}`,
-          );
-          const response = await axios.get(url, {
-            timeout: 5000,
-            headers: {
-              "User-Agent":
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
-            },
-          });
-          const $ = cheerio.load(response.data);
-          pageText = $("body").text();
-        }
+        const pageText = await this.fetchPageBodyText(url);
 
         if (keywords.length > 0) {
           const lowerPageText = pageText.toLowerCase();
@@ -450,7 +468,10 @@ class StatusChecker {
     this.cancelCurrentCheck = false;
     this.currentProgress = 0;
     this.currentResourceName = "";
-    console.log("[StatusChecker] Starting status check...");
+    const startedAt = Date.now();
+    console.log(
+      `[StatusChecker] Starting status check (concurrency=${this.maxConcurrentChecks})...`,
+    );
 
     try {
       const resources = await ResourceManager.getResources();
@@ -490,68 +511,99 @@ class StatusChecker {
       const failedResources = [];
       console.log(`[StatusChecker] Checking ${this.totalResources} resources`);
 
-      for (let i = 0; i < uniqueResources.length; i++) {
-        const resource = uniqueResources[i];
+      const processResources = async (resourcesToProcess, isRetry = false) => {
+        let nextIndex = 0;
+        const workerCount = Math.max(
+          1,
+          Math.min(this.maxConcurrentChecks, resourcesToProcess.length),
+        );
 
-        if (this.cancelCurrentCheck) {
-          console.log("[StatusChecker] Check cancelled");
-          break;
-        }
+        const workers = Array.from({ length: workerCount }, async () => {
+          while (!this.cancelCurrentCheck) {
+            const index = nextIndex;
+            nextIndex += 1;
 
-        try {
-          if (!resource.resource_name) {
-            continue;
+            if (index >= resourcesToProcess.length) {
+              return;
+            }
+
+            const resource = resourcesToProcess[index];
+            if (!resource || !resource.resource_name) {
+              this.currentProgress += 1;
+              continue;
+            }
+
+            this.currentProgress += 1;
+            this.currentResourceName = isRetry
+              ? `${resource.resource_name} (retry)`
+              : resource.resource_name;
+
+            try {
+              const statusData = await this.checkResourceStatus(resource);
+
+              await DatabaseManager.updateResourceStatus(
+                resource.id || null,
+                resource.resource_name,
+                statusData.status,
+                statusData.status_url,
+                statusData.last_checked,
+              );
+
+              if (isRetry) {
+                console.log(
+                  `[StatusChecker] Retry successful: ${resource.resource_name}`,
+                );
+              }
+            } catch (error) {
+              try {
+                await DatabaseManager.updateResourceStatus(
+                  resource.id || null,
+                  resource.resource_name,
+                  "Unknown",
+                  resource.status_page || null,
+                  new Date().toISOString(),
+                );
+              } catch (cacheError) {
+                const label = isRetry
+                  ? "after retry"
+                  : "for initial attempt";
+                console.error(
+                  `[StatusChecker] Failed to update Unknown status ${label} for ${resource.resource_name}: ${cacheError.message}`,
+                );
+              }
+
+              if (!isRetry) {
+                try {
+                  await DatabaseManager.logStatusCheckError(
+                    resource.id || null,
+                    resource.resource_name,
+                    resource.status_page,
+                    resource.check_type || "api",
+                    error.message || "Unknown error",
+                  );
+                } catch (logError) {
+                  console.error(
+                    `[StatusChecker] Failed to log error for ${resource.resource_name}: ${logError.message}`,
+                  );
+                }
+
+                failedResources.push({
+                  resource,
+                  error: error.message || "Unknown error",
+                });
+              } else {
+                console.error(
+                  `[StatusChecker] Retry failed: ${resource.resource_name} - ${error.message}`,
+                );
+              }
+            }
           }
+        });
 
-          this.currentProgress = i + 1;
-          this.currentResourceName = resource.resource_name;
+        await Promise.all(workers);
+      };
 
-          const statusData = await this.checkResourceStatus(resource);
-
-          await DatabaseManager.updateResourceStatus(
-            resource.id || null,
-            resource.resource_name,
-            statusData.status,
-            statusData.status_url,
-            statusData.last_checked,
-          );
-        } catch (error) {
-          try {
-            await DatabaseManager.updateResourceStatus(
-              resource.id || null,
-              resource.resource_name,
-              "Unknown",
-              resource.status_page || null,
-              new Date().toISOString(),
-            );
-          } catch (cacheError) {
-            console.error(
-              `[StatusChecker] Failed to update Unknown status for ${resource.resource_name}: ${cacheError.message}`,
-            );
-          }
-
-          try {
-            await DatabaseManager.logStatusCheckError(
-              resource.id || null,
-              resource.resource_name,
-              resource.status_page,
-              resource.check_type || "api",
-              error.message || "Unknown error",
-            );
-          } catch (logError) {
-            console.error(
-              `[StatusChecker] Failed to log error for ${resource.resource_name}: ${logError.message}`,
-            );
-          }
-
-          failedResources.push({
-            resource,
-            error: error.message || "Unknown error",
-          });
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
+      await processResources(uniqueResources, false);
 
       if (failedResources.length > 0 && !this.cancelCurrentCheck) {
         console.log(
@@ -559,60 +611,23 @@ class StatusChecker {
         );
         this.totalResources = uniqueResources.length + failedResources.length; // Update total for progress
 
-        for (let i = 0; i < failedResources.length; i++) {
-          const { resource, error: firstError } = failedResources[i];
-
-          if (this.cancelCurrentCheck) {
-            break;
-          }
-
-          this.currentProgress = uniqueResources.length + i + 1;
-          this.currentResourceName = `${resource.resource_name} (retry)`;
-
-          try {
-            const statusData = await this.checkResourceStatus(resource);
-
-            await DatabaseManager.updateResourceStatus(
-              resource.id || null,
-              resource.resource_name,
-              statusData.status,
-              statusData.status_url,
-              statusData.last_checked,
-            );
-
-            console.log(
-              `[StatusChecker] Retry successful: ${resource.resource_name}`,
-            );
-          } catch (retryError) {
-            console.error(
-              `[StatusChecker] Failed: ${resource.resource_name} - ${retryError.message}`,
-            );
-
-            try {
-              await DatabaseManager.updateResourceStatus(
-                resource.id || null,
-                resource.resource_name,
-                "Unknown",
-                resource.status_page || null,
-                new Date().toISOString(),
-              );
-            } catch (cacheError) {
-              console.error(
-                `[StatusChecker] Failed to update Unknown status after retry for ${resource.resource_name}: ${cacheError.message}`,
-              );
-            }
-          }
-
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        }
+        await processResources(
+          failedResources.map((entry) => entry.resource),
+          true,
+        );
       }
 
       if (!this.cancelCurrentCheck) {
-        console.log("[StatusChecker] Check complete");
+        console.log(
+          `[StatusChecker] Check complete in ${Date.now() - startedAt}ms`,
+        );
       }
     } catch (error) {
       console.error("[StatusChecker] Error:", error);
     } finally {
+      console.log(
+        `[StatusChecker] Cycle finished in ${Date.now() - startedAt}ms`,
+      );
       this.isChecking = false;
       this.cancelCurrentCheck = false;
       this.currentProgress = 0;

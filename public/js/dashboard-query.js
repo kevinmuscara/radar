@@ -22,6 +22,14 @@
   );
   const currentIssuesCount = document.getElementById("current-issues-count");
   const currentIssuesEmpty = document.getElementById("current-issues-empty");
+  let announcementExpiryTimeoutId = null;
+
+  function clearAnnouncementExpiryTimer() {
+    if (announcementExpiryTimeoutId !== null) {
+      window.clearTimeout(announcementExpiryTimeoutId);
+      announcementExpiryTimeoutId = null;
+    }
+  }
 
   function updateAnnouncementVisibility() {
     if (!announcementBanner || announcementCards.length === 0) {
@@ -50,6 +58,8 @@
       return;
     }
 
+    clearAnnouncementExpiryTimer();
+
     updateAnnouncementVisibility();
 
     const now = Date.now();
@@ -63,10 +73,25 @@
 
     const nextExpiry = Math.min.apply(null, futureExpirations);
     const delay = Math.max(250, nextExpiry - now + 50);
-    window.setTimeout(scheduleAnnouncementExpiryCheck, delay);
+    announcementExpiryTimeoutId = window.setTimeout(
+      scheduleAnnouncementExpiryCheck,
+      delay,
+    );
   }
 
   scheduleAnnouncementExpiryCheck();
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      clearAnnouncementExpiryTimer();
+      return;
+    }
+
+    scheduleAnnouncementExpiryCheck();
+  });
+
+  window.addEventListener("pagehide", clearAnnouncementExpiryTimer);
+  window.addEventListener("beforeunload", clearAnnouncementExpiryTimer);
 
   if (!searchInput || !searchForm) {
     return;

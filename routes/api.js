@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const cheerio = require("cheerio");
-const puppeteer = require("puppeteer");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 const resources = require("../config/ResourceManager");
@@ -13,41 +12,84 @@ const execFileAsync = promisify(execFile);
 
 const requestLimiter = new Map();
 const MAX_REQUESTS_PER_MINUTE = 200;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_CLEANUP_MS = 60 * 1000;
+const RATE_LIMIT_STALE_MS = 5 * 60 * 1000;
+const MAX_RATE_LIMIT_KEYS = 5000;
 
 function checkRateLimit(identifier) {
   const now = Date.now();
   const key = identifier || "global";
 
-  if (!requestLimiter.has(key)) {
-    requestLimiter.set(key, []);
+  let entry = requestLimiter.get(key);
+  if (!entry) {
+    entry = {
+      windowStart: now,
+      count: 0,
+      lastSeen: now,
+    };
   }
 
-  const times = requestLimiter.get(key);
-  const recentRequests = times.filter((t) => now - t < 60000);
+  if (now - entry.windowStart >= RATE_LIMIT_WINDOW_MS) {
+    entry.windowStart = now;
+    entry.count = 0;
+  }
 
-  if (recentRequests.length >= MAX_REQUESTS_PER_MINUTE) {
+  if (entry.count >= MAX_REQUESTS_PER_MINUTE) {
+    entry.lastSeen = now;
+    requestLimiter.set(key, entry);
     return false;
   }
 
-  recentRequests.push(now);
-  requestLimiter.set(key, recentRequests);
+  entry.count += 1;
+  entry.lastSeen = now;
+  requestLimiter.set(key, entry);
+
+  if (requestLimiter.size > MAX_RATE_LIMIT_KEYS) {
+    const cutoff = now - RATE_LIMIT_STALE_MS;
+    for (const [entryKey, tracked] of requestLimiter.entries()) {
+      if (tracked.lastSeen < cutoff) {
+        requestLimiter.delete(entryKey);
+      }
+    }
+
+    if (requestLimiter.size > MAX_RATE_LIMIT_KEYS) {
+      const entriesByAge = Array.from(requestLimiter.entries()).sort(
+        (a, b) => a[1].lastSeen - b[1].lastSeen,
+      );
+      const overflow = requestLimiter.size - MAX_RATE_LIMIT_KEYS;
+      for (let i = 0; i < overflow; i++) {
+        requestLimiter.delete(entriesByAge[i][0]);
+      }
+    }
+
+    console.warn(
+      `[API] Rate limiter key set exceeded limit; trimmed to ${requestLimiter.size} keys`,
+    );
+  }
+
   return true;
 }
 
-setInterval(
+const rateLimiterCleanupInterval = setInterval(
   () => {
     const now = Date.now();
-    for (const [key, times] of requestLimiter.entries()) {
-      const recentRequests = times.filter((t) => now - t < 60000);
-      if (recentRequests.length === 0) {
+    const cutoff = now - RATE_LIMIT_STALE_MS;
+    for (const [key, entry] of requestLimiter.entries()) {
+      if (entry.lastSeen < cutoff) {
         requestLimiter.delete(key);
-      } else {
-        requestLimiter.set(key, recentRequests);
       }
     }
+
+    if (requestLimiter.size > 0) {
+      console.log(`[API] Rate limiter active key count: ${requestLimiter.size}`);
+    }
   },
-  5 * 60 * 1000,
+  RATE_LIMIT_CLEANUP_MS,
 );
+if (typeof rateLimiterCleanupInterval.unref === "function") {
+  rateLimiterCleanupInterval.unref();
+}
 
 function normalizeStatus(statusText) {
   if (!statusText) return "Unknown";
@@ -255,37 +297,7 @@ async function checkStatus(resource) {
     }
 
     if (method === "scrape") {
-      let pageText;
-
-      try {
-        const browser = await puppeteer.launch({
-          headless: "new",
-          args: ["--no-sandbox"],
-        });
-        const page = await browser.newPage();
-        page.setDefaultTimeout(8000);
-        page.setDefaultNavigationTimeout(8000);
-
-        await page.goto(url, { waitUntil: "domcontentloaded" });
-        pageText = await page.content();
-        await browser.close();
-
-        const $ = cheerio.load(pageText);
-        pageText = $("body").text();
-      } catch (puppeteerError) {
-        console.warn(
-          `Puppeteer failed for ${url}, falling back to axios: ${puppeteerError.message}`,
-        );
-        const response = await axios.get(url, {
-          timeout: 5000,
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
-          },
-        });
-        const $ = cheerio.load(response.data);
-        pageText = $("body").text();
-      }
+      const pageText = await statusChecker.fetchPageBodyText(url);
 
       if (keywords.length > 0) {
         const lowerPageText = pageText.toLowerCase();

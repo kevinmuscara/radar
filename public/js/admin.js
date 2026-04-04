@@ -922,9 +922,12 @@ function renderAll() {
 }
 
 async function loadAllData() {
-  const resourcesRes = await requestJson("/resources");
-  const categoriesRes = await requestJson("/resources/categories");
-  const announcementsRes = await requestJson("/resources/announcements");
+  const startedAt = Date.now();
+  const [resourcesRes, categoriesRes, announcementsRes] = await Promise.all([
+    requestJson("/resources"),
+    requestJson("/resources/categories"),
+    requestJson("/resources/announcements"),
+  ]);
 
   const resourceMap = new Map();
   Object.entries(resourcesRes.resources || {}).forEach(([category, list]) => {
@@ -972,6 +975,7 @@ async function loadAllData() {
   }
 
   renderAll();
+  console.log(`[Admin] loadAllData completed in ${Date.now() - startedAt}ms`);
 }
 
 function updateResourceCheckSections() {

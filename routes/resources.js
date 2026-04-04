@@ -23,16 +23,73 @@ function createImportJob() {
     error: null,
     startedAt: Date.now(),
     completedAt: null,
+    cleanupTimeout: null,
   };
 
   importJobs.set(jobId, job);
+  console.log(`[Import] Created job ${jobId}. Active jobs: ${importJobs.size}`);
   return job;
 }
 
 function scheduleImportJobCleanup(jobId) {
-  setTimeout(() => {
+  const job = importJobs.get(jobId);
+  if (job && job.cleanupTimeout) {
+    clearTimeout(job.cleanupTimeout);
+  }
+
+  const timeout = setTimeout(() => {
     importJobs.delete(jobId);
+    console.log(`[Import] Cleaned up job ${jobId}. Active jobs: ${importJobs.size}`);
   }, IMPORT_JOB_TTL_MS);
+
+  if (typeof timeout.unref === "function") {
+    timeout.unref();
+  }
+
+  if (job) {
+    job.cleanupTimeout = timeout;
+  }
+}
+
+function queueDefinitionStatusCheck(resourceName, definitionPayload, action) {
+  const queuedAt = Date.now();
+  console.log(
+    `[Resources] Queued initial status check for ${action} resource ${resourceName}`,
+  );
+
+  setImmediate(async () => {
+    try {
+      const statusData = await statusChecker.checkResourceStatus(definitionPayload);
+      await dbManager.updateResourceStatus(
+        null,
+        resourceName,
+        statusData.status,
+        statusData.status_url || definitionPayload.status_page,
+        statusData.last_checked,
+      );
+      console.log(
+        `[Resources] Completed initial status check for ${action} resource ${resourceName} in ${Date.now() - queuedAt}ms`,
+      );
+    } catch (error) {
+      console.error(
+        `[Resources] Failed initial status check for ${action} resource ${resourceName}:`,
+        error.message,
+      );
+      try {
+        await dbManager.logStatusCheckError(
+          null,
+          resourceName,
+          definitionPayload.status_page || null,
+          definitionPayload.check_type || "api",
+          error.message || "Unknown error",
+        );
+      } catch (logError) {
+        console.error(
+          `[Resources] Failed to log status-check error for ${resourceName}: ${logError.message}`,
+        );
+      }
+    }
+  });
 }
 
 async function processImportJob(job, rows) {
@@ -326,6 +383,7 @@ router.post(
   "/category/:category",
   checkResourceManagerAccess,
   async (request, response) => {
+    const startedAt = Date.now();
     const { category } = request.params;
     const { resource_name, status_page } = request.body;
 
@@ -358,34 +416,15 @@ router.post(
       await resources.addResource(selectedCategory, definitionPayload);
     }
 
-    try {
-      const statusData =
-        await statusChecker.checkResourceStatus(definitionPayload);
-      await dbManager.updateResourceStatus(
-        null,
-        resource_name,
-        statusData.status,
-        statusData.status_url || definitionPayload.status_page,
-        statusData.last_checked,
-      );
-      console.log(
-        `[Resources] Checked status for new resource: ${resource_name}`,
-      );
-    } catch (error) {
-      console.error(
-        `[Resources] Failed to check status for new resource ${resource_name}:`,
-        error.message,
-      );
-      await dbManager.logStatusCheckError(
-        null,
-        resource_name,
-        definitionPayload.status_page || null,
-        definitionPayload.check_type || "api",
-        error.message || "Unknown error",
-      );
-    }
+    queueDefinitionStatusCheck(resource_name, definitionPayload, "new");
 
-    response.json({ status: 200 });
+    console.log(
+      `[Resources] Created resource ${resource_name} in ${Date.now() - startedAt}ms (status check queued)`,
+    );
+    response.json({
+      status: 200,
+      message: "Resource created. Initial status check is running.",
+    });
   },
 );
 
@@ -435,6 +474,7 @@ router.put(
   "/category/:category/:resource",
   checkResourceManagerAccess,
   async (request, response) => {
+    const startedAt = Date.now();
     const { category, resource } = request.params;
     const { resource_name, status_page } = request.body;
     const selectedCategories = parseCategories(
@@ -477,34 +517,15 @@ router.put(
       }
     }
 
-    try {
-      const statusData =
-        await statusChecker.checkResourceStatus(definitionPayload);
-      await dbManager.updateResourceStatus(
-        null,
-        resource_name,
-        statusData.status,
-        statusData.status_url || definitionPayload.status_page,
-        statusData.last_checked,
-      );
-      console.log(
-        `[Resources] Checked status for updated resource: ${resource_name}`,
-      );
-    } catch (error) {
-      console.error(
-        `[Resources] Failed to check status for updated resource ${resource_name}:`,
-        error.message,
-      );
-      await dbManager.logStatusCheckError(
-        null,
-        resource_name,
-        definitionPayload.status_page || null,
-        definitionPayload.check_type || "api",
-        error.message || "Unknown error",
-      );
-    }
+    queueDefinitionStatusCheck(resource_name, definitionPayload, "updated");
 
-    response.json({ status: 200 });
+    console.log(
+      `[Resources] Updated resource ${resource_name} in ${Date.now() - startedAt}ms (status check queued)`,
+    );
+    response.json({
+      status: 200,
+      message: "Resource updated. Initial status check is running.",
+    });
   },
 );
 
