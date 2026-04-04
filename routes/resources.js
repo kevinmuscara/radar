@@ -75,7 +75,7 @@ async function processImportJob(job, rows) {
       favicon_url: favicon_url || null,
       check_type: normalizedCheckType,
       scrape_keywords: scrape_keywords || "",
-      api_config: api_config || null,
+      api_config: normalizeImportedApiConfig(api_config, normalizedCheckType),
     });
   }
 
@@ -215,6 +215,36 @@ function parseCategories(rawCategory) {
   }
 
   return unique([text]);
+}
+
+function normalizeImportedApiConfig(rawApiConfig, checkType) {
+  if (checkType !== "api") return null;
+  if (rawApiConfig === null || rawApiConfig === undefined) return null;
+
+  if (typeof rawApiConfig === "object" && !Array.isArray(rawApiConfig)) {
+    const fieldPath = String(rawApiConfig.fieldPath || "").trim();
+    if (!fieldPath) return null;
+    return JSON.stringify({ ...rawApiConfig, fieldPath });
+  }
+
+  const text = String(rawApiConfig).trim();
+  if (!text) return null;
+
+  try {
+    const parsed = JSON.parse(text);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return null;
+    }
+
+    const fieldPath = String(parsed.fieldPath || "").trim();
+    if (!fieldPath) return null;
+    return JSON.stringify({ ...parsed, fieldPath });
+  } catch (_error) {
+    if (text.startsWith("{") || text.startsWith("[")) {
+      return null;
+    }
+    return JSON.stringify({ fieldPath: text });
+  }
 }
 
 function escapeCsvCell(value) {

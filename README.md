@@ -218,7 +218,7 @@ Example:
 
 ```csv
 K-12|Middle School,Google Workspace for Education,https://www.google.com/appsstatus/dashboard/,,scrape,No incidents,
-"K-12,High School",GitHub Status,https://www.githubstatus.com/api/v2/status.json,https://www.github.com/favicon.ico,api,,status.indicator
+"K-12,High School",GitHub Status,https://www.githubstatus.com/api/v2/status.json,https://www.github.com/favicon.ico,api,,"{""fieldPath"":""status.description""}"
 Infrastructure,Core Router,10.0.0.1,,icmp,,
 ```
 

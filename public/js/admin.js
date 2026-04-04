@@ -1475,7 +1475,11 @@ function bindGlobalActions() {
             if (parsed && parsed.fieldPath) {
               qs("#edit-resource-api-mapped-field").value = parsed.fieldPath;
             }
-          } catch (_error) {}
+          } catch (_error) {
+            if (!configRaw.trim().startsWith("{") && !configRaw.trim().startsWith("[")) {
+              qs("#edit-resource-api-mapped-field").value = configRaw.trim();
+            }
+          }
         }
 
         state.editContext = {

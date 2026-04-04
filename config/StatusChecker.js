@@ -22,16 +22,33 @@ class StatusChecker {
 
   hasMappedApiField(resource) {
     if (!resource || !resource.api_config) return false;
+    const parsed = this.parseApiConfig(resource.api_config);
+    return Boolean(parsed && parsed.fieldPath && String(parsed.fieldPath).trim());
+  }
+
+  parseApiConfig(rawApiConfig) {
+    if (!rawApiConfig) return null;
+
+    if (typeof rawApiConfig === "object" && !Array.isArray(rawApiConfig)) {
+      const fieldPath = String(rawApiConfig.fieldPath || "").trim();
+      return fieldPath ? { ...rawApiConfig, fieldPath } : rawApiConfig;
+    }
+
+    const text = String(rawApiConfig).trim();
+    if (!text) return null;
+
     try {
-      const parsed =
-        typeof resource.api_config === "string"
-          ? JSON.parse(resource.api_config)
-          : resource.api_config;
-      return Boolean(
-        parsed && parsed.fieldPath && String(parsed.fieldPath).trim(),
-      );
+      const parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return null;
+      }
+      const fieldPath = String(parsed.fieldPath || "").trim();
+      return fieldPath ? { ...parsed, fieldPath } : parsed;
     } catch (_error) {
-      return false;
+      if (text.startsWith("{") || text.startsWith("[")) {
+        return null;
+      }
+      return { fieldPath: text };
     }
   }
 
@@ -231,18 +248,7 @@ class StatusChecker {
           .map((k) => k.trim())
           .filter(Boolean)
       : [];
-    let apiConfig = null;
-
-    if (resource.api_config) {
-      try {
-        apiConfig =
-          typeof resource.api_config === "string"
-            ? JSON.parse(resource.api_config)
-            : resource.api_config;
-      } catch (e) {
-        console.error("Failed to parse api_config:", e);
-      }
-    }
+    const apiConfig = this.parseApiConfig(resource.api_config);
 
     if (!url || url.trim() === "") {
       return { status: "Unknown", last_checked: new Date().toISOString() };
