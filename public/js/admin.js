@@ -244,6 +244,44 @@ async function requestJson(url, options = {}) {
   return body;
 }
 
+function setFormPendingState(form, options) {
+  if (!form || !options) return;
+
+  const submitButton = qs(`button[form="${form.id}"][type="submit"]`);
+  const progressNode = options.progressSelector
+    ? qs(options.progressSelector)
+    : null;
+
+  if (options.pending) {
+    if (!form.dataset.defaultSubmitText && submitButton) {
+      form.dataset.defaultSubmitText = submitButton.textContent.trim();
+    }
+    form.dataset.pending = "true";
+  } else {
+    form.dataset.pending = "false";
+  }
+
+  qsa("input, select, textarea, button", form).forEach((field) => {
+    if (field.type === "submit") return;
+    field.disabled = Boolean(options.pending);
+  });
+
+  if (submitButton) {
+    submitButton.disabled = Boolean(options.pending);
+    submitButton.setAttribute(
+      "aria-busy",
+      options.pending ? "true" : "false",
+    );
+    submitButton.textContent = options.pending
+      ? options.pendingLabel
+      : form.dataset.defaultSubmitText || submitButton.textContent;
+  }
+
+  if (progressNode) {
+    progressNode.classList.toggle("hidden", !options.pending);
+  }
+}
+
 async function fetchLatestErrors() {
   const data = await requestJson(`/resources/errors?ts=${Date.now()}`);
   const errors = Array.isArray(data.errors) ? data.errors : [];
@@ -981,11 +1019,31 @@ function updateResourceCheckSections() {
   }
 }
 
+function resetResourceFormPendingState() {
+  const createForm = qs("#form-resources");
+  const editForm = qs("#form-edit-resources");
+
+  createForm &&
+    setFormPendingState(createForm, {
+      pending: false,
+      pendingLabel: "Create Resource",
+      progressSelector: "#resource-submit-progress",
+    });
+
+  editForm &&
+    setFormPendingState(editForm, {
+      pending: false,
+      pendingLabel: "Save Changes",
+      progressSelector: "#edit-resource-submit-progress",
+    });
+}
+
 function bindModalTriggers() {
   qsa("[data-open-modal]").forEach((button) => {
     button.addEventListener("click", () => {
       const modal = button.getAttribute("data-open-modal");
       const apiTarget = button.getAttribute("data-api-target");
+      resetResourceFormPendingState();
       if (apiTarget) {
         state.apiExplorerTarget = apiTarget;
       }
@@ -1007,6 +1065,7 @@ function bindModalTriggers() {
 
   qsa("[data-close-modal]").forEach((button) => {
     button.addEventListener("click", () => {
+      resetResourceFormPendingState();
       closeModal(button.getAttribute("data-close-modal"));
     });
   });
@@ -1017,6 +1076,7 @@ function bindModalTriggers() {
         const key = Object.keys(modals).find(
           (alias) => modals[alias] === modal.id,
         );
+        resetResourceFormPendingState();
         key && closeModal(key);
       }
     });
@@ -1029,6 +1089,7 @@ function bindModalTriggers() {
     );
     if (!open) return;
     const key = Object.keys(modals).find((alias) => modals[alias] === open.id);
+    resetResourceFormPendingState();
     key && closeModal(key);
   });
 }
@@ -1776,6 +1837,7 @@ function bindForms() {
   formResources &&
     formResources.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (formResources.dataset.pending === "true") return;
       const name = qs("#resource-name").value.trim();
       const url = qs("#resource-url").value.trim();
       const faviconUrl = qs("#resource-favicon-url").value.trim();
@@ -1814,6 +1876,11 @@ function bindForms() {
       };
 
       try {
+        setFormPendingState(formResources, {
+          pending: true,
+          pendingLabel: "Creating...",
+          progressSelector: "#resource-submit-progress",
+        });
         await requestJson(
           `/resources/category/${encodeURIComponent(categories[0])}`,
           {
@@ -1828,6 +1895,12 @@ function bindForms() {
         await loadAllData();
       } catch (error) {
         alert(error.message || "Failed to create resource");
+      } finally {
+        setFormPendingState(formResources, {
+          pending: false,
+          pendingLabel: "Create Resource",
+          progressSelector: "#resource-submit-progress",
+        });
       }
     });
 
@@ -1860,6 +1933,7 @@ function bindForms() {
   formEditResources &&
     formEditResources.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (formEditResources.dataset.pending === "true") return;
       if (!state.editContext || state.editContext.type !== "resource") return;
 
       const newName = qs("#edit-resource-name").value.trim();
@@ -1902,6 +1976,11 @@ function bindForms() {
       };
 
       try {
+        setFormPendingState(formEditResources, {
+          pending: true,
+          pendingLabel: "Saving...",
+          progressSelector: "#edit-resource-submit-progress",
+        });
         await requestJson(
           `/resources/category/${encodeURIComponent(state.editContext.oldCategory)}/${encodeURIComponent(state.editContext.oldName)}`,
           {
@@ -1916,6 +1995,12 @@ function bindForms() {
         await loadAllData();
       } catch (error) {
         alert(error.message || "Failed to update resource");
+      } finally {
+        setFormPendingState(formEditResources, {
+          pending: false,
+          pendingLabel: "Save Changes",
+          progressSelector: "#edit-resource-submit-progress",
+        });
       }
     });
 

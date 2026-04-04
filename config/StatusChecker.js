@@ -381,21 +381,16 @@ class StatusChecker {
         }
 
         if (keywords.length > 0) {
-          for (const kw of keywords) {
-            if (pageText.toLowerCase().includes(kw.toLowerCase())) {
-              return {
-                status: this.normalizeStatus(kw),
-                last_checked: new Date().toISOString(),
-                status_url: url,
-              };
-            } else {
-              return {
-                status: "Outage",
-                last_checked: new Date().toISOString(),
-                status_url: url,
-              };
-            }
-          }
+          const lowerPageText = pageText.toLowerCase();
+          const hasKeywordMatch = keywords.some((kw) =>
+            lowerPageText.includes(kw.toLowerCase()),
+          );
+
+          return {
+            status: hasKeywordMatch ? "Operational" : "Outage",
+            last_checked: new Date().toISOString(),
+            status_url: url,
+          };
         }
 
         for (const kw of [

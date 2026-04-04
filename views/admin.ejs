@@ -764,6 +764,16 @@
               <label for="resource-api-mapped-field" class="mt-3 block text-sm font-medium text-gray-900 mb-1">Mapped API Field</label>
               <input type="text" id="resource-api-mapped-field" name="resource-api-mapped-field" placeholder="e.g. page.status.description" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
             </div>
+
+            <div id="resource-submit-progress" class="hidden rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900" aria-live="polite">
+              <div class="flex items-center gap-2">
+                <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+                </svg>
+                <span>Creating resource and running the initial status check...</span>
+              </div>
+            </div>
           </div>
         </form>
       </div>
@@ -1005,6 +1015,16 @@
               </div>
               <label for="edit-resource-api-mapped-field" class="mt-3 block text-sm font-medium text-gray-900 mb-1">Mapped API Field</label>
               <input type="text" id="edit-resource-api-mapped-field" name="edit-resource-api-mapped-field" placeholder="e.g. page.status.description" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+            </div>
+
+            <div id="edit-resource-submit-progress" class="hidden rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900" aria-live="polite">
+              <div class="flex items-center gap-2">
+                <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+                </svg>
+                <span>Updating resource and running the initial status check...</span>
+              </div>
             </div>
           </div>
         </form>
