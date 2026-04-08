@@ -2,6 +2,8 @@
 
 ![Radar cover](cover.png)
 
+[![Ko-Fi](https://srv-cdn.himpfen.io/badges/kofi/kofi-flat.svg)](https://ko-fi.com/kevinmuscara) &nbsp; 
+
 Radar is a teacher friendly focused status dashboard for tracking the health of digital resources and infrastructure in one place.
 
 It provides:
@@ -11,6 +13,9 @@ It provides:
 - CSV import/export for bulk management
 - Issue reporting and announcement workflows
 - RSS feed output for integrations 
+
+If you wish to support continuous development, please consider [sponsoring](https://ko-fi.com/kevinnmuscara)
+
 
 ## Installation & Usage
 
