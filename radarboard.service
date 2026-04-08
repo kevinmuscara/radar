@@ -6,7 +6,7 @@ After=network.target
 User=root
 Group=root
 WorkingDirectory=/home/root/radar
-ExecStart=/usr/bin/node /home/root/radar/index.js
+ExecStart=/usr/bin/npm start
 Restart=always
 RestartSec=10
 Environment="NODE_ENV=production"
