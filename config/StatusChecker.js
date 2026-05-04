@@ -1,10 +1,12 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 const puppeteer = require("puppeteer");
+const nodemailer = require("nodemailer");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 const DatabaseManager = require("./DatabaseManager");
 const ResourceManager = require("./ResourceManager");
+const SetupManager = require("./SetupManager");
 
 const execFileAsync = promisify(execFile);
 
@@ -23,6 +25,220 @@ class StatusChecker {
     this.currentProgress = 0;
     this.totalResources = 0;
     this.currentResourceName = "";
+    this.mailTransporter = null;
+    this.mailTransporterCacheKey = "";
+  }
+
+  normalizeStatusToken(value) {
+    const normalized = this.toCanonicalStatus(value);
+    if (!normalized) return "Unknown";
+    return normalized;
+  }
+
+  isNotifiableStatus(status) {
+    const normalized = this.normalizeStatusToken(status);
+    return (
+      normalized === "Outage" ||
+      normalized === "Degraded" ||
+      normalized === "Maintenance"
+    );
+  }
+
+  getRecipientList(rawRecipients) {
+    return String(rawRecipients || "")
+      .split(/[\n,;]+/)
+      .map((entry) => String(entry || "").trim())
+      .filter(Boolean);
+  }
+
+  shouldSendStatusAlert(previousStatus, currentStatus) {
+    const previous = this.normalizeStatusToken(previousStatus);
+    const current = this.normalizeStatusToken(currentStatus);
+
+    if (!this.isNotifiableStatus(current)) {
+      return false;
+    }
+
+    return previous !== current;
+  }
+
+  getTransporterCacheKey(settings) {
+    return [
+      settings.smtpHost,
+      settings.smtpPort,
+      settings.smtpSecure ? "secure" : "insecure",
+      settings.smtpUsername,
+      settings.smtpPassword,
+    ].join("|");
+  }
+
+  getOrCreateTransporter(settings) {
+    const cacheKey = this.getTransporterCacheKey(settings);
+    if (this.mailTransporter && this.mailTransporterCacheKey === cacheKey) {
+      return this.mailTransporter;
+    }
+
+    this.mailTransporter = nodemailer.createTransport({
+      host: settings.smtpHost,
+      port: settings.smtpPort,
+      secure: settings.smtpSecure,
+      auth: settings.smtpUsername
+        ? {
+            user: settings.smtpUsername,
+            pass: settings.smtpPassword,
+          }
+        : undefined,
+    });
+    this.mailTransporterCacheKey = cacheKey;
+    return this.mailTransporter;
+  }
+
+  isTlsModeMismatchError(error) {
+    const message = String((error && error.message) || "").toLowerCase();
+    if (!message) return false;
+
+    return (
+      message.includes("wrong version number") ||
+      message.includes("tls_validate_record_header") ||
+      message.includes("ssl routines")
+    );
+  }
+
+  async notifyOnStatusChange(resource, previousStatus, currentStatus, statusUrl) {
+    try {
+      const resourceName = String(resource.resource_name || "Unknown Resource");
+      const normalizedCurrentStatus = this.normalizeStatusToken(currentStatus);
+      const normalizedPreviousStatus = this.normalizeStatusToken(previousStatus);
+
+      if (this.isNotifiableStatus(normalizedCurrentStatus)) {
+        console.log(
+          `[StatusChecker] Notification evaluation for ${resourceName}: previous=${normalizedPreviousStatus}, current=${normalizedCurrentStatus}`,
+        );
+      }
+
+      if (!this.isNotifiableStatus(normalizedCurrentStatus)) {
+        return;
+      }
+
+      if (normalizedPreviousStatus === normalizedCurrentStatus) {
+        console.log(
+          `[StatusChecker] Email alert skipped for ${resourceName}: status unchanged (${normalizedCurrentStatus})`,
+        );
+        return;
+      }
+
+      const settings = await SetupManager.getEmailNotificationSettings({
+        includePassword: true,
+      });
+
+      if (!settings.enabled) {
+        console.log(
+          `[StatusChecker] Email alert skipped for ${resourceName}: notifications are disabled`,
+        );
+        return;
+      }
+
+      const recipients = this.getRecipientList(settings.toEmails);
+      if (
+        !settings.smtpHost ||
+        !settings.smtpPort ||
+        !settings.fromEmail ||
+        recipients.length === 0
+      ) {
+        console.warn(
+          `[StatusChecker] Email alert skipped for ${resource.resource_name}: notification settings are incomplete`,
+        );
+        return;
+      }
+
+      console.log(
+        `[StatusChecker] Email alert preparing for ${resourceName}: smtpHost=${settings.smtpHost}, smtpPort=${settings.smtpPort}, secure=${settings.smtpSecure ? "yes" : "no"}, recipients=${recipients.length}`,
+      );
+
+      const transporter = this.getOrCreateTransporter(settings);
+      const timestamp = new Date().toISOString();
+      const subjectPrefix = settings.subjectPrefix || "Radar Alert";
+
+      const subject = `${subjectPrefix}: ${resourceName} is ${normalizedCurrentStatus}`;
+      const text = [
+        `${resourceName} changed status.`,
+        `Previous status: ${normalizedPreviousStatus}`,
+        `Current status: ${normalizedCurrentStatus}`,
+        `Status URL: ${statusUrl || resource.status_page || "N/A"}`,
+        `Detected at: ${timestamp}`,
+      ].join("\n");
+
+      const html = `
+        <p><strong>${resourceName}</strong> changed status.</p>
+        <p><strong>Previous status:</strong> ${normalizedPreviousStatus}<br>
+        <strong>Current status:</strong> ${normalizedCurrentStatus}<br>
+        <strong>Status URL:</strong> ${statusUrl || resource.status_page || "N/A"}<br>
+        <strong>Detected at:</strong> ${timestamp}</p>
+      `;
+
+      console.log(
+        `[StatusChecker] Attempting email alert send for ${resourceName} to ${recipients.join(", ")}`,
+      );
+
+      const mailPayload = {
+        from: settings.fromEmail,
+        to: recipients.join(", "),
+        subject,
+        text,
+        html,
+      };
+
+      let info;
+      try {
+        info = await transporter.sendMail(mailPayload);
+      } catch (sendError) {
+        const canRetryWithStartTls =
+          settings.smtpSecure === true &&
+          Number(settings.smtpPort) === 587 &&
+          this.isTlsModeMismatchError(sendError);
+
+        if (!canRetryWithStartTls) {
+          throw sendError;
+        }
+
+        console.warn(
+          `[StatusChecker] SMTP secure mode mismatch detected for ${resourceName} on port 587; retrying with STARTTLS (secure=false)`,
+        );
+
+        const fallbackTransporter = nodemailer.createTransport({
+          host: settings.smtpHost,
+          port: settings.smtpPort,
+          secure: false,
+          auth: settings.smtpUsername
+            ? {
+                user: settings.smtpUsername,
+                pass: settings.smtpPassword,
+              }
+            : undefined,
+        });
+
+        info = await fallbackTransporter.sendMail(mailPayload);
+
+        console.log(
+          `[StatusChecker] SMTP retry with STARTTLS succeeded for ${resourceName}`,
+        );
+      }
+
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+
+      console.log(
+        `[StatusChecker] Email alert sent for ${resourceName} (${normalizedCurrentStatus}) messageId=${info && info.messageId ? info.messageId : "unknown"}`,
+      );
+      if (previewUrl) {
+        console.log(
+          `[StatusChecker] Email preview URL for ${resourceName}: ${previewUrl}`,
+        );
+      }
+    } catch (notifyError) {
+      console.error(
+        `[StatusChecker] Failed to send email alert for ${resource.resource_name}: ${notifyError.message}`,
+      );
+    }
   }
 
   async fetchPageBodyText(url) {
@@ -539,6 +755,13 @@ class StatusChecker {
               : resource.resource_name;
 
             try {
+              const previousStatusRecord =
+                await DatabaseManager.getResourceStatusByName(
+                  resource.resource_name,
+                );
+              const previousStatus = previousStatusRecord
+                ? previousStatusRecord.status
+                : "Unknown";
               const statusData = await this.checkResourceStatus(resource);
 
               await DatabaseManager.updateResourceStatus(
@@ -547,6 +770,13 @@ class StatusChecker {
                 statusData.status,
                 statusData.status_url,
                 statusData.last_checked,
+              );
+
+              await this.notifyOnStatusChange(
+                resource,
+                previousStatus,
+                statusData.status,
+                statusData.status_url,
               );
 
               if (isRetry) {

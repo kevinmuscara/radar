@@ -7,7 +7,7 @@
   <link href="/css/animate.css" rel="stylesheet">
   <title><%= config.branding.schoolName %> Admin Dashboard</title>
 </head>
-<body class="admin-page relative min-h-screen overflow-x-hidden bg-[#FCFBF4]" data-role="<%= (currentUser && currentUser.role) ? currentUser.role : 'superadmin' %>" data-is-superadmin="<%= isSuperAdmin ? 'true' : 'false' %>" data-school-name="<%= config.branding.schoolName %>" data-refresh-interval="<%= config.refreshIntervalMinutes %>" data-admin-username="<%= (config.adminUser && config.adminUser.username) ? config.adminUser.username : 'admin' %>" data-branding-logo="<%= config.branding.logo %>">
+<body class="admin-page relative min-h-screen overflow-x-hidden bg-[#FCFBF4]" data-role="<%= (currentUser && currentUser.role) ? currentUser.role : 'superadmin' %>" data-is-superadmin="<%= isSuperAdmin ? 'true' : 'false' %>" data-school-name="<%= config.branding.schoolName %>" data-refresh-interval="<%= config.refreshIntervalMinutes %>" data-admin-username="<%= (config.adminUser && config.adminUser.username) ? config.adminUser.username : 'admin' %>" data-branding-logo="<%= config.branding.logo %>" data-notify-enabled="<%= config.emailNotifications && config.emailNotifications.enabled ? 'true' : 'false' %>" data-notify-smtp-host="<%= config.emailNotifications ? config.emailNotifications.smtpHost : '' %>" data-notify-smtp-port="<%= config.emailNotifications ? config.emailNotifications.smtpPort : 587 %>" data-notify-smtp-secure="<%= config.emailNotifications && config.emailNotifications.smtpSecure ? 'true' : 'false' %>" data-notify-smtp-username="<%= config.emailNotifications ? config.emailNotifications.smtpUsername : '' %>" data-notify-smtp-password-set="<%= config.emailNotifications && config.emailNotifications.smtpPasswordSet ? 'true' : 'false' %>" data-notify-from-email="<%= config.emailNotifications ? config.emailNotifications.fromEmail : '' %>" data-notify-to-emails="<%= config.emailNotifications ? config.emailNotifications.toEmails : '' %>" data-notify-subject-prefix="<%= config.emailNotifications ? config.emailNotifications.subjectPrefix : 'Radar Alert' %>">
   <div id="wave-container" class="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true"></div>
   <div class="relative z-10 mx-auto max-w-7xl px-4 pt-10 pb-96 sm:pb-64 lg:pb-32 sm:px-6 lg:px-8">
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-8">
@@ -592,6 +592,58 @@
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+
+            <div class="rounded-lg border border-gray-300 bg-white p-4 shadow-sm sm:p-5" style="padding: 20px; border-width: 1px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);">
+              <h3 class="text-lg font-semibold text-gray-900">Email Notifications</h3>
+              <p class="mt-1 text-sm text-gray-600">Send custom email alerts when a resource becomes non-operational.</p>
+
+              <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-900 md:col-span-2" for="notifications-enabled">
+                  <input id="notifications-enabled" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                  Enable email notifications
+                </label>
+
+                <div>
+                  <label for="notifications-smtp-host" class="block text-sm font-medium text-gray-900">SMTP Host</label>
+                  <input id="notifications-smtp-host" type="text" placeholder="smtp.example.com" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                </div>
+
+                <div>
+                  <label for="notifications-smtp-port" class="block text-sm font-medium text-gray-900">SMTP Port</label>
+                  <input id="notifications-smtp-port" type="number" min="1" step="1" inputmode="numeric" placeholder="587" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                </div>
+
+                <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-900 md:col-span-2" for="notifications-smtp-secure">
+                  <input id="notifications-smtp-secure" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                  Use secure SMTP (SSL/TLS)
+                </label>
+
+                <div>
+                  <label for="notifications-smtp-username" class="block text-sm font-medium text-gray-900">SMTP Username</label>
+                  <input id="notifications-smtp-username" type="text" placeholder="alerts@example.com" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                </div>
+
+                <div>
+                  <label for="notifications-smtp-password" class="block text-sm font-medium text-gray-900">SMTP Password</label>
+                  <input id="notifications-smtp-password" type="password" placeholder="Leave blank to keep current password" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                </div>
+
+                <div>
+                  <label for="notifications-from-email" class="block text-sm font-medium text-gray-900">From Email</label>
+                  <input id="notifications-from-email" type="email" placeholder="alerts@example.com" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                </div>
+
+                <div>
+                  <label for="notifications-to-emails" class="block text-sm font-medium text-gray-900">Recipient Emails</label>
+                  <input id="notifications-to-emails" type="text" placeholder="admin@example.com, ops@example.com" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                </div>
+
+                <div class="md:col-span-2">
+                  <label for="notifications-subject-prefix" class="block text-sm font-medium text-gray-900">Subject Prefix</label>
+                  <input id="notifications-subject-prefix" type="text" placeholder="Radar Alert" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                </div>
               </div>
             </div>
 

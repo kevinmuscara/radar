@@ -59,6 +59,12 @@ function queueDefinitionStatusCheck(resourceName, definitionPayload, action) {
 
   setImmediate(async () => {
     try {
+      const previousStatusRecord = await dbManager.getResourceStatusByName(
+        resourceName,
+      );
+      const previousStatus = previousStatusRecord
+        ? previousStatusRecord.status
+        : "Unknown";
       const statusData = await statusChecker.checkResourceStatus(definitionPayload);
       await dbManager.updateResourceStatus(
         null,
@@ -66,6 +72,15 @@ function queueDefinitionStatusCheck(resourceName, definitionPayload, action) {
         statusData.status,
         statusData.status_url || definitionPayload.status_page,
         statusData.last_checked,
+      );
+      await statusChecker.notifyOnStatusChange(
+        {
+          resource_name: resourceName,
+          status_page: definitionPayload.status_page,
+        },
+        previousStatus,
+        statusData.status,
+        statusData.status_url || definitionPayload.status_page,
       );
       console.log(
         `[Resources] Completed initial status check for ${action} resource ${resourceName} in ${Date.now() - queuedAt}ms`,
@@ -192,6 +207,12 @@ async function processImportJob(job, rows) {
       try {
         resourceDef = await resources.getDefinition(resourceName);
         if (resourceDef) {
+          const previousStatusRecord = await dbManager.getResourceStatusByName(
+            resourceName,
+          );
+          const previousStatus = previousStatusRecord
+            ? previousStatusRecord.status
+            : "Unknown";
           const statusData =
             await statusChecker.checkResourceStatus(resourceDef);
           await dbManager.updateResourceStatus(
@@ -200,6 +221,12 @@ async function processImportJob(job, rows) {
             statusData.status,
             statusData.status_url || resourceDef.status_page,
             statusData.last_checked,
+          );
+          await statusChecker.notifyOnStatusChange(
+            resourceDef,
+            previousStatus,
+            statusData.status,
+            statusData.status_url || resourceDef.status_page,
           );
         }
       } catch (error) {

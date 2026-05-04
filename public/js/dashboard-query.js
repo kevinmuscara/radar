@@ -23,6 +23,8 @@
   const currentIssuesCount = document.getElementById("current-issues-count");
   const currentIssuesEmpty = document.getElementById("current-issues-empty");
   let announcementExpiryTimeoutId = null;
+  const AUTO_REFRESH_INTERVAL_MS = 30 * 1000;
+  let autoRefreshIntervalId = null;
 
   function clearAnnouncementExpiryTimer() {
     if (announcementExpiryTimeoutId !== null) {
@@ -81,6 +83,43 @@
 
   scheduleAnnouncementExpiryCheck();
 
+  function shouldSkipAutoRefresh() {
+    if (document.hidden) {
+      return true;
+    }
+
+    const activeElement = document.activeElement;
+    if (activeElement && activeElement.id === "search-input") {
+      return true;
+    }
+
+    return false;
+  }
+
+  function startAutoRefresh() {
+    if (autoRefreshIntervalId !== null) {
+      return;
+    }
+
+    autoRefreshIntervalId = window.setInterval(() => {
+      if (shouldSkipAutoRefresh()) {
+        return;
+      }
+      window.location.reload();
+    }, AUTO_REFRESH_INTERVAL_MS);
+  }
+
+  function stopAutoRefresh() {
+    if (autoRefreshIntervalId === null) {
+      return;
+    }
+
+    window.clearInterval(autoRefreshIntervalId);
+    autoRefreshIntervalId = null;
+  }
+
+  startAutoRefresh();
+
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       clearAnnouncementExpiryTimer();
@@ -92,6 +131,7 @@
 
   window.addEventListener("pagehide", clearAnnouncementExpiryTimer);
   window.addEventListener("beforeunload", clearAnnouncementExpiryTimer);
+  window.addEventListener("beforeunload", stopAutoRefresh);
 
   if (!searchInput || !searchForm) {
     return;

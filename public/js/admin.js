@@ -2243,10 +2243,37 @@ function bindForms() {
         "";
       const username = document.body.dataset.adminUsername || "admin";
       const logo = qs("#school-logo")?.files?.[0];
+      const notificationsEnabled =
+        qs("#notifications-enabled")?.checked === true ? "true" : "false";
+      const notificationsSmtpHost =
+        qs("#notifications-smtp-host")?.value?.trim() || "";
+      const notificationsSmtpPort =
+        qs("#notifications-smtp-port")?.value?.trim() || "";
+      const notificationsSmtpSecure =
+        qs("#notifications-smtp-secure")?.checked === true ? "true" : "false";
+      const notificationsSmtpUsername =
+        qs("#notifications-smtp-username")?.value?.trim() || "";
+      const notificationsSmtpPassword =
+        qs("#notifications-smtp-password")?.value || "";
+      const notificationsFromEmail =
+        qs("#notifications-from-email")?.value?.trim() || "";
+      const notificationsToEmails =
+        qs("#notifications-to-emails")?.value?.trim() || "";
+      const notificationsSubjectPrefix =
+        qs("#notifications-subject-prefix")?.value?.trim() || "";
 
       formData.set("username", username);
       formData.set("password", "");
       formData.set("schoolName", schoolName);
+      formData.set("notificationsEnabled", notificationsEnabled);
+      formData.set("notificationsSmtpHost", notificationsSmtpHost);
+      formData.set("notificationsSmtpPort", notificationsSmtpPort);
+      formData.set("notificationsSmtpSecure", notificationsSmtpSecure);
+      formData.set("notificationsSmtpUsername", notificationsSmtpUsername);
+      formData.set("notificationsSmtpPassword", notificationsSmtpPassword);
+      formData.set("notificationsFromEmail", notificationsFromEmail);
+      formData.set("notificationsToEmails", notificationsToEmails);
+      formData.set("notificationsSubjectPrefix", notificationsSubjectPrefix);
       if (logo) formData.set("logo", logo);
 
       try {
@@ -2324,16 +2351,48 @@ function initDefaultsFromServer() {
   const schoolName = document.body.dataset.schoolName || "";
   const interval = document.body.dataset.refreshInterval || "30";
   const brandingLogo = document.body.dataset.brandingLogo || "";
+  const notifyEnabled = document.body.dataset.notifyEnabled === "true";
+  const notifySmtpHost = document.body.dataset.notifySmtpHost || "";
+  const notifySmtpPort = document.body.dataset.notifySmtpPort || "587";
+  const notifySmtpSecure = document.body.dataset.notifySmtpSecure === "true";
+  const notifySmtpUsername = document.body.dataset.notifySmtpUsername || "";
+  const notifyFromEmail = document.body.dataset.notifyFromEmail || "";
+  const notifyToEmails = document.body.dataset.notifyToEmails || "";
+  const notifySubjectPrefix =
+    document.body.dataset.notifySubjectPrefix || "Radar Alert";
+  const notifySmtpPasswordSet =
+    document.body.dataset.notifySmtpPasswordSet === "true";
   const schoolInput = qs("#school\\.name");
   const intervalInput = qs("#status-check-interval");
   const uploadLabelText = qs(
     'label[for="school-logo"] span.text-sm.font-medium.text-gray-700',
   );
+  const notifyEnabledInput = qs("#notifications-enabled");
+  const notifySmtpHostInput = qs("#notifications-smtp-host");
+  const notifySmtpPortInput = qs("#notifications-smtp-port");
+  const notifySmtpSecureInput = qs("#notifications-smtp-secure");
+  const notifySmtpUsernameInput = qs("#notifications-smtp-username");
+  const notifySmtpPasswordInput = qs("#notifications-smtp-password");
+  const notifyFromEmailInput = qs("#notifications-from-email");
+  const notifyToEmailsInput = qs("#notifications-to-emails");
+  const notifySubjectPrefixInput = qs("#notifications-subject-prefix");
   const announcementExpiry = qs("#announcement-expires");
   const editAnnouncementExpiry = qs("#edit-announcement-expires");
 
   schoolInput && (schoolInput.value = schoolName);
   intervalInput && (intervalInput.value = interval);
+  notifyEnabledInput && (notifyEnabledInput.checked = notifyEnabled);
+  notifySmtpHostInput && (notifySmtpHostInput.value = notifySmtpHost);
+  notifySmtpPortInput && (notifySmtpPortInput.value = notifySmtpPort);
+  notifySmtpSecureInput && (notifySmtpSecureInput.checked = notifySmtpSecure);
+  notifySmtpUsernameInput && (notifySmtpUsernameInput.value = notifySmtpUsername);
+  notifyFromEmailInput && (notifyFromEmailInput.value = notifyFromEmail);
+  notifyToEmailsInput && (notifyToEmailsInput.value = notifyToEmails);
+  notifySubjectPrefixInput &&
+    (notifySubjectPrefixInput.value = notifySubjectPrefix);
+  if (notifySmtpPasswordInput && notifySmtpPasswordSet) {
+    notifySmtpPasswordInput.placeholder = "Password already saved (leave blank to keep)";
+  }
   if (uploadLabelText && brandingLogo) {
     uploadLabelText.textContent = `Current logo: ${brandingLogo} (click to replace)`;
   }

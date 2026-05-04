@@ -34,6 +34,15 @@ class SetupManager {
     await this.#setSetting("branding_logo", "logo.png");
     await this.#setSetting("branding_schoolName", "Your School Name");
     await this.#setSetting("refresh_interval_minutes", "30");
+    await this.#setSetting("notifications_enabled", "false");
+    await this.#setSetting("notifications_smtp_host", "");
+    await this.#setSetting("notifications_smtp_port", "587");
+    await this.#setSetting("notifications_smtp_secure", "false");
+    await this.#setSetting("notifications_smtp_username", "");
+    await this.#setSetting("notifications_smtp_password", "");
+    await this.#setSetting("notifications_from_email", "");
+    await this.#setSetting("notifications_to_emails", "");
+    await this.#setSetting("notifications_subject_prefix", "Radar Alert");
     bcrypt.genSalt(10, (_err, salt) => {
       bcrypt.hash("password", salt, (_err, hash) => {
         this.#setSetting(
@@ -239,6 +248,9 @@ class SetupManager {
     const adminUser = await this.getAdminUser();
     const setupComplete = await this.isSetupComplete();
     const refreshIntervalMinutes = await this.getRefreshIntervalMinutes();
+    const emailNotifications = await this.getEmailNotificationSettings({
+      includePassword: false,
+    });
 
     return {
       branding: {
@@ -248,7 +260,92 @@ class SetupManager {
       adminUser,
       setupComplete,
       refreshIntervalMinutes,
+      emailNotifications,
     };
+  }
+
+  async getEmailNotificationSettings(options = {}) {
+    await this.ready;
+    const includePassword = Boolean(options.includePassword);
+
+    const enabledRaw = await this.#getSetting("notifications_enabled");
+    const smtpHost = (await this.#getSetting("notifications_smtp_host")) || "";
+    const smtpPortRaw = await this.#getSetting("notifications_smtp_port");
+    const smtpSecureRaw = await this.#getSetting("notifications_smtp_secure");
+    const smtpUsername =
+      (await this.#getSetting("notifications_smtp_username")) || "";
+    const smtpPassword =
+      (await this.#getSetting("notifications_smtp_password")) || "";
+    const fromEmail =
+      (await this.#getSetting("notifications_from_email")) || "";
+    const toEmails =
+      (await this.#getSetting("notifications_to_emails")) || "";
+    const subjectPrefix =
+      (await this.#getSetting("notifications_subject_prefix")) ||
+      "Radar Alert";
+
+    const smtpPortParsed = parseInt(smtpPortRaw, 10);
+    const smtpPort =
+      Number.isFinite(smtpPortParsed) && smtpPortParsed > 0
+        ? smtpPortParsed
+        : 587;
+
+    const settings = {
+      enabled: enabledRaw === "true",
+      smtpHost: String(smtpHost).trim(),
+      smtpPort,
+      smtpSecure: smtpSecureRaw === "true",
+      smtpUsername: String(smtpUsername).trim(),
+      smtpPasswordSet: Boolean(String(smtpPassword).trim()),
+      fromEmail: String(fromEmail).trim(),
+      toEmails: String(toEmails).trim(),
+      subjectPrefix: String(subjectPrefix).trim() || "Radar Alert",
+    };
+
+    if (includePassword) {
+      return {
+        ...settings,
+        smtpPassword,
+      };
+    }
+
+    return settings;
+  }
+
+  async updateEmailNotificationSettings(payload = {}) {
+    await this.ready;
+
+    const enabled =
+      String(payload.enabled || "").trim().toLowerCase() === "true";
+    const smtpHost = String(payload.smtpHost || "").trim();
+    const smtpPortInput = String(payload.smtpPort || "").trim();
+    const smtpSecure =
+      String(payload.smtpSecure || "").trim().toLowerCase() === "true";
+    const smtpUsername = String(payload.smtpUsername || "").trim();
+    const smtpPasswordInput = String(payload.smtpPassword || "");
+    const fromEmail = String(payload.fromEmail || "").trim();
+    const toEmails = String(payload.toEmails || "").trim();
+    const subjectPrefix =
+      String(payload.subjectPrefix || "").trim() || "Radar Alert";
+
+    const parsedPort = parseInt(smtpPortInput, 10);
+    const smtpPort =
+      Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 587;
+
+    await this.#setSetting("notifications_enabled", enabled ? "true" : "false");
+    await this.#setSetting("notifications_smtp_host", smtpHost);
+    await this.#setSetting("notifications_smtp_port", String(smtpPort));
+    await this.#setSetting(
+      "notifications_smtp_secure",
+      smtpSecure ? "true" : "false",
+    );
+    await this.#setSetting("notifications_smtp_username", smtpUsername);
+    if (smtpPasswordInput.trim()) {
+      await this.#setSetting("notifications_smtp_password", smtpPasswordInput);
+    }
+    await this.#setSetting("notifications_from_email", fromEmail);
+    await this.#setSetting("notifications_to_emails", toEmails);
+    await this.#setSetting("notifications_subject_prefix", subjectPrefix);
   }
 
   async isSetupComplete() {

@@ -106,7 +106,44 @@ router.post(
       statusChecker.updateInterval(intervalMs);
     }
 
+    await configuration.updateEmailNotificationSettings({
+      enabled: request.body.notificationsEnabled,
+      smtpHost: request.body.notificationsSmtpHost,
+      smtpPort: request.body.notificationsSmtpPort,
+      smtpSecure: request.body.notificationsSmtpSecure,
+      smtpUsername: request.body.notificationsSmtpUsername,
+      smtpPassword: request.body.notificationsSmtpPassword,
+      fromEmail: request.body.notificationsFromEmail,
+      toEmails: request.body.notificationsToEmails,
+      subjectPrefix: request.body.notificationsSubjectPrefix,
+    });
+
     response.redirect("/admin");
+  },
+);
+
+router.post(
+  "/notification-settings",
+  checkSuperAdmin,
+  async (request, response) => {
+    await configuration.updateEmailNotificationSettings({
+      enabled: request.body.enabled,
+      smtpHost: request.body.smtpHost,
+      smtpPort: request.body.smtpPort,
+      smtpSecure: request.body.smtpSecure,
+      smtpUsername: request.body.smtpUsername,
+      smtpPassword: request.body.smtpPassword,
+      fromEmail: request.body.fromEmail,
+      toEmails: request.body.toEmails,
+      subjectPrefix: request.body.subjectPrefix,
+    });
+
+    response.json({
+      status: 200,
+      emailNotifications: await configuration.getEmailNotificationSettings({
+        includePassword: false,
+      }),
+    });
   },
 );
 
