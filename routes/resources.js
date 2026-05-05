@@ -91,6 +91,19 @@ function queueDefinitionStatusCheck(resourceName, definitionPayload, action) {
         error.message,
       );
       try {
+        await dbManager.updateResourceStatus(
+          null,
+          resourceName,
+          "Unknown",
+          definitionPayload.status_page || null,
+          new Date().toISOString(),
+        );
+      } catch (updateError) {
+        console.error(
+          `[Resources] Failed to set Unknown status for ${resourceName}: ${updateError.message}`,
+        );
+      }
+      try {
         await dbManager.logStatusCheckError(
           null,
           resourceName,
@@ -234,6 +247,19 @@ async function processImportJob(job, rows) {
           `[Resources] Failed to check status for imported resource ${resourceName}:`,
           error.message,
         );
+        try {
+          await dbManager.updateResourceStatus(
+            resourceDef ? resourceDef.id || null : null,
+            resourceName,
+            "Unknown",
+            resourceDef ? resourceDef.status_page || null : null,
+            new Date().toISOString(),
+          );
+        } catch (updateError) {
+          console.error(
+            `[Resources] Failed to set Unknown status for imported resource ${resourceName}: ${updateError.message}`,
+          );
+        }
         await dbManager.logStatusCheckError(
           resourceDef ? resourceDef.id || null : null,
           resourceName,
@@ -344,10 +370,22 @@ router.get("/", async (_request, response) => {
   response.json({ status: 200, resources: allResources });
 });
 
+router.get("/tags/id/:resourceId", async (request, response) => {
+  const { resourceId } = request.params;
+  const categories = await resources.getResourceCategoriesById(Number(resourceId));
+  response.json({ status: 200, categories });
+});
+
 router.get("/tags/:resourceName", async (request, response) => {
   const { resourceName } = request.params;
   const categories = await resources.getResourceCategories(resourceName);
   response.json({ status: 200, categories });
+});
+
+router.delete("/id/:resourceId", checkResourceManagerAccess, async (request, response) => {
+  const { resourceId } = request.params;
+  await resources.removeResourceById(Number(resourceId));
+  response.json({ status: 200 });
 });
 
 router.get("/categories", async (_request, response) => {

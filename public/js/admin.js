@@ -757,7 +757,7 @@ function renderResources() {
           <button type="button" aria-label="Edit ${escapeHtml(resource.resource_name)}" class="edit-btn-animated rounded border border-gray-300 p-1.5 text-gray-700 hover:bg-gray-100" data-edit-type="resource" data-edit-name="${escapeHtml(resource.resource_name)}" data-edit-url="${escapeHtml(resource.status_page)}" data-edit-category="${escapeHtml(resource.primaryCategory || "")}" data-edit-categories="${escapeHtml(JSON.stringify(resource.categories || []))}" data-edit-check-type="${escapeHtml(resource.check_type || "api")}" data-edit-scrape-keywords="${escapeHtml(resource.scrape_keywords || "")}" data-edit-api-config="${escapeHtml(resource.api_config || "")}" data-edit-favicon="${escapeHtml(resource.favicon_url || "")}">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931ZM19.5 7.125 16.875 4.5"/></svg>
           </button>
-          <button type="button" aria-label="Delete ${escapeHtml(resource.resource_name)}" class="delete-btn-animated rounded border border-gray-300 p-1.5 text-gray-700 hover:bg-gray-100" data-delete-type="resource" data-delete-item="${escapeHtml(resource.resource_name)}" data-resource-name="${escapeHtml(resource.resource_name)}">
+          <button type="button" aria-label="Delete ${escapeHtml(resource.resource_name)}" class="delete-btn-animated rounded border border-gray-300 p-1.5 text-gray-700 hover:bg-gray-100" data-delete-type="resource" data-delete-item="${escapeHtml(resource.resource_name)}" data-resource-name="${escapeHtml(resource.resource_name)}" data-resource-id="${resource.id != null ? resource.id : ""}">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21.75H8.084a2.25 2.25 0 0 1-2.245-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
           </button>
         </div>
@@ -933,8 +933,10 @@ async function loadAllData() {
   Object.entries(resourcesRes.resources || {}).forEach(([category, list]) => {
     (list || []).forEach((resource) => {
       if (!resource || !resource.resource_name) return;
-      if (!resourceMap.has(resource.resource_name)) {
-        resourceMap.set(resource.resource_name, {
+      const key = resource.id != null ? resource.id : `${resource.resource_name}::${resource.status_page}`;
+      if (!resourceMap.has(key)) {
+        resourceMap.set(key, {
+          id: resource.id,
           resource_name: resource.resource_name,
           status_page: resource.status_page || "",
           favicon_url: resource.favicon_url || "",
@@ -944,7 +946,7 @@ async function loadAllData() {
           categories: [],
         });
       }
-      const item = resourceMap.get(resource.resource_name);
+      const item = resourceMap.get(key);
       if (!item.categories.includes(category)) item.categories.push(category);
       item.primaryCategory = item.categories[0] || category;
     });
@@ -1441,6 +1443,14 @@ async function handleDelete(type, button) {
   }
 
   if (type === "resource") {
+    const resourceId = button.getAttribute("data-resource-id");
+    if (resourceId) {
+      await requestJson(`/resources/id/${encodeURIComponent(resourceId)}`, {
+        method: "DELETE",
+      });
+      return;
+    }
+    // Fallback for resources without an ID (legacy path)
     const resourceName = button.getAttribute("data-resource-name");
     const tags = await requestJson(
       `/resources/tags/${encodeURIComponent(resourceName)}`,
@@ -2243,37 +2253,10 @@ function bindForms() {
         "";
       const username = document.body.dataset.adminUsername || "admin";
       const logo = qs("#school-logo")?.files?.[0];
-      const notificationsEnabled =
-        qs("#notifications-enabled")?.checked === true ? "true" : "false";
-      const notificationsSmtpHost =
-        qs("#notifications-smtp-host")?.value?.trim() || "";
-      const notificationsSmtpPort =
-        qs("#notifications-smtp-port")?.value?.trim() || "";
-      const notificationsSmtpSecure =
-        qs("#notifications-smtp-secure")?.checked === true ? "true" : "false";
-      const notificationsSmtpUsername =
-        qs("#notifications-smtp-username")?.value?.trim() || "";
-      const notificationsSmtpPassword =
-        qs("#notifications-smtp-password")?.value || "";
-      const notificationsFromEmail =
-        qs("#notifications-from-email")?.value?.trim() || "";
-      const notificationsToEmails =
-        qs("#notifications-to-emails")?.value?.trim() || "";
-      const notificationsSubjectPrefix =
-        qs("#notifications-subject-prefix")?.value?.trim() || "";
 
       formData.set("username", username);
       formData.set("password", "");
       formData.set("schoolName", schoolName);
-      formData.set("notificationsEnabled", notificationsEnabled);
-      formData.set("notificationsSmtpHost", notificationsSmtpHost);
-      formData.set("notificationsSmtpPort", notificationsSmtpPort);
-      formData.set("notificationsSmtpSecure", notificationsSmtpSecure);
-      formData.set("notificationsSmtpUsername", notificationsSmtpUsername);
-      formData.set("notificationsSmtpPassword", notificationsSmtpPassword);
-      formData.set("notificationsFromEmail", notificationsFromEmail);
-      formData.set("notificationsToEmails", notificationsToEmails);
-      formData.set("notificationsSubjectPrefix", notificationsSubjectPrefix);
       if (logo) formData.set("logo", logo);
 
       try {
@@ -2285,6 +2268,67 @@ function bindForms() {
         window.location.reload();
       } catch (error) {
         alert(error.message || "Failed to update settings");
+      }
+    });
+
+  const notificationForm = qs("#notification-settings-form");
+  notificationForm &&
+    notificationForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const payload = {
+        enabled: qs("#notifications-enabled")?.checked === true,
+        smtpHost: qs("#notifications-smtp-host")?.value?.trim() || "",
+        smtpPort: qs("#notifications-smtp-port")?.value?.trim() || "",
+        smtpSecure: qs("#notifications-smtp-secure")?.checked === true,
+        smtpUsername: qs("#notifications-smtp-username")?.value?.trim() || "",
+        smtpPassword: qs("#notifications-smtp-password")?.value || "",
+        fromEmail: qs("#notifications-from-email")?.value?.trim() || "",
+        toEmails: qs("#notifications-to-emails")?.value?.trim() || "",
+        subjectPrefix:
+          qs("#notifications-subject-prefix")?.value?.trim() || "",
+      };
+
+      try {
+        const result = await requestJson("/setup/notification-settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const notifications = result.emailNotifications || {};
+        document.body.dataset.notifyEnabled = notifications.enabled
+          ? "true"
+          : "false";
+        document.body.dataset.notifySmtpHost = notifications.smtpHost || "";
+        document.body.dataset.notifySmtpPort = String(
+          notifications.smtpPort || "587",
+        );
+        document.body.dataset.notifySmtpSecure = notifications.smtpSecure
+          ? "true"
+          : "false";
+        document.body.dataset.notifySmtpUsername =
+          notifications.smtpUsername || "";
+        document.body.dataset.notifySmtpPasswordSet = notifications.smtpPasswordSet
+          ? "true"
+          : "false";
+        document.body.dataset.notifyFromEmail = notifications.fromEmail || "";
+        document.body.dataset.notifyToEmails = notifications.toEmails || "";
+        document.body.dataset.notifySubjectPrefix =
+          notifications.subjectPrefix || "Radar Alert";
+
+        const passwordInput = qs("#notifications-smtp-password");
+        if (passwordInput) {
+          passwordInput.value = "";
+          if (notifications.smtpPasswordSet) {
+            passwordInput.placeholder =
+              "Password already saved (leave blank to keep)";
+          }
+        }
+
+        alert("Notification settings updated");
+      } catch (error) {
+        alert(error.message || "Failed to update notification settings");
       }
     });
 

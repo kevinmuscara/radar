@@ -383,6 +383,40 @@ class ResourceManager {
     }
   }
 
+  async getResourceCategoriesById(resourceId) {
+    await this.ready;
+    const db = await this.dbManager.getDb();
+    const rows = await db.all(
+      `SELECT c.name
+         FROM resource_category_mapping m
+         JOIN categories c ON m.category_id = c.id
+         WHERE m.resource_id = ?`,
+      [resourceId],
+    );
+    return rows.map((r) => r.name);
+  }
+
+  async removeResourceById(resourceId) {
+    await this.ready;
+    const db = await this.dbManager.getDb();
+
+    const resRow = await db.get(
+      "SELECT name FROM resource_definitions WHERE id = ?",
+      [resourceId],
+    );
+    if (!resRow) return;
+
+    await db.run(
+      "DELETE FROM resource_category_mapping WHERE resource_id = ?",
+      [resourceId],
+    );
+    await db.run(
+      "DELETE FROM resource_definitions WHERE id = ?",
+      [resourceId],
+    );
+    await this.dbManager.deleteIssueReportsByResourceName(resRow.name);
+  }
+
   async updateResource(
     category,
     oldResourceName,

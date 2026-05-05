@@ -8,6 +8,7 @@ lerna-debug.log*
 *.DS_Store
 site/
 
+credentials.txt
 public/css/output.css
 
 package-lock.json

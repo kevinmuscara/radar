@@ -599,7 +599,8 @@
               <h3 class="text-lg font-semibold text-gray-900">Email Notifications</h3>
               <p class="mt-1 text-sm text-gray-600">Send custom email alerts when a resource becomes non-operational.</p>
 
-              <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <form id="notification-settings-form" class="mt-4">
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-900 md:col-span-2" for="notifications-enabled">
                   <input id="notifications-enabled" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                   Enable email notifications
@@ -645,6 +646,13 @@
                   <input id="notifications-subject-prefix" type="text" placeholder="Radar Alert" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
                 </div>
               </div>
+
+              <div class="mt-4">
+                <button class="block w-full rounded-lg border border-blue-600 bg-blue-600 px-12 py-3 text-sm font-medium text-white transition-colors hover:bg-transparent hover:text-blue-600" type="submit">
+                  Update Notification Settings
+                </button>
+              </div>
+              </form>
             </div>
 
             <div class="rounded-lg border border-gray-300 bg-white p-4 shadow-sm sm:p-5" style="padding: 20px; border-width: 1px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); position: relative;">

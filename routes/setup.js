@@ -106,18 +106,6 @@ router.post(
       statusChecker.updateInterval(intervalMs);
     }
 
-    await configuration.updateEmailNotificationSettings({
-      enabled: request.body.notificationsEnabled,
-      smtpHost: request.body.notificationsSmtpHost,
-      smtpPort: request.body.notificationsSmtpPort,
-      smtpSecure: request.body.notificationsSmtpSecure,
-      smtpUsername: request.body.notificationsSmtpUsername,
-      smtpPassword: request.body.notificationsSmtpPassword,
-      fromEmail: request.body.notificationsFromEmail,
-      toEmails: request.body.notificationsToEmails,
-      subjectPrefix: request.body.notificationsSubjectPrefix,
-    });
-
     response.redirect("/admin");
   },
 );
