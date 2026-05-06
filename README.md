@@ -5,7 +5,7 @@
  
 ![Radar cover](cover.png)
 
-[![Ko-Fi](https://srv-cdn.himpfen.io/badges/kofi/kofi-flat.svg)](https://ko-fi.com/kevinmuscara) &nbsp; 
+[![BuyMeACoffee](https://raw.githubusercontent.com/pachadotdev/buymeacoffee-badges/main/bmc-donate-yellow.svg)](https://www.buymeacoffee.com/muscara)
 
 Radar is a teacher friendly focused status dashboard for tracking the health of digital resources and infrastructure in one place.
 
@@ -17,7 +17,7 @@ It provides:
 - Issue reporting and announcement workflows
 - RSS feed output for integrations 
 
-If you wish to support continuous development, please consider [sponsoring](https://ko-fi.com/kevinnmuscara)
+If you wish to support continuous development, please consider [sponsoring](https://buymeacoffee.com/muscara)
 
 
 ## Installation & Usage
