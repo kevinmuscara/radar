@@ -1,0 +1,114 @@
+category,resource_name,status_page,favicon_url,check_type,scrape_keywords,api_config
+K-8|K-5,Zearn,https://status.zearn.org,,heartbeat,,
+K-8|K-5,BrainPOP ELL,https://status.brainpop.com,,heartbeat,,
+K-8|K-5,Legends of Learning,https://legendsoflearning.com,,heartbeat,,
+K-8|K-5,Prodigy,https://prodigy.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Schoology Learning,https://status.powerschool.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[80].status""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Google Workspace for Education,https://www.google.com/appsstatus/dashboard/,,scrape,No incidents,
+K-8|K-5|K-12|9-12|6-12|6-8,Canva for Education,https://www.canvastatus.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,WeVideo,https://status.wevideo.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Socrative,https://status.socrative.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Lumio (formerly SMART Learning Suite Online),https://status.smarttech.com/,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Screencastify,https://status.screencastify.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,SchoolAI,https://status.schoolai.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Remind,https://status.remind.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Pear Assessment (formerly Edulastic),https://status.peardeck.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[0].status""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Pear Deck,https://status.peardeck.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[1].status""}"
+K-8|K-5|K-12|9-12|6-12|6-8,OverDrive,https://status.overdrive.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Sora,https://status.openai.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[0].status""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Newsela,https://status.newsela.com/,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Nearpod,https://status.nearpod.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,News2You,https://status.n2y.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Kami (Alternative on Schoology),https://status.kamihq.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,IXL,https://status.ixl.com/,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,GoGuardian,https://status.goguardian.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Destiny Library Manager,https://status.follettsoftware.com/,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Code.org,https://status.code.org/api/v2/summary.json,,api,,"{""fieldPath"":""page.status""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Clever,https://status.clever.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,CK-12,https://status.ck12.org/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+K-8|K-5|K-12|9-12|6-12|6-8,EduBlogs,https://status.campuspress.com/,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Wayground (formerly Quizizz),https://quizizz.freshping.io,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Gimkit,https://gimkit.crisp.watch/en/,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,123test.com Career Aptitude Test,https://123test.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,PowToon,http://status.powtoon.com/,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Boom Learning,http://status.boomlearning.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Book Widgets,https://bookwidgets.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,BookSource,https://booksource.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Diigo,https://diigo.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Edpuzzle,https://edpuzzle.com/,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Formative,https://formative.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Mote,https://mote.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Personal Finance Lab,https://personalfinancelab.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Pixton,https://pixton.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Quia,https://quia.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Rosetta Stone For Schools,https://www.rosettastone.com/,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Soundation4Education,https://edu.soundation.com/,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Typing.com,https://typing.com,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,Wizer,https://wizer.me,,heartbeat,,
+K-8|K-5|K-12|9-12|6-12|6-8,World Book,https://worldbook.com,,heartbeat,,
+K-8,Padlet,https://status.padlet.help/api/v2/summary.json,,api,,"{""fieldPath"":""page.status""}"
+K-5,Rise Up,https://status.riseup.ai/,,heartbeat,,
+K-5,Lalilo,https://status.renaissance.com/,,heartbeat,,
+K-5,Freckle ELA,https://status.freckle.com,,heartbeat,,
+K-5,Flat for Education,https://status.flat.io,,heartbeat,,
+K-5,Class Dojo,https://status.classdojo.com,,heartbeat,,
+K-5,BrainPOP Jr.,https://status.brainpop.com,,heartbeat,,
+K-5,Benchmark Education,https://benchmark.freshstatus.io/,,heartbeat,,
+K-5,99Math,https://99math.com,,heartbeat,,
+K-5,ABCya,https://abcya.com,,heartbeat,,
+K-5,ASSISTments,https://assistments.com,,heartbeat,,
+K-5,Acadience,https://acadiencelearning.com,,heartbeat,,
+K-5,EasyCBM,https://easycbm.com,,heartbeat,,
+K-5,GoNoodle,https://gonoodle.com,,heartbeat,,
+K-5,Kodable,https://kodable.com,,heartbeat,,
+K-5,Project Read,https://projectread.ai,,heartbeat,,
+K-5,Read Naturally,https://readnaturally.com,,heartbeat,,
+K-5,Spellie,https://spellie.com,,heartbeat,,
+K-5,Studies Weekly,https://studiesweekly.com,,heartbeat,,
+K-5,Teach Your Monster to Read,https://teachyourmonster.org,,heartbeat,,
+K-5,Vooks,https://vooks.com,,heartbeat,,
+K-5,Read Live,https://readlive.readnaturally.com/,,heartbeat,,
+K-12,Grouper,https://grouper.school,,heartbeat,,
+K-12,Gizmos,https://www.explorelearning.com/our-products/site-status,https://gizmos.explorelearning.com/favicon-32x32.png,scrape,All ExploreLearning sites are currently working with no issues.,
+K-12,ReadWorks,https://readworks.org/,,heartbeat,,
+9-12,Canvas,https://status.instructure.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+9-12,Agile Mind,https://agilemind.com,,heartbeat,,
+9-12,Speakable,https://speakable.io,,heartbeat,,
+9-12,VIA Institute on Character,https://viacharacter.org,,heartbeat,,
+9-12,Writable,https://status.writable.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+9-12|Student Testing,Methodize (ACT Prep),https://methodize.methodlearning.com/,,heartbeat,,
+9-12|Student Testing,Noteflight Learn,https://statusgator.com/services/noteflight,,scrape,Noteflight is up,
+9-12,Scholastic,https://scholastic.com/,,heartbeat,,
+6-12,Señor Wooly,https://status.senorwooly.com,,heartbeat,,
+6-12,Affinity Products,https://affinity.studio,,heartbeat,,
+6-12,Brilliant,https://brilliant.com,,heartbeat,,
+6-12,CMU CS Academy,https://academy.cs.cmu.edu/,,heartbeat,,
+6-12,CS-Stem Network,https://www.cs2n.org/,,heartbeat,,
+6-12,CommonLit,https://commonlit.com,,heartbeat,,
+6-12,Conjuguemos,https://conjuguemos.com,,heartbeat,,
+6-12,Delta Math,https://deltamath.com,,heartbeat,,
+6-12,Desmos Classroom,https://desmos.com,,heartbeat,,
+6-12,MyPLTW (Project Lead the Way),https://www.pltw.org/,,heartbeat,,
+6-12,NoRedInk,https://noredink.com,,heartbeat,,
+6-12,PhET,https://phet.com,,heartbeat,,
+6-12,Pixlr,https://pixlr.com,,heartbeat,,
+6-12,ProWritingAid,https://prowritingaid.com,,heartbeat,,
+6-12,Quill,https://quill.com,,heartbeat,,
+6-12,Tinkercad Classroom,https://tinkercad.com,,heartbeat,,
+6-12,WeWillWrite,https://wewillwrite.com,,heartbeat,,
+6-12|6-8,JASON Learning,https://jason.org,,heartbeat,,
+6-12|6-8,BrainPOP Science,https://status.brainpop.com,,heartbeat,,
+6-12|6-8,Thunkable,https://status.thunkable.com/,,heartbeat,,
+6-12|6-8,CompTIA Spark,https://status.comptia.org/,,heartbeat,,
+6-12,Everfi,https://statusgator.com/services/everfi,https://everfi.com/wp-content/uploads/2025/09/favicon.png,scrape,EVERFI is up,
+6-12,Verizon Innovative Learning HQ,https://www.verizon.com/learning/login,,heartbeat,,
+6-12,Amplify,https://status.amplify.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+6-12,ICivics,https://outagestats.com/en/is-site-down/icivics.org,https://vision.icivics.org/wp-content/uploads/2024/07/cropped-iCivics-512-x-512-Favicon-32x32.png,scrape,Current status: No failures,
+6-12,SchooLinks,https://status.schoolinks.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+6-8,Project STEM,http://project-stem.com/,https://lh3.googleusercontent.com/sitesv/APaQ0STOcl8PRXmxSwrnPNVi1fDORQUe1rS0-KUS1HqMYdxMnmB1kB6zCrALer69CpkGbcs8JEsfWBaRN2NIeCOokvNQBXGgDntDAQSICPgg8mLJzlAH7WaMOo_JZRZ-Bfl7lHoGY1pKWruMtGfW4D9qMZjCYp0CrtmddUg2bvkquItqRekRS9qjgvIpVPU=w16383,heartbeat,,
+District,eFinancePlus,https://status.powerschool.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[60].status""}"
+District,SchoolMessenger,https://status.powerschool.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[12].status""}"
+District,Incident IQ,https://status.incidentiq.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+District,Dexcom Monitoring,https://status.dexcom.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+District,ParentSquare,https://status.parentsquare.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
+Student Testing,iReady,https://api.status.io/1.0/status/64d25bf4adb04b052efa180e,https://login.i-ready.com/favicon.ico,api,All Systems Operational,"{""fieldPath"":""result.status_overall.status""}"

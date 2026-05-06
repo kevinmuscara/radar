@@ -1,5 +1,8 @@
 # Radar
 
+> [!IMPORTANT] 
+> For anyone who attended BrainStorm 2026 and want to have the prefab resource list to start from, you can access it [here](./West%20Clermont%20Resource%20Export.csv). Keep in mind, by importing this, it will automatically categorize all resources by our category names, you may want to re-organize the categories before bulk importing. 
+ 
 ![Radar cover](cover.png)
 
 [![Ko-Fi](https://srv-cdn.himpfen.io/badges/kofi/kofi-flat.svg)](https://ko-fi.com/kevinmuscara) &nbsp; 
