@@ -1,0 +1,13 @@
+services:
+  radar:
+    image: ${IMAGE_NAME:-ghcr.io/kevinmuscara/radar:main}
+    ports:
+      - ${HOST_PORT:-8080}:80
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      HOST: ${HOST:-0.0.0.0}
+      PORT: ${PORT:-80}
+      DB_PATH: ${DB_PATH:-/app/data/database.sqlite}
+    volumes:
+      - ${DATA_PATH:-./radar-data}:/app/data
+    restart: unless-stopped

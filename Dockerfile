@@ -3,11 +3,18 @@ FROM node:20-bookworm AS build
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN npm install --build-from-source
 
 COPY . .
 RUN npm run build:css
-
+RUN npm prune --production
 FROM node:20-bookworm-slim AS runtime
 
 WORKDIR /app
@@ -41,8 +48,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN npm install --omit=dev && npm cache clean --force
-
+COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/config ./config
 COPY --from=build /app/public ./public
 COPY --from=build /app/routes ./routes

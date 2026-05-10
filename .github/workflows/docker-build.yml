@@ -1,0 +1,42 @@
+name: Manual Docker Build
+
+on:
+  # This makes it manual only
+  workflow_dispatch:
+    inputs:
+      custom_tag:
+        description: 'Optional: Custom tag name (defaults to branch name)'
+        required: false
+        default: ''
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and Push Image
+        run: |
+          # Logic: If custom_tag is empty, use the branch name (main or test)
+          if [ -z "${{ github.event.inputs.custom_tag }}" ]; then
+            TAG_NAME=${{ github.ref_name }}
+          else
+            TAG_NAME=${{ github.event.inputs.custom_tag }}
+          fi
+          
+          # Convert repository name to lowercase for Docker naming standards
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[:upper:]' '[:lower:]')
+
+          echo "Building $IMAGE_ID with tag: $TAG_NAME"
+
+          docker build . --file Dockerfile --tag $IMAGE_ID:$TAG_NAME
+          docker push $IMAGE_ID:$TAG_NAME
