@@ -77,6 +77,31 @@
       return `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(host)}`;
     }
 
+    function getStatusPageLink(resource) {
+      const raw = String(resource && resource.status_page ? resource.status_page : '').trim();
+      if (!raw) return '';
+
+      function parseUrl(input) {
+        try {
+          return new URL(input);
+        } catch (_error) {
+          try {
+            return new URL('https://' + input);
+          } catch (_error2) {
+            return null;
+          }
+        }
+      }
+
+      const parsed = parseUrl(raw);
+      if (!parsed || (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')) {
+        return '';
+      }
+
+      const isApiEndpoint = /\/api(?:\/|$)/i.test(parsed.pathname) || /\.(json|xml)$/i.test(parsed.pathname);
+      return isApiEndpoint ? parsed.origin : parsed.toString();
+    }
+
     const categoryEntries = Object.keys(resources).map((name) => ({ name, slug: slugify(name) }));
     const validViewSlugs = new Set(['all'].concat(categoryEntries.map((entry) => entry.slug)));
 
@@ -273,7 +298,14 @@
                   </div>
                   <div class="flex min-w-0 flex-col flex-1">
                     <div class="mb-2 flex min-w-0 items-start justify-between gap-2">
-                      <h3 class="min-w-0 break-words font-semibold leading-snug text-gray-900"><%= resource.resource_name %></h3>
+                      <% const statusPageLink = getStatusPageLink(resource); %>
+                      <% if (statusPageLink) { %>
+                        <a target="_blank" rel="noopener noreferrer" href="<%= statusPageLink %>">
+                          <h3 class="min-w-0 break-words font-semibold leading-snug text-gray-900"><%= resource.resource_name %></h3>
+                        </a>
+                      <% } else { %>
+                        <h3 class="min-w-0 break-words font-semibold leading-snug text-gray-900"><%= resource.resource_name %></h3>
+                      <% } %>
                       <form method="POST" action="<%= reportIssueAction(resource.resource_name) %>">
                         <input type="hidden" name="redirect_to" value="<%= currentUrl || '/' %>">
                         <button type="submit" title="<%= reportLabel %>" aria-label="<%= reportLabel %>" class="report-issue-btn inline-flex shrink-0 items-center gap-1 text-gray-400 hover:text-amber-500 transition-colors" data-resource-name="<%= resource.resource_name %>">
@@ -324,7 +356,14 @@
                   </div>
                   <div class="flex min-w-0 flex-col flex-1">
                     <div class="mb-2 flex min-w-0 items-start justify-between gap-2">
-                      <h3 class="min-w-0 break-words font-semibold leading-snug text-gray-900"><%= resource.resource_name %></h3>
+                      <% const statusPageLink = getStatusPageLink(resource); %>
+                      <% if (statusPageLink) { %>
+                        <a target="_blank" rel="noopener noreferrer" href="<%= statusPageLink %>">
+                          <h3 class="min-w-0 break-words font-semibold leading-snug text-gray-900"><%= resource.resource_name %></h3>
+                        </a>
+                      <% } else { %>
+                        <h3 class="min-w-0 break-words font-semibold leading-snug text-gray-900"><%= resource.resource_name %></h3>
+                      <% } %>
                       <form method="POST" action="<%= reportIssueAction(resource.resource_name) %>">
                         <input type="hidden" name="redirect_to" value="<%= currentUrl || '/' %>">
                         <button type="submit" title="<%= reportLabel %>" aria-label="<%= reportLabel %>" class="report-issue-btn inline-flex shrink-0 items-center gap-1 text-gray-400 hover:text-amber-500 transition-colors" data-resource-name="<%= resource.resource_name %>">
