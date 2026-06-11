@@ -1058,9 +1058,14 @@ function bindModalTriggers() {
           state.apiExplorerTarget === "edit-resource-api-mapped-field"
             ? qs("#edit-resource-url")?.value
             : qs("#resource-url")?.value;
-        const urlInput = qs("#api-explorer-url");
-        if (urlInput && sourceUrl) urlInput.value = sourceUrl;
         resetApiExplorerState();
+        const urlInput = qs("#api-explorer-url");
+        if (urlInput) urlInput.value = sourceUrl || "";
+        showModal(modal);
+        if (isValidAbsoluteUrl(sourceUrl)) {
+          window.setTimeout(triggerApiExplorerAnalyze, 0);
+        }
+        return;
       }
       if (modal === "resources" || modal === "edit-resources") {
         updateResourceCheckSections();
@@ -1132,6 +1137,22 @@ function resetApiExplorerState() {
   setApiUseFieldEnabled(false);
 }
 
+function getApiExplorerUrlInputs() {
+  return [qs("#resource-url"), qs("#edit-resource-url"), qs("#api-explorer-url")].filter(Boolean);
+}
+
+function syncApiExplorerUrlFields(sourceInput) {
+  if (!sourceInput) return;
+
+  const value = String(sourceInput.value || "");
+  getApiExplorerUrlInputs().forEach((input) => {
+    if (input === sourceInput) return;
+    if (input.value !== value) {
+      input.value = value;
+    }
+  });
+}
+
 function getApiExplorerSearchInputs() {
   const modal = qs("#modal-api-explorer");
   if (!modal) {
@@ -1144,6 +1165,13 @@ function getApiExplorerSearchInputs() {
   const valueInput =
     qs("#api-explorer-search-value", modal) || allSearchInputs[1] || null;
   return { keyInput, valueInput };
+}
+
+function triggerApiExplorerAnalyze() {
+  const analyzeButton = qs(
+    '#modal-api-explorer button[type="button"].rounded-lg.border.border-blue-600.bg-blue-600',
+  );
+  analyzeButton && analyzeButton.click();
 }
 
 function matchesApiSearch(value, term) {
@@ -1177,7 +1205,7 @@ function filterApiExplorerData(node, keyTerm, valueTerm, nodeKey = "") {
         String(index),
       );
       if (!result.matched) return;
-      keptItems.push(result.includeWholeNode ? item : result.value);
+      keptItems[index] = result.includeWholeNode ? item : result.value;
     });
 
     if (keyMatches && !valueTerm) {
@@ -1276,13 +1304,17 @@ function applyApiExplorerFilters({ preserveSelection = false } = {}) {
 }
 
 function initApiExplorer() {
-  const analyzeButton = qs(
-    '#modal-api-explorer button[type="button"].rounded-lg.border.border-blue-600.bg-blue-600',
-  );
   const useFieldButton = qs("#api-explorer-use-field");
   const { keyInput, valueInput } = getApiExplorerSearchInputs();
+  const urlInputs = getApiExplorerUrlInputs();
 
   resetApiExplorerState();
+
+  urlInputs.forEach((input) => {
+    input.addEventListener("input", () => {
+      syncApiExplorerUrlFields(input);
+    });
+  });
 
   keyInput &&
     keyInput.addEventListener("input", () => {
@@ -1293,6 +1325,10 @@ function initApiExplorer() {
     valueInput.addEventListener("input", () => {
       applyApiExplorerFilters();
     });
+
+  const analyzeButton = qs(
+    '#modal-api-explorer button[type="button"].rounded-lg.border.border-blue-600.bg-blue-600',
+  );
 
   analyzeButton &&
     analyzeButton.addEventListener("click", async () => {
