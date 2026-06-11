@@ -1177,7 +1177,7 @@ function filterApiExplorerData(node, keyTerm, valueTerm, nodeKey = "") {
         String(index),
       );
       if (!result.matched) return;
-      keptItems.push(result.includeWholeNode ? item : result.value);
+      keptItems[index] = result.includeWholeNode ? item : result.value;
     });
 
     if (keyMatches && !valueTerm) {
