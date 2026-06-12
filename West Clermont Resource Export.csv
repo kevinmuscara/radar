@@ -3,7 +3,7 @@ K-8|K-5,Zearn,https://status.zearn.org,,heartbeat,,
 K-8|K-5,BrainPOP ELL,https://status.brainpop.com,,heartbeat,,
 K-8|K-5,Legends of Learning,https://legendsoflearning.com,,heartbeat,,
 K-8|K-5,Prodigy,https://prodigy.com,,heartbeat,,
-K-8|K-5|K-12|9-12|6-12|6-8,Schoology Learning,https://status.powerschool.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[80].status""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Schoology Learning,https://status.powerschool.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[88].status""}"
 K-8|K-5|K-12|9-12|6-12|6-8,Google Workspace for Education,https://www.google.com/appsstatus/dashboard/,,scrape,No incidents,
 K-8|K-5|K-12|9-12|6-12|6-8,Canva for Education,https://www.canvastatus.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
 K-8|K-5|K-12|9-12|6-12|6-8,WeVideo,https://status.wevideo.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
@@ -12,10 +12,10 @@ K-8|K-5|K-12|9-12|6-12|6-8,Lumio (formerly SMART Learning Suite Online),https://
 K-8|K-5|K-12|9-12|6-12|6-8,Screencastify,https://status.screencastify.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
 K-8|K-5|K-12|9-12|6-12|6-8,SchoolAI,https://status.schoolai.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
 K-8|K-5|K-12|9-12|6-12|6-8,Remind,https://status.remind.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
-K-8|K-5|K-12|9-12|6-12|6-8,Pear Assessment (formerly Edulastic),https://status.peardeck.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[0].status""}"
-K-8|K-5|K-12|9-12|6-12|6-8,Pear Deck,https://status.peardeck.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[1].status""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Pear Assessment (formerly Edulastic),https://status.peardeck.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[1].status""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Pear Deck,https://status.peardeck.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[3].status""}"
 K-8|K-5|K-12|9-12|6-12|6-8,OverDrive,https://status.overdrive.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
-K-8|K-5|K-12|9-12|6-12|6-8,Sora,https://status.openai.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[0].status""}"
+K-8|K-5|K-12|9-12|6-12|6-8,Sora,https://status.openai.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[6].status""}"
 K-8|K-5|K-12|9-12|6-12|6-8,Newsela,https://status.newsela.com/,,heartbeat,,
 K-8|K-5|K-12|9-12|6-12|6-8,Nearpod,https://status.nearpod.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
 K-8|K-5|K-12|9-12|6-12|6-8,News2You,https://status.n2y.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
@@ -106,8 +106,8 @@ K-12,ReadWorks,https://readworks.org/,,heartbeat,,
 6-12,ICivics,https://outagestats.com/en/is-site-down/icivics.org,https://vision.icivics.org/wp-content/uploads/2024/07/cropped-iCivics-512-x-512-Favicon-32x32.png,scrape,Current status: No failures,
 6-12,SchooLinks,https://status.schoolinks.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
 6-8,Project STEM,http://project-stem.com/,https://lh3.googleusercontent.com/sitesv/APaQ0STOcl8PRXmxSwrnPNVi1fDORQUe1rS0-KUS1HqMYdxMnmB1kB6zCrALer69CpkGbcs8JEsfWBaRN2NIeCOokvNQBXGgDntDAQSICPgg8mLJzlAH7WaMOo_JZRZ-Bfl7lHoGY1pKWruMtGfW4D9qMZjCYp0CrtmddUg2bvkquItqRekRS9qjgvIpVPU=w16383,heartbeat,,
-District,eFinancePlus,https://status.powerschool.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[60].status""}"
-District,SchoolMessenger,https://status.powerschool.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[12].status""}"
+District,eFinancePlus,https://status.powerschool.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[68].status""}"
+District,SchoolMessenger,https://status.powerschool.com/api/v2/summary.json,,api,,"{""fieldPath"":""components[90].status""}"
 District,Incident IQ,https://status.incidentiq.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
 District,Dexcom Monitoring,https://status.dexcom.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
 District,ParentSquare,https://status.parentsquare.com/api/v2/summary.json,,api,,"{""fieldPath"":""status.description""}"
