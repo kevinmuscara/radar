@@ -1,6 +1,7 @@
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
 const path = require("path");
+const fs = require("fs");
 
 class DatabaseManager {
   constructor() {
@@ -8,12 +9,42 @@ class DatabaseManager {
   }
 
   async init() {
-    const dbPath =
-      process.env.DB_PATH || path.join(__dirname, "../database.sqlite");
-    const db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database,
-    });
+    const defaultDbPath = path.join(__dirname, "../database.sqlite");
+    const configuredDbPath = String(process.env.DB_PATH || "").trim();
+    const shouldIgnoreConfiguredDbPath =
+      process.platform === "win32" && configuredDbPath.startsWith("/app/");
+
+    const selectedDbPath = configuredDbPath && !shouldIgnoreConfiguredDbPath ? configuredDbPath : defaultDbPath;
+
+    if (configuredDbPath && shouldIgnoreConfiguredDbPath) {
+      console.warn(`[DatabaseManager] Ignoring DB_PATH="${configuredDbPath}" on Windows; using default ${defaultDbPath}`);
+    }
+
+    const openDb = async (filename) => {
+      const parentDir = path.dirname(filename);
+      if (parentDir && parentDir !== ".") {
+        fs.mkdirSync(parentDir, { recursive: true });
+      }
+
+      return open({
+        filename,
+        driver: sqlite3.Database,
+      });
+    };
+
+    let db;
+    try {
+      db = await openDb(selectedDbPath);
+    } catch (error) {
+      const canFallback = selectedDbPath !== defaultDbPath && !shouldIgnoreConfiguredDbPath && configuredDbPath;
+
+      if (!canFallback) {
+        throw error;
+      }
+
+      console.warn(`[DatabaseManager] Failed to open DB_PATH="${configuredDbPath}" (${error.message}). Falling back to ${defaultDbPath}`);
+      db = await openDb(defaultDbPath);
+    }
 
     await db.exec("PRAGMA foreign_keys = ON;");
 
